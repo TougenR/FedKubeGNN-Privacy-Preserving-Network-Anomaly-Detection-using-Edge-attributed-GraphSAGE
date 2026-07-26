@@ -69,6 +69,9 @@ Out of scope:
 - [x] Record validation and external full-data limitations.
 - [ ] Run the optional Flower tests and full six-scenario benchmark in an
   environment containing IoT-23, PyG, and Flower.
+- [x] Remediate review findings: Flower benchmark config/best-test protocol,
+  content-root provenance, shared-contract validation, strategy-bound resume,
+  crash-consistent rounds, and compatible-run comparison.
 
 ## Decisions
 
@@ -78,6 +81,9 @@ Out of scope:
 - 2026-07-26: Run FedAvg before FedProx (`mu=0.01`) using 30 rounds x 5 local epochs.
 - 2026-07-26: Emit console and JSONL evidence now; reserve telemetry exporters
   for Phase 3 without coupling business logic to an observability backend.
+- 2026-07-26: Treat the seven post-implementation review findings as valid.
+  Round commit markers, content-root digests, and validation-best Flower state
+  become required correctness boundaries rather than optional hardening.
 
 ## Validation
 
@@ -88,8 +94,11 @@ Out of scope:
 
 Observed 2026-07-26:
 
-- `python -m unittest discover -s tests/federated -v`: 35 run, 32 passed and 3
-  skipped because Flower is not installed.
+- `python -m unittest discover -s tests/federated -v`: 46 run, 41 passed and 5
+  skipped because Flower is not installed in the default project environment.
+- With pinned Flower 1.32.1 installed under `/tmp`, all 9 Flower-focused tests
+  passed, including a two-round server protocol test proving validation-best
+  selection and one final federated test evaluation.
 - `python -m compileall -q src/federated tests/federated`: passed.
 - Focused `ruff check` on every new/modified Phase 2 Python surface: passed.
 - `git diff --check`: passed.
@@ -106,7 +115,10 @@ preprocessing, immutable portable graph artifacts, lazy client loading,
 centralized/FedAvg/FedProx commands, validation-selected checkpoints,
 failure/resume guards, single final test evaluation, communication accounting,
 and console/JSONL observability across preparation, task, runtime, and Flower
-boundaries.
+boundaries. Post-review remediation additionally binds prepared dataset identity
+to client/contract content, validates every graph against the shared schema,
+uses Phase 2 settings in Flower, commits resumable rounds crash-consistently,
+and rejects comparisons across incompatible provenance.
 
 The plan remains active only for external execution evidence. No real IoT-23
 metric or Flower end-to-end claim is made until the missing data/dependencies

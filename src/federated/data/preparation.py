@@ -22,7 +22,12 @@ from src.federated.config.schema import Phase2Config
 from src.federated.data.manifest import MANIFEST_VERSION, PreparedDatasetManifest
 from src.federated.data.partitioners.scenario import deterministic_edge_masks
 from src.federated.data.sources.iot23 import read_clean_priority_sample
-from src.federated.data.storage import GraphArrays, sha256_file, write_graph_arrays
+from src.federated.data.storage import (
+    GraphArrays,
+    checksum_index_digest,
+    sha256_file,
+    write_graph_arrays,
+)
 from src.federated.observability.events import NoopObserver, Observer
 
 
@@ -230,6 +235,7 @@ def prepare_iot23(
                     "client_id": client_id,
                     "path": str(relative),
                     "num_edges": arrays.num_edges,
+                    "artifact_digest": checksum_index_digest(temporary / relative),
                 }
             )
 
@@ -251,7 +257,7 @@ def prepare_iot23(
                 "graph_protocol": config.data.graph_protocol,
             },
         )
-        _preprocessor_contract(
+        contract_root = _preprocessor_contract(
             task, preprocessor, config=config, raw_sources=raw_sources
         ).write(temporary / "contract")
         initial_path = temporary / "initial_state.npz"
@@ -264,6 +270,7 @@ def prepare_iot23(
             "graph_protocol": config.data.graph_protocol,
             "preprocessing": config.data.preprocessing,
             "contract_path": "contract",
+            "contract_digest": checksum_index_digest(contract_root),
             "initial_state_path": "initial_state.npz",
             "initial_state_sha256": sha256_file(initial_path),
             "raw_sources": raw_sources,

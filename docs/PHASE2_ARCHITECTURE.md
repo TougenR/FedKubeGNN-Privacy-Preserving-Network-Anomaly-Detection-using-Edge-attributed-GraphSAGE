@@ -86,7 +86,10 @@ artifacts/phase2/prepared/<dataset-id>/
 
 Không lưu PyG pickle, raw IP mapping hay tensor dump trong log. Loader dựng lại
 `x=ones`, cạnh đảo và message-passing edge attributes. Mọi mask phải boolean,
-rời nhau và phủ đúng toàn bộ edge; checksum sai thì fail trước train.
+rời nhau và phủ đúng toàn bộ edge; checksum sai thì fail trước train. Prepared
+manifest v2 ràng buộc checksum index của contract và từng client, đồng thời kiểm
+tra feature/label schema và số edge dùng chung. Artifact manifest v1 cũ phải được
+tạo lại bằng lệnh `prepare` và không được resume như cùng dataset.
 
 Observed run:
 
@@ -94,9 +97,12 @@ Observed run:
 artifacts/phase2/runs/<run-id>/
 ├── run.json, config.snapshot.json, failure.json (nếu lỗi)
 ├── events/server.jsonl
-├── metrics/rounds.jsonl, rounds.csv, summary.json
+├── metrics/rounds/round-NNNN.json, rounds.jsonl, rounds.csv, summary.json
 └── checkpoints/round-NNNN.npz, best_model.npz
 ```
+
+File `metrics/rounds/round-NNNN.json` là commit marker bền vững; JSONL, CSV,
+`run.json` và best checkpoint được reconcile từ marker này khi resume sau crash.
 
 Event có UTC timestamp, run/component/strategy/round/client, duration, count,
 loss/F1, byte count và digest phù hợp. Field chứa password, token, raw IP,
@@ -134,9 +140,12 @@ flwr run . --stream
 ```
 
 IoT-23 Flower run cần override `task=iot23_manifest`, `dataset-root` và bật
-`save-model`; mỗi process ghi JSONL riêng dưới `events-output`. FedAvg và
-FedProx đều dùng full participation và global metric được tính từ tổng fixed-K
-confusion matrix, không average client macro-F1.
+`save-model`; các hyperparameter benchmark (30 round, 5 local epoch, optimizer,
+learning rate và FedProx mu) được lấy trực tiếp từ `phase2-config`, không dùng
+toy defaults trong `pyproject.toml`. Mỗi process ghi JSONL riêng dưới
+`events-output`. FedAvg và FedProx đều dùng full participation, chọn checkpoint
+tốt nhất theo validation macro-F1 rồi mới đánh giá test đúng một lần. Global
+metric được tính từ tổng fixed-K confusion matrix, không average client macro-F1.
 
 ## Validation và giới hạn hiện tại
 

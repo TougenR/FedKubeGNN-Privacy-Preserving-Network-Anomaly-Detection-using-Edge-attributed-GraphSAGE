@@ -11,7 +11,12 @@ from torch import nn
 
 from src.federated.adapters.phase1_iot23 import Phase1IoT23Task
 from src.federated.data.manifest import MANIFEST_VERSION
-from src.federated.data.storage import GraphArrays, sha256_file, write_graph_arrays
+from src.federated.data.storage import (
+    GraphArrays,
+    checksum_index_digest,
+    sha256_file,
+    write_graph_arrays,
+)
 from src.federated.tasks.iot23 import ManifestIoT23Task
 
 
@@ -64,18 +69,33 @@ class ManifestTaskTests(unittest.TestCase):
                 model_hyperparameters={},
                 device="cpu",
             )
-            source_task.contract_bundle().write(root / "contract")
+            contract_root = source_task.contract_bundle().write(root / "contract")
             np.savez(root / "initial_state.npz", **source_task.initial_state())
             clients = []
             for client_id in ("a", "b"):
                 relative = Path("clients") / client_id
-                write_graph_arrays(root / relative, GraphArrays.from_graph(FakeGraph()))
-                clients.append({"client_id": client_id, "path": str(relative)})
+                client_root = write_graph_arrays(
+                    root / relative,
+                    GraphArrays.from_graph(FakeGraph()),
+                    metadata={
+                        "client_id": client_id,
+                        "graph_protocol": "transductive_edge_mask",
+                    },
+                )
+                clients.append(
+                    {
+                        "client_id": client_id,
+                        "path": str(relative),
+                        "num_edges": 6,
+                        "artifact_digest": checksum_index_digest(client_root),
+                    }
+                )
             manifest = {
                 "manifest_version": MANIFEST_VERSION,
                 "dataset_id": "fixture",
                 "graph_protocol": "transductive_edge_mask",
                 "contract_path": "contract",
+                "contract_digest": checksum_index_digest(contract_root),
                 "initial_state_path": "initial_state.npz",
                 "initial_state_sha256": sha256_file(root / "initial_state.npz"),
                 "clients": clients,

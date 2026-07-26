@@ -42,6 +42,10 @@ def atomic_json(path: Path, value: Mapping[str, Any]) -> None:
     )
 
 
+def atomic_text(path: Path, value: str) -> None:
+    _atomic_bytes(path, value.encode("utf-8"))
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -52,6 +56,7 @@ class RunStore:
 
     root: Path
     run_id: str
+    strategy: str
     config_digest: str
     dataset_digest: str
     model_digest: str
@@ -78,7 +83,14 @@ class RunStore:
         root.mkdir(parents=True, exist_ok=False)
         for name in ("events", "metrics", "checkpoints"):
             (root / name).mkdir()
-        store = cls(root, run_id, config_digest, dataset_digest, model_digest)
+        store = cls(
+            root,
+            run_id,
+            strategy,
+            config_digest,
+            dataset_digest,
+            model_digest,
+        )
         atomic_json(root / "config.snapshot.json", dict(config_snapshot))
         store._write_status("running", strategy=strategy, started_at=_now())
         return store
@@ -88,6 +100,7 @@ class RunStore:
         cls,
         root: str | Path,
         *,
+        strategy: str,
         config_digest: str,
         dataset_digest: str,
         model_digest: str,
@@ -95,6 +108,7 @@ class RunStore:
         path = Path(root)
         manifest = json.loads((path / "run.json").read_text(encoding="utf-8"))
         expected = {
+            "strategy": strategy,
             "config_digest": config_digest,
             "dataset_digest": dataset_digest,
             "model_digest": model_digest,
@@ -106,10 +120,15 @@ class RunStore:
         }
         if mismatches:
             raise ValueError(
-                f"Cannot resume run with incompatible digests: {mismatches}."
+                f"Cannot resume run with incompatible provenance: {mismatches}."
             )
         return cls(
-            path, str(manifest["run_id"]), config_digest, dataset_digest, model_digest
+            path,
+            str(manifest["run_id"]),
+            strategy,
+            config_digest,
+            dataset_digest,
+            model_digest,
         )
 
     def _write_status(self, status: str, **fields: Any) -> None:
@@ -129,13 +148,19 @@ class RunStore:
                 "config_digest": self.config_digest,
                 "dataset_digest": self.dataset_digest,
                 "model_digest": self.model_digest,
+                "strategy": self.strategy,
                 **fields,
             }
         )
         atomic_json(path, current)
 
     def checkpoint(
-        self, state: Mapping[str, np.ndarray], *, round_number: int, best: bool = False
+        self,
+        state: Mapping[str, np.ndarray],
+        *,
+        round_number: int,
+        best: bool = False,
+        mark_latest: bool = True,
     ) -> Path:
         path = self.root / "checkpoints" / f"round-{round_number:04d}.npz"
         descriptor, temporary_name = tempfile.mkstemp(
@@ -161,12 +186,25 @@ class RunStore:
             _atomic_bytes(
                 self.root / "checkpoints" / "best_model.npz", path.read_bytes()
             )
+        if mark_latest:
+            self.mark_round_committed(round_number, path)
+        return path
+
+    def promote_best(self, round_number: int) -> Path:
+        source = self.root / "checkpoints" / f"round-{round_number:04d}.npz"
+        if not source.is_file():
+            raise FileNotFoundError(f"Cannot promote missing checkpoint: {source}")
+        destination = self.root / "checkpoints" / "best_model.npz"
+        _atomic_bytes(destination, source.read_bytes())
+        return destination
+
+    def mark_round_committed(self, round_number: int, checkpoint: str | Path) -> None:
+        path = Path(checkpoint)
         self._write_status(
             "running",
             latest_round=round_number,
             latest_checkpoint=str(path.relative_to(self.root)),
         )
-        return path
 
     def complete(self, **fields: Any) -> None:
         self._write_status("completed", completed_at=_now(), **fields)

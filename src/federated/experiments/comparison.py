@@ -10,11 +10,30 @@ from typing import Iterable
 
 def compare_runs(run_roots: Iterable[str | Path], output: str | Path) -> Path:
     rows = []
+    expected_provenance: dict[str, str] | None = None
     for root_value in run_roots:
         root = Path(root_value)
         status = json.loads((root / "run.json").read_text(encoding="utf-8"))
         if status.get("status") != "completed":
             raise ValueError(f"Run is not completed: {root}")
+        provenance = {
+            key: str(status.get(key, ""))
+            for key in ("config_digest", "dataset_digest", "model_digest")
+        }
+        missing = [key for key, value in provenance.items() if not value]
+        if missing:
+            raise ValueError(f"Run {root} is missing provenance fields: {missing}.")
+        if expected_provenance is None:
+            expected_provenance = provenance
+        elif provenance != expected_provenance:
+            mismatches = {
+                key: (expected_provenance[key], provenance[key])
+                for key in expected_provenance
+                if provenance[key] != expected_provenance[key]
+            }
+            raise ValueError(
+                f"Run {root} is not comparable with the first run: {mismatches}."
+            )
         summary = json.loads(
             (root / "metrics/summary.json").read_text(encoding="utf-8")
         )
@@ -32,6 +51,7 @@ def compare_runs(run_roots: Iterable[str | Path], output: str | Path) -> Path:
                 "test_accuracy": test.get("accuracy"),
                 "upload_bytes": summary.get("total_upload_bytes", 0),
                 "download_bytes": summary.get("total_download_bytes", 0),
+                **provenance,
             }
         )
     destination = Path(output)

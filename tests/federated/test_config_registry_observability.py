@@ -75,12 +75,25 @@ class ObservabilityTests(unittest.TestCase):
             self.assertTrue(checkpoint.is_file())
             self.assertTrue((store.root / "checkpoints/best_model.npz").is_file())
             RunStore.resume(
-                store.root, config_digest="c", dataset_digest="d", model_digest="m"
+                store.root,
+                strategy="fedavg",
+                config_digest="c",
+                dataset_digest="d",
+                model_digest="m",
             )
             with self.assertRaises(ValueError):
                 RunStore.resume(
                     store.root,
+                    strategy="fedavg",
                     config_digest="wrong",
+                    dataset_digest="d",
+                    model_digest="m",
+                )
+            with self.assertRaises(ValueError):
+                RunStore.resume(
+                    store.root,
+                    strategy="fedprox",
+                    config_digest="c",
                     dataset_digest="d",
                     model_digest="m",
                 )

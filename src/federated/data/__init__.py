@@ -3,6 +3,7 @@
 from src.federated.data.manifest import PreparedDatasetManifest
 from src.federated.data.storage import (
     GraphArrays,
+    checksum_index_digest,
     load_graph_arrays,
     load_pyg_graph,
     write_graph_arrays,
@@ -11,6 +12,7 @@ from src.federated.data.storage import (
 __all__ = [
     "GraphArrays",
     "PreparedDatasetManifest",
+    "checksum_index_digest",
     "load_graph_arrays",
     "load_pyg_graph",
     "write_graph_arrays",

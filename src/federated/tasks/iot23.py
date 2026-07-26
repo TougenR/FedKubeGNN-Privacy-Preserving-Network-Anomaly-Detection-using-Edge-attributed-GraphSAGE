@@ -104,6 +104,7 @@ class ManifestIoT23Task:
         if client_id in self._adapters:
             return self._adapters[client_id]
         started = time.perf_counter()
+        self._manifest.verify_client_digest(client_id)
         graph = self._graph_loader(self._manifest.client_path(client_id))
         # Portable graph files intentionally omit class names; restore only the
         # non-sensitive schema metadata required by the compatibility adapter.

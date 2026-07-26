@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import io
 import json
 import time
 from dataclasses import dataclass
@@ -24,7 +25,7 @@ from src.federated.observability.events import (
     NoopObserver,
     Observer,
 )
-from src.federated.observability.run_store import RunStore, atomic_json
+from src.federated.observability.run_store import RunStore, atomic_json, atomic_text
 from src.federated.strategies.fedavg import FedAvgPolicy
 from src.federated.strategies.fedprox import FedProxPolicy
 
@@ -61,11 +62,34 @@ def _evaluate(
     return metrics, matrix, float(loss)
 
 
-def _append_round(root: Path, record: Mapping[str, Any]) -> None:
-    jsonl = root / "metrics" / "rounds.jsonl"
-    with jsonl.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(record, sort_keys=True) + "\n")
-        handle.flush()
+def _round_commit_path(root: Path, round_number: int) -> Path:
+    return root / "metrics" / "rounds" / f"round-{round_number:04d}.json"
+
+
+def _load_committed_rounds(root: Path) -> list[dict[str, Any]]:
+    commit_root = root / "metrics" / "rounds"
+    if not commit_root.exists():
+        return []
+    records = [
+        json.loads(path.read_text(encoding="utf-8"))
+        for path in sorted(commit_root.glob("round-*.json"))
+    ]
+    for expected_round, record in enumerate(records, start=1):
+        if int(record.get("round", -1)) != expected_round:
+            raise RuntimeError("Round commit markers are not contiguous from round 1.")
+        checkpoint = root / str(record.get("checkpoint", ""))
+        if not checkpoint.is_file():
+            raise RuntimeError(
+                f"Committed round {expected_round} is missing checkpoint {checkpoint}."
+            )
+    return records
+
+
+def _publish_round_views(root: Path, records: list[Mapping[str, Any]]) -> None:
+    jsonl_text = "".join(
+        json.dumps(record, sort_keys=True) + "\n" for record in records
+    )
+    atomic_text(root / "metrics" / "rounds.jsonl", jsonl_text)
     csv_path = root / "metrics" / "rounds.csv"
     fields = [
         "round",
@@ -80,13 +104,46 @@ def _append_round(root: Path, record: Mapping[str, Any]) -> None:
         "download_bytes",
         "duration_seconds",
     ]
-    exists = csv_path.exists()
-    with csv_path.open("a", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fields)
-        if not exists:
-            writer.writeheader()
+    buffer = io.StringIO(newline="")
+    writer = csv.DictWriter(buffer, fieldnames=fields)
+    writer.writeheader()
+    for record in records:
         writer.writerow({key: record[key] for key in fields})
-        handle.flush()
+    atomic_text(csv_path, buffer.getvalue())
+
+
+def _commit_round(
+    store: RunStore,
+    record: dict[str, Any],
+    checkpoint: Path,
+) -> list[dict[str, Any]]:
+    committed = dict(record)
+    committed["checkpoint"] = str(checkpoint.relative_to(store.root))
+    atomic_json(_round_commit_path(store.root, int(record["round"])), committed)
+    records = _load_committed_rounds(store.root)
+    _publish_round_views(store.root, records)
+    store.mark_round_committed(int(record["round"]), checkpoint)
+    return records
+
+
+def _reconcile_run(store: RunStore) -> list[dict[str, Any]]:
+    records = _load_committed_rounds(store.root)
+    status = json.loads((store.root / "run.json").read_text(encoding="utf-8"))
+    committed_round = int(records[-1]["round"]) if records else 0
+    status_round = int(status.get("latest_round", 0))
+    if status_round > committed_round:
+        raise RuntimeError(
+            "run.json is ahead of durable round commits; this legacy/incomplete "
+            "run cannot be resumed safely."
+        )
+    _publish_round_views(store.root, records)
+    if records:
+        best = max(records, key=lambda item: float(item["macro_f1"]))
+        store.promote_best(int(best["round"]))
+        if status_round != committed_round:
+            checkpoint = store.root / str(records[-1]["checkpoint"])
+            store.mark_round_committed(committed_round, checkpoint)
+    return records
 
 
 def run_observed_inprocess(
@@ -121,6 +178,7 @@ def run_observed_inprocess(
     else:
         store = RunStore.resume(
             resume_root,
+            strategy=policy.name,
             config_digest=config_digest,
             dataset_digest=dataset_digest,
             model_digest=task.model_spec.digest,
@@ -128,9 +186,9 @@ def run_observed_inprocess(
     observer = CompositeObserver(
         observer, JsonlObserver(store.root / "events" / "server.jsonl")
     )
-    status_path = store.root / "run.json"
-    status = json.loads(status_path.read_text(encoding="utf-8"))
-    latest_round = int(status.get("latest_round", 0)) if resume_root is not None else 0
+    prior = _reconcile_run(store)
+    status = json.loads((store.root / "run.json").read_text(encoding="utf-8"))
+    latest_round = int(prior[-1]["round"]) if prior else 0
     if resume_root is not None and status.get("status") == "completed":
         raise ValueError("A completed run cannot be resumed.")
     if latest_round >= num_rounds:
@@ -145,16 +203,9 @@ def run_observed_inprocess(
     task.model_spec.validate_state(state)
     payload_bytes = state_nbytes(state)
     best_round, best_f1 = 0, -1.0
-    rounds_path = store.root / "metrics" / "rounds.jsonl"
-    if latest_round and rounds_path.exists():
-        prior = [
-            json.loads(line)
-            for line in rounds_path.read_text(encoding="utf-8").splitlines()
-            if line
-        ]
-        if prior:
-            best = max(prior, key=lambda item: float(item["macro_f1"]))
-            best_round, best_f1 = int(best["round"]), float(best["macro_f1"])
+    if prior:
+        best = max(prior, key=lambda item: float(item["macro_f1"]))
+        best_round, best_f1 = int(best["round"]), float(best["macro_f1"])
     run_started = time.perf_counter()
     observer.emit(
         "run.started",
@@ -214,7 +265,6 @@ def run_observed_inprocess(
             is_best = macro_f1 > best_f1
             if is_best:
                 best_round, best_f1 = round_number, macro_f1
-            store.checkpoint(state, round_number=round_number, best=is_best)
             record = {
                 "round": round_number,
                 "strategy": policy.name,
@@ -230,7 +280,14 @@ def run_observed_inprocess(
                 "duration_seconds": time.perf_counter() - started,
                 "confusion_matrix": matrix.tolist(),
             }
-            _append_round(store.root, record)
+            checkpoint = store.checkpoint(
+                state,
+                round_number=round_number,
+                mark_latest=False,
+            )
+            _commit_round(store, record, checkpoint)
+            if is_best:
+                store.promote_best(round_number)
             observer.emit(
                 "round.completed",
                 run_id=store.run_id,

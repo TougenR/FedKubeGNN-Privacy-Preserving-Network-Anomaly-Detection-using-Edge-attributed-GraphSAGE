@@ -5,6 +5,7 @@ from pathlib import Path
 
 from src.federated.adapters.toy import ToyFederatedTask
 from src.federated.contracts.task import LocalTrainConfig
+from src.federated.observability import RunStore
 from src.federated.runtimes.inprocess import run_observed_inprocess
 from src.federated.strategies.fedavg import FedAvgPolicy
 from src.federated.strategies.fedprox import FedProxPolicy
@@ -128,6 +129,12 @@ class ObservedRuntimeTests(unittest.TestCase):
             failed = json.loads((run_root / "run.json").read_text())
             self.assertEqual(failed["status"], "failed")
             self.assertEqual(failed["latest_round"], 1)
+            with self.assertRaisesRegex(ValueError, "strategy"):
+                run_observed_inprocess(
+                    SixClientToyTask(),
+                    resume_root=run_root,
+                    **{**kwargs, "policy": FedProxPolicy(0.01)},
+                )
             result = run_observed_inprocess(
                 SixClientToyTask(), resume_root=run_root, **kwargs
             )
@@ -137,6 +144,49 @@ class ObservedRuntimeTests(unittest.TestCase):
             self.assertEqual(completed["previous_failure"], "failure.json")
             self.assertEqual(
                 len((run_root / "metrics/rounds.jsonl").read_text().splitlines()), 2
+            )
+
+    def test_orphan_checkpoint_before_commit_marker_is_safely_replayed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            task = SixClientToyTask()
+            store = RunStore.create(
+                temporary,
+                strategy="fedavg",
+                config_digest="orphan-config",
+                dataset_digest="six-scenario-fixture",
+                model_digest=task.model_spec.digest,
+                config_snapshot={"fixture": True},
+            )
+            store.checkpoint(
+                task.initial_state(), round_number=1, mark_latest=False
+            )
+            store.fail(RuntimeError("crash before round commit"))
+
+            result = run_observed_inprocess(
+                task,
+                policy=FedAvgPolicy(),
+                num_rounds=1,
+                train_config=LocalTrainConfig(
+                    local_epochs=1, learning_rate=0.1, optimizer="sgd"
+                ),
+                output_root=temporary,
+                config_digest="orphan-config",
+                config_snapshot={"fixture": True},
+                resume_root=store.root,
+            )
+            status = json.loads((result.run_root / "run.json").read_text())
+            self.assertEqual(status["status"], "completed")
+            self.assertEqual(status["latest_round"], 1)
+            self.assertTrue(
+                (result.run_root / "metrics/rounds/round-0001.json").is_file()
+            )
+            self.assertEqual(
+                len(
+                    (result.run_root / "metrics/rounds.jsonl")
+                    .read_text()
+                    .splitlines()
+                ),
+                1,
             )
 
 

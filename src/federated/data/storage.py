@@ -32,6 +32,20 @@ def sha256_file(path: str | Path) -> str:
     return digest.hexdigest()
 
 
+def checksum_index_digest(directory: str | Path) -> str:
+    """Digest a checksums index so a parent manifest can bind its contents."""
+    root = Path(directory)
+    checksums = json.loads((root / "checksums.json").read_text(encoding="utf-8"))
+    if not isinstance(checksums, dict) or not checksums:
+        raise ContractError(f"Invalid or empty checksums index: {root}")
+    canonical = json.dumps(
+        {str(name): str(digest) for name, digest in checksums.items()},
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
 @dataclass(frozen=True)
 class GraphArrays:
     edge_index: np.ndarray
