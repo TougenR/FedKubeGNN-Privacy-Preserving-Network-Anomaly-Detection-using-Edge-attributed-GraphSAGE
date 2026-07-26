@@ -31,6 +31,14 @@ signals, and application behavior remain authoritative. Harness adds navigation
 and working-memory structure around that truth; it does not install upstream
 `repository-harness` product documents over it.
 
+Application documents:
+
+- [`PHASE1_REPORT.md`](PHASE1_REPORT.md): historical centralized experiments.
+- [`PHASE2_ARCHITECTURE.md`](PHASE2_ARCHITECTURE.md): current preparation,
+  federation, observability, artifact and run contract.
+- [`kienthuc/huong-tiep-can-va-lua-chon-model.md`](kienthuc/huong-tiep-can-va-lua-chon-model.md):
+  problem framing and why E-GraphSAGE is selected over pure CNNs.
+
 ## Source-Repository Indexes
 
 The following material is deliberately outside the default installation:

@@ -8,10 +8,23 @@ Repo chứa baseline **Giai đoạn 1** do **Nguyễn Khắc Bảo** phụ trác
 IoT-23 → dựng đồ thị hành vi → huấn luyện **E-GraphSAGE** + 4 baseline
 (`gat`, `sage_edge_concat`, `graphsage`, `gcn`) tập trung trên 1 máy.
 
-Nền tảng **Giai đoạn 2** nằm trong `src/federated/` và được thiết kế như một
-boundary độc lập: core FedAvg/metrics và Flower runtime không phụ thuộc PyG hay
-implementation Phase 1. Xem [kiến trúc Phase 2](docs/PHASE2_ARCHITECTURE.md)
-trước khi nối dữ liệu/model thật.
+Pipeline **Giai đoạn 2** nằm trong `src/federated/`: chuẩn bị sáu client IoT-23
+với shared train-only preprocessing, chạy FedAvg/FedProx, chọn checkpoint theo
+validation và ghi structured JSONL/run artifacts. Core FedAvg/metrics và Flower
+runtime không phụ thuộc PyG hay implementation Phase 1. Xem
+[kiến trúc Phase 2](docs/PHASE2_ARCHITECTURE.md) trước khi chạy dữ liệu thật.
+
+Preflight và smoke Phase 2:
+
+```bash
+python -m src.federated.cli --config configs/phase2/iot23-federated.yaml doctor
+python -m unittest discover -s tests/federated -v
+python -m src.federated.cli run --task toy --strategy fedavg --rounds 2
+```
+
+`doctor` cho biết chính xác raw scenario/dependency/disk nào còn thiếu. Phase 2
+cần raw dataset để tạo artifact mới, nhưng không cần tải checkpoint Phase 1;
+initial E-GraphSAGE state và centralized reference được tạo lại từ config/seed.
 
 ## Cấu trúc repo
 

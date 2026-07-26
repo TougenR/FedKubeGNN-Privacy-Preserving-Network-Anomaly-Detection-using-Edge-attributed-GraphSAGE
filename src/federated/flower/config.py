@@ -18,6 +18,8 @@ DEFAULT_RUN_CONFIG: Final[dict[str, int | float | str | bool]] = {
     "seed": 42,
     "save-model": False,
     "model-output": "artifacts/phase2/toy_final_model.pt",
+    "evaluate-split": "val",
+    "events-output": "artifacts/phase2/flower-events",
 }
 
 

@@ -36,9 +36,7 @@ class _FakeGraph:
             ],
             dtype=torch.float32,
         )
-        labels = torch.tensor(
-            [0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1], dtype=torch.long
-        )
+        labels = torch.tensor([0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1], dtype=torch.long)
         if invert:
             # Keep the model task the same but vary local order/distribution.
             order = torch.arange(len(labels) - 1, -1, -1)
@@ -116,6 +114,23 @@ class Phase1AdapterTests(unittest.TestCase):
         self.assertGreaterEqual(result.rounds[-1].global_metrics["macro_f1"], 0.5)
         self.assertEqual(result.rounds[-1].train_examples, 16)
         self.assertEqual(result.rounds[-1].evaluation_examples, 4)
+
+    def test_one_client_fedavg_matches_direct_local_update(self) -> None:
+        task = self._task()
+        config = LocalTrainConfig(
+            local_epochs=2, learning_rate=0.1, optimizer="sgd", seed=42
+        )
+        direct = task.train_local("scenario-a", task.initial_state(), config)
+        federated = run_federated_simulation(
+            task,
+            num_rounds=1,
+            train_config=config,
+            client_ids=["scenario-a"],
+        )
+        for name in direct.state:
+            np.testing.assert_allclose(
+                federated.final_state[name], direct.state[name], rtol=0, atol=1e-7
+            )
 
     def test_adapter_rejects_overlapping_masks(self) -> None:
         graph = _FakeGraph()

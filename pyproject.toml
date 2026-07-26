@@ -31,8 +31,8 @@ fab-format-version = 1
 flwr-version-target = "1.32.1"
 
 [tool.flwr.app.components]
-serverapp = "src.federated.flower.toy_server_app:app"
-clientapp = "src.federated.flower.toy_client_app:app"
+serverapp = "src.federated.flower.unified_server_app:app"
+clientapp = "src.federated.flower.unified_client_app:app"
 
 [tool.flwr.app.config]
 num-server-rounds = 3
@@ -47,3 +47,7 @@ proximal-mu = 0.0
 seed = 42
 save-model = false
 model-output = "artifacts/phase2/toy_final_model.pt"
+task = "toy"
+phase2-config = "configs/phase2/iot23-federated.yaml"
+evaluate-split = "val"
+events-output = "artifacts/phase2/flower-events"

@@ -1,0 +1,293 @@
+"""Observed full-participation runtime used for proof and local experiments."""
+
+from __future__ import annotations
+
+import csv
+import json
+import time
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Mapping
+
+import numpy as np
+
+from src.federated.contracts.task import FederatedTask, LocalTrainConfig
+from src.federated.core.aggregation import weighted_fedavg
+from src.federated.core.metrics import (
+    aggregate_confusion_matrices,
+    classification_metrics,
+)
+from src.federated.core.state import copy_array_state, state_nbytes
+from src.federated.observability.events import (
+    CompositeObserver,
+    JsonlObserver,
+    NoopObserver,
+    Observer,
+)
+from src.federated.observability.run_store import RunStore, atomic_json
+from src.federated.strategies.fedavg import FedAvgPolicy
+from src.federated.strategies.fedprox import FedProxPolicy
+
+
+@dataclass(frozen=True)
+class ObservedRunResult:
+    run_id: str
+    run_root: Path
+    best_round: int
+    validation_macro_f1: float
+    test_metrics: Mapping[str, Any]
+
+
+def _evaluate(
+    task: FederatedTask, state: Mapping[str, np.ndarray], split: str
+) -> tuple[dict[str, Any], np.ndarray, float]:
+    task_split = "val" if split == "validation" else split
+    results = [
+        task.evaluate_local(client_id, state, split=task_split)
+        for client_id in task.client_ids
+    ]
+    matrix = aggregate_confusion_matrices(
+        (result.confusion_matrix for result in results),
+        num_classes=task.label_schema.num_classes,
+    )
+    metrics = classification_metrics(matrix, class_names=task.label_schema.classes)
+    total = sum(result.num_examples for result in results)
+    loss = (
+        sum(result.loss * result.num_examples for result in results) / total
+        if total
+        else 0.0
+    )
+    metrics["loss"] = float(loss)
+    return metrics, matrix, float(loss)
+
+
+def _append_round(root: Path, record: Mapping[str, Any]) -> None:
+    jsonl = root / "metrics" / "rounds.jsonl"
+    with jsonl.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(record, sort_keys=True) + "\n")
+        handle.flush()
+    csv_path = root / "metrics" / "rounds.csv"
+    fields = [
+        "round",
+        "train_loss",
+        "validation_loss",
+        "accuracy",
+        "macro_f1",
+        "weighted_f1",
+        "train_examples",
+        "validation_examples",
+        "upload_bytes",
+        "download_bytes",
+        "duration_seconds",
+    ]
+    exists = csv_path.exists()
+    with csv_path.open("a", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fields)
+        if not exists:
+            writer.writeheader()
+        writer.writerow({key: record[key] for key in fields})
+        handle.flush()
+
+
+def run_observed_inprocess(
+    task: FederatedTask,
+    *,
+    policy: FedAvgPolicy | FedProxPolicy,
+    num_rounds: int,
+    train_config: LocalTrainConfig,
+    output_root: str | Path,
+    config_digest: str,
+    config_snapshot: Mapping[str, Any],
+    observer: Observer | None = None,
+    resume_root: str | Path | None = None,
+) -> ObservedRunResult:
+    """Run rounds on validation, select the best checkpoint, then test once."""
+    if num_rounds < 1:
+        raise ValueError("num_rounds must be >= 1.")
+    observer = observer or NoopObserver()
+    metadata = dict(task.metadata())
+    dataset_digest = str(
+        metadata.get("dataset_digest", metadata.get("dataset_id", task.task_id))
+    )
+    if resume_root is None:
+        store = RunStore.create(
+            output_root,
+            strategy=policy.name,
+            config_digest=config_digest,
+            dataset_digest=dataset_digest,
+            model_digest=task.model_spec.digest,
+            config_snapshot=config_snapshot,
+        )
+    else:
+        store = RunStore.resume(
+            resume_root,
+            config_digest=config_digest,
+            dataset_digest=dataset_digest,
+            model_digest=task.model_spec.digest,
+        )
+    observer = CompositeObserver(
+        observer, JsonlObserver(store.root / "events" / "server.jsonl")
+    )
+    status_path = store.root / "run.json"
+    status = json.loads(status_path.read_text(encoding="utf-8"))
+    latest_round = int(status.get("latest_round", 0)) if resume_root is not None else 0
+    if resume_root is not None and status.get("status") == "completed":
+        raise ValueError("A completed run cannot be resumed.")
+    if latest_round >= num_rounds:
+        raise ValueError(
+            f"Resume checkpoint round {latest_round} is not below requested rounds={num_rounds}."
+        )
+    state = (
+        store.load_checkpoint(store.root / str(status["latest_checkpoint"]))
+        if latest_round
+        else task.initial_state()
+    )
+    task.model_spec.validate_state(state)
+    payload_bytes = state_nbytes(state)
+    best_round, best_f1 = 0, -1.0
+    rounds_path = store.root / "metrics" / "rounds.jsonl"
+    if latest_round and rounds_path.exists():
+        prior = [
+            json.loads(line)
+            for line in rounds_path.read_text(encoding="utf-8").splitlines()
+            if line
+        ]
+        if prior:
+            best = max(prior, key=lambda item: float(item["macro_f1"]))
+            best_round, best_f1 = int(best["round"]), float(best["macro_f1"])
+    run_started = time.perf_counter()
+    observer.emit(
+        "run.started",
+        run_id=store.run_id,
+        component="runtime",
+        strategy=policy.name,
+        rounds=num_rounds,
+        clients=len(task.client_ids),
+        graph_protocol=metadata.get("graph_protocol"),
+    )
+    if latest_round:
+        observer.emit(
+            "run.resumed",
+            run_id=store.run_id,
+            component="runtime",
+            strategy=policy.name,
+            latest_round=latest_round,
+            remaining_rounds=num_rounds - latest_round,
+        )
+    effective_config = LocalTrainConfig(
+        local_epochs=train_config.local_epochs,
+        learning_rate=train_config.learning_rate,
+        weight_decay=train_config.weight_decay,
+        grad_clip=train_config.grad_clip,
+        optimizer=train_config.optimizer,
+        proximal_mu=policy.proximal_mu,
+        seed=train_config.seed,
+    )
+    try:
+        for round_number in range(latest_round + 1, num_rounds + 1):
+            started = time.perf_counter()
+            observer.emit(
+                "round.started",
+                run_id=store.run_id,
+                component="runtime",
+                strategy=policy.name,
+                round=round_number,
+                clients=len(task.client_ids),
+            )
+            local_results = [
+                task.train_local(client_id, copy_array_state(state), effective_config)
+                for client_id in task.client_ids
+            ]
+            state = weighted_fedavg(local_results, model_spec=task.model_spec)
+            validation, matrix, validation_loss = _evaluate(task, state, "validation")
+            train_examples = sum(result.num_examples for result in local_results)
+            weighted_train_loss = (
+                sum(
+                    result.metrics.get("train_loss", 0.0) * result.num_examples
+                    for result in local_results
+                )
+                / train_examples
+            )
+            upload_bytes = payload_bytes * len(task.client_ids)
+            download_bytes = payload_bytes * len(task.client_ids)
+            macro_f1 = float(validation["macro_f1"])
+            is_best = macro_f1 > best_f1
+            if is_best:
+                best_round, best_f1 = round_number, macro_f1
+            store.checkpoint(state, round_number=round_number, best=is_best)
+            record = {
+                "round": round_number,
+                "strategy": policy.name,
+                "train_loss": float(weighted_train_loss),
+                "validation_loss": validation_loss,
+                "accuracy": float(validation["accuracy"]),
+                "macro_f1": macro_f1,
+                "weighted_f1": float(validation["weighted_f1"]),
+                "train_examples": train_examples,
+                "validation_examples": int(matrix.sum()),
+                "upload_bytes": upload_bytes,
+                "download_bytes": download_bytes,
+                "duration_seconds": time.perf_counter() - started,
+                "confusion_matrix": matrix.tolist(),
+            }
+            _append_round(store.root, record)
+            observer.emit(
+                "round.completed",
+                run_id=store.run_id,
+                component="runtime",
+                strategy=policy.name,
+                round=round_number,
+                macro_f1=macro_f1,
+                loss=validation_loss,
+                upload_bytes=upload_bytes,
+                download_bytes=download_bytes,
+                duration_seconds=record["duration_seconds"],
+            )
+
+        best_state = store.load_checkpoint(
+            store.root / "checkpoints" / "best_model.npz"
+        )
+        test_metrics, test_matrix, _ = _evaluate(task, best_state, "test")
+        summary = {
+            "run_id": store.run_id,
+            "strategy": policy.name,
+            "best_round": best_round,
+            "validation_macro_f1": best_f1,
+            "test_metrics": test_metrics,
+            "test_confusion_matrix": test_matrix.tolist(),
+            "total_upload_bytes": payload_bytes * len(task.client_ids) * num_rounds,
+            "total_download_bytes": payload_bytes * len(task.client_ids) * num_rounds,
+            "duration_seconds": time.perf_counter() - run_started,
+        }
+        atomic_json(store.root / "metrics" / "summary.json", summary)
+        store.complete(
+            best_round=best_round,
+            validation_macro_f1=best_f1,
+            test_macro_f1=float(test_metrics["macro_f1"]),
+        )
+        observer.emit(
+            "run.completed",
+            run_id=store.run_id,
+            component="runtime",
+            strategy=policy.name,
+            best_round=best_round,
+            validation_macro_f1=best_f1,
+            test_macro_f1=float(test_metrics["macro_f1"]),
+            duration_seconds=summary["duration_seconds"],
+        )
+        return ObservedRunResult(
+            store.run_id, store.root, best_round, best_f1, test_metrics
+        )
+    except BaseException as error:
+        store.fail(error)
+        observer.emit(
+            "run.failed",
+            level="ERROR",
+            run_id=store.run_id,
+            component="runtime",
+            strategy=policy.name,
+            error_type=type(error).__name__,
+            error_message=str(error),
+            duration_seconds=time.perf_counter() - run_started,
+        )
+        raise

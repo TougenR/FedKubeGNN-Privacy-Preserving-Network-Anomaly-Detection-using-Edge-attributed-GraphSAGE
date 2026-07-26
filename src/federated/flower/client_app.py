@@ -9,9 +9,11 @@ import numpy as np
 from src.federated.contracts.task import FederatedTask, LocalTrainConfig
 from src.federated.core.state import arrays_to_torch_state, torch_state_to_arrays
 from src.federated.flower.config import resolve_run_config
+from src.federated.observability.events import NoopObserver, Observer
 
 
 TaskFactory = Callable[[Any], FederatedTask]
+ObserverFactory = Callable[[Any, str], Observer]
 
 
 def _client_id(task: FederatedTask, context: Any) -> str:
@@ -44,9 +46,7 @@ def _train_config(msg: Any, context: Any) -> LocalTrainConfig:
         grad_clip=float(run.get("grad-clip", 1.0)),
         optimizer=str(run.get("optimizer", "sgd")),
         proximal_mu=float(
-            message_config.get(
-                "proximal-mu", run.get("proximal-mu", 0.0)
-            )
+            message_config.get("proximal-mu", run.get("proximal-mu", 0.0))
         ),
         seed=int(run.get("seed", 42)),
     )
@@ -56,6 +56,7 @@ def build_client_app(
     task_factory: TaskFactory,
     *,
     log_message_sizes: bool = True,
+    observer_factory: ObserverFactory | None = None,
 ) -> Any:
     """Build a current Flower Message API ClientApp for a task plugin."""
     try:
@@ -72,37 +73,63 @@ def build_client_app(
 
     @app.train()
     def train(msg: Message, context: Any) -> Message:
+        observer = (
+            observer_factory(context, "client") if observer_factory else NoopObserver()
+        )
         task = task_factory(context)
         client_id = _client_id(task, context)
-        state = torch_state_to_arrays(
-            msg.content["arrays"].to_torch_state_dict()
-        )
+        state = torch_state_to_arrays(msg.content["arrays"].to_torch_state_dict())
         task.model_spec.validate_state(state)
-        result = task.train_local(
-            client_id, state, _train_config(msg, context)
+        observer.emit(
+            "flower.client_train_received",
+            component="flower",
+            run_id=str(context.run_id),
+            client_id=client_id,
+            download_bytes=sum(value.nbytes for value in state.values()),
         )
+        result = task.train_local(client_id, state, _train_config(msg, context))
         task.model_spec.validate_state(result.state)
-        arrays = ArrayRecord(
-            torch_state_dict=arrays_to_torch_state(result.state)
-        )
+        arrays = ArrayRecord(torch_state_dict=arrays_to_torch_state(result.state))
         metrics: dict[str, int | float] = {
             "num-examples": int(result.num_examples),
             **{key: float(value) for key, value in result.metrics.items()},
         }
-        content = RecordDict(
-            {"arrays": arrays, "metrics": MetricRecord(metrics)}
+        content = RecordDict({"arrays": arrays, "metrics": MetricRecord(metrics)})
+        observer.emit(
+            "flower.client_train_completed",
+            component="flower",
+            run_id=str(context.run_id),
+            client_id=client_id,
+            examples=result.num_examples,
+            upload_bytes=sum(value.nbytes for value in result.state.values()),
+            train_loss=result.metrics.get("train_loss"),
         )
         return Message(content=content, reply_to=msg)
 
     @app.evaluate()
     def evaluate(msg: Message, context: Any) -> Message:
+        observer = (
+            observer_factory(context, "client") if observer_factory else NoopObserver()
+        )
         task = task_factory(context)
         client_id = _client_id(task, context)
-        state = torch_state_to_arrays(
-            msg.content["arrays"].to_torch_state_dict()
-        )
+        state = torch_state_to_arrays(msg.content["arrays"].to_torch_state_dict())
         task.model_spec.validate_state(state)
-        result = task.evaluate_local(client_id, state, split="test")
+        run = resolve_run_config(context.run_config)
+        message_config = msg.content["config"] if "config" in msg.content else {}
+        split = str(message_config.get("split", run.get("evaluate-split", "val")))
+        if split == "validation":
+            split = "val"
+        result = task.evaluate_local(client_id, state, split=split)
+        observer.emit(
+            "flower.client_evaluate_completed",
+            component="flower",
+            run_id=str(context.run_id),
+            client_id=client_id,
+            split=split,
+            examples=result.num_examples,
+            loss=result.loss,
+        )
         matrix = np.asarray(result.confusion_matrix, dtype=np.int64)
         metrics: dict[str, int | float | list[int]] = {
             "num-examples": int(result.num_examples),
@@ -110,9 +137,7 @@ def build_client_app(
             "num-classes": int(task.label_schema.num_classes),
             "confusion-matrix": matrix.reshape(-1).tolist(),
         }
-        metrics.update(
-            {key: float(value) for key, value in result.metrics.items()}
-        )
+        metrics.update({key: float(value) for key, value in result.metrics.items()})
         return Message(
             content=RecordDict({"metrics": MetricRecord(metrics)}),
             reply_to=msg,

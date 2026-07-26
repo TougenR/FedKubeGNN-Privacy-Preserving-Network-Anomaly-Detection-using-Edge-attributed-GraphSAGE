@@ -1,146 +1,158 @@
-# Phase 2: Federated Foundation
+# Phase 2: IoT-23 Federation
 
-Tài liệu này mô tả phần nền tảng Phase 2 đã được triển khai ngày 2026-07-24.
-Mục tiêu thiết kế là giữ thuật toán federated, metric và Flower runtime hoạt
-động ngay cả khi toàn bộ pipeline Phase 1 bị thay thế.
+Phase 2 biến đầu ra logic của Phase 1 thành sáu client non-IID theo scenario,
+huấn luyện cùng E-GraphSAGE bằng FedAvg/FedProx, và lưu đủ bằng chứng để tái
+lập hoặc chẩn đoán một run. Historical macro-F1 `0.8773` chỉ là số tham khảo;
+benchmark mới fit preprocessing trên train và phải tự tạo centralized result.
 
-## Trust boundary
-
-Phase 1 được xem là một upstream chưa được xác minh. Phase 2 không import
-`src.preprocess`, `src.graph_build` hoặc `src.model` trong core. Chỉ adapter
-IoT-23 được phép biết các field PyG và cách khởi tạo model cũ.
+## Luồng hệ thống hiện tại
 
 ```text
-Phase 1 hiện tại hoặc pipeline mới
-              │
-              ▼
-      FederatedTask adapter
-              │  schema + named parameters + sufficient statistics
-              ▼
-Contracts ── Core FedAvg/metrics ── Flower ClientApp/ServerApp
-              ▲
-              │
-       Toy task độc lập
+6 x conn.log.labeled
+        │ deterministic priority sample, cap/class, SHA-256
+        ▼
+6 x clean DataFrame ── label-aware 70/10/20 edge masks
+        │
+        ├── concat TRAIN rows only ──► shared Preprocessor + global labels
+        │
+        ▼
+transform all rows with frozen preprocessor
+        │
+        ▼
+IP nodes + flow edges ──► portable .npy client graphs
+        │                  contract JSON/NPZ + checksums + manifest
+        ▼
+ManifestIoT23Task (server loads contract/state only)
+        │
+        ├── client selected ──► lazy load exactly one graph
+        │
+        ▼
+30 rounds, 6 clients, full participation, 5 local epochs
+        │
+        ├── FedAvg: weighted average by train-edge count
+        └── FedProx: FedAvg + local proximal loss, mu=0.01
+        │
+        ▼
+validation each round ──► best checkpoint ──► test exactly once
+        │
+        ▼
+run.json + JSONL events + rounds.csv/jsonl + summary + .npz checkpoints
 ```
 
-Nếu Phase 1 refactor, chỉ adapter và bước tạo artifact cần đổi. Core aggregation,
-global metrics và Flower boundary không được phụ thuộc vào class path, pickle,
-PyG `Data`, hay tên hàm cụ thể của Phase 1.
+Đây vẫn là protocol `transductive_edge_mask`: train/validation/test là các
+cạnh khác nhau trong cùng graph; message passing được phép nhìn feature và
+topology của toàn graph nhưng không nhìn nhãn ngoài mask. Protocol luôn nằm
+trong config, manifest, task metadata và event.
 
-## Các lớp bảo vệ
+## Boundary và extension points
 
-- `FederatedTask` là plugin contract duy nhất mà core và Flower sử dụng. Task
-  phải cung cấp danh sách client, schema, initial named state, local train,
-  local evaluate và metadata.
-- `FeatureSchema`, `LabelSchema`, `GraphSchema` và `ModelSpec` có digest ổn định.
-  Sai thứ tự feature, label mapping, parameter key, shape hoặc dtype sẽ fail
-  trước aggregation.
-- `ContractBundle` lưu JSON/NPZ và SHA-256. Bundle không pickle đối tượng
-  `Preprocessor`, vì class path của pickle sẽ vỡ khi Phase 1 refactor.
-- FedAvg dùng `num_examples` làm trọng số và từ chối state không tương thích.
-  Tensor không phải số thực chỉ được chấp nhận khi mọi client gửi cùng giá trị.
-- Global macro-F1 được tính từ tổng confusion matrix K x K, không lấy trung
-  bình các client macro-F1. Những class vắng mặt vẫn nằm trong label schema cố
-  định và nhận F1 bằng 0.
-- Optimizer là local, được khởi tạo lại cho mỗi train message. FedProx dùng cùng
-  task contract và thêm proximal term; core không giữ optimizer state giữa các
-  round.
+Core chỉ biết `FederatedTask`, named NumPy state, schema và confusion matrix.
+PyG/E-GraphSAGE nằm sau adapter. Config nghiêm ngặt chọn rõ:
 
-## Cấu trúc triển khai
+- `data_source`, `partitioner`, `graph_builder`;
+- `model`, `task`, `strategy`, `runtime`, `observer`.
 
-- `src/federated/contracts/`: schema, task protocol, portable artifact bundle.
-- `src/federated/core/`: named-state conversion, strict weighted FedAvg,
-  confusion-matrix metrics và in-process runner không phụ thuộc Flower.
-- `src/federated/adapters/toy.py`: hai client non-IID xác định, dùng để chứng
-  minh core độc lập với Phase 1 và PyG.
-- `src/federated/adapters/phase1_iot23.py`: anti-corruption adapter cho graph
-  và E-GraphSAGE hiện tại.
-- `src/federated/flower/`: generic `ClientApp`/`ServerApp`, FedAvg/FedProx và
-  callback tổng hợp global metrics theo Message API của Flower 1.32.1.
+`src/federated/registry.py` từ chối tên lạ và duplicate; không cho config import
+Python object tùy ý. Các import cũ trong `src/federated/adapters/` và
+`src/federated/flower/` vẫn là compatibility surface.
 
-## Chạy proof độc lập
+Các package chính:
 
-Tạo môi trường riêng cho Phase 2; lệnh này không cài `torch-geometric`:
+- `config/`, `registry.py`: config versioned và extension registry.
+- `data/`: sampling, split, preparation, portable graph và manifest validation.
+- `tasks/`: manifest-backed lazy IoT-23 task và toy compatibility export.
+- `strategies/`, `runtimes/`: FedAvg/FedProx và observed in-process runtime.
+- `flower/`: Flower 1.32 Message API, task switching và client/server events.
+- `observability/`: backend-neutral observer, JSONL sink, atomic run store.
+- `experiments/`: centralized reference, task factory và result comparison.
+
+## Artifact contracts
+
+Prepared dataset:
+
+```text
+artifacts/phase2/prepared/<dataset-id>/
+├── manifest.json
+├── initial_state.npz
+├── contract/
+│   ├── feature_schema.json, label_schema.json, graph_schema.json
+│   ├── model_spec.json, categories.json, learned_arrays.npz
+│   └── manifest.json, checksums.json
+└── clients/<scenario-id>/
+    ├── edge_index.npy, edge_attr.npy, edge_label.npy
+    ├── train_mask.npy, val_mask.npy, test_mask.npy
+    └── metadata.json, checksums.json
+```
+
+Không lưu PyG pickle, raw IP mapping hay tensor dump trong log. Loader dựng lại
+`x=ones`, cạnh đảo và message-passing edge attributes. Mọi mask phải boolean,
+rời nhau và phủ đúng toàn bộ edge; checksum sai thì fail trước train.
+
+Observed run:
+
+```text
+artifacts/phase2/runs/<run-id>/
+├── run.json, config.snapshot.json, failure.json (nếu lỗi)
+├── events/server.jsonl
+├── metrics/rounds.jsonl, rounds.csv, summary.json
+└── checkpoints/round-NNNN.npz, best_model.npz
+```
+
+Event có UTC timestamp, run/component/strategy/round/client, duration, count,
+loss/F1, byte count và digest phù hợp. Field chứa password, token, raw IP,
+edge attributes hay tensor bị từ chối. Interface observer không phụ thuộc
+backend để Phase 3 có thể thêm OpenTelemetry/Prometheus.
+
+## Chạy
+
+Config chuẩn: `configs/phase2/iot23-federated.yaml`. Global CLI option đứng
+trước subcommand:
 
 ```bash
-python -m venv .venv-phase2
-source .venv-phase2/bin/activate
-pip install -r requirements-phase2.txt
-python -m unittest discover -s tests/federated -v
+python -m src.federated.cli --config configs/phase2/iot23-federated.yaml doctor
+python -m src.federated.cli --config configs/phase2/iot23-federated.yaml prepare
+python -m src.federated.cli validate --dataset artifacts/phase2/prepared/<dataset-id>
+
+python -m src.federated.cli run --dataset artifacts/phase2/prepared/<dataset-id> --strategy fedavg
+python -m src.federated.cli run --dataset artifacts/phase2/prepared/<dataset-id> --strategy fedprox
+python -m src.federated.cli centralized --dataset artifacts/phase2/prepared/<dataset-id>
+python -m src.federated.cli evaluate --dataset artifacts/phase2/prepared/<dataset-id> --checkpoint <best_model.npz> --split test --output artifacts/phase2/test.json
+python -m src.federated.cli compare --runs <central-run> <fedavg-run> <fedprox-run> --output artifacts/phase2/comparison.csv
+```
+
+Để smoke không cần PyG/data thật:
+
+```bash
+python -m src.federated.cli run --task toy --strategy fedavg --rounds 2
+python -m src.federated.cli run --task toy --strategy fedprox --rounds 2
+```
+
+Flower dùng unified apps trong `pyproject.toml`; mặc định vẫn là toy để proof:
+
+```bash
 flwr run . --stream
 ```
 
-`pyproject.toml` mặc định chạy toy federation gồm 2 client, 3 round, full
-participation và FedAvg. Để đổi sang FedProx, override `strategy=fedprox` và
-`proximal-mu`; các default nằm trong `src/federated/flower/config.py`, do đó
-direct API và Flower CLI dùng cùng hành vi.
+IoT-23 Flower run cần override `task=iot23_manifest`, `dataset-root` và bật
+`save-model`; mỗi process ghi JSONL riêng dưới `events-output`. FedAvg và
+FedProx đều dùng full participation và global metric được tính từ tổng fixed-K
+confusion matrix, không average client macro-F1.
 
-## Nối Phase 1 hiện tại
+## Validation và giới hạn hiện tại
 
-Caller phải chuẩn bị graph đã split và truyền mọi contract một cách tường minh:
-
-```python
-from src.federated.adapters.phase1_iot23 import (
-    Phase1IoT23Task,
-    make_phase1_model_factory,
-)
-
-task = Phase1IoT23Task(
-    client_graphs=scenario_graphs,
-    feature_columns=preprocessor.feature_columns,
-    class_to_idx=class_to_idx,
-    model_factory=make_phase1_model_factory(
-        model_name="egraphsage",
-        cfg=model_config,
-    ),
-    model_hyperparameters=model_config,
-    source_metadata={"source": "phase1-iot23"},
-)
-
-task.contract_bundle(preprocessor=preprocessor).write(contract_directory)
-```
-
-Adapter kiểm tra graph fields, dimensions, boolean masks, mask coverage,
-non-overlap, label range và metadata mapping. Nó không tự fit preprocessing,
-không tự khám phá feature order và không âm thầm sửa artifact không hợp lệ.
-
-Để chạy adapter này với implementation cũ, cài thêm dependency Phase 1:
+Local proof chạy bằng:
 
 ```bash
-pip install -r requirements.txt
+python -m unittest discover -s tests/federated -v
+python -m compileall -q src/federated
+git diff --check
 ```
 
-## Những gì đã và chưa được chứng minh
+Proof bao gồm strict config/registry, integrity/tamper, deterministic sampling
+và split, server init không load graph, one-client FedAvg equivalence, sáu-client
+FedAvg/FedProx observed runs, communication bytes và best/test artifacts.
 
-Đã được chứng minh tự động:
-
-- contract bundle round-trip và phát hiện checksum/schema drift;
-- strict weighted FedAvg, fixed-K global metrics, FedAvg và FedProx toy path;
-- IoT-23 adapter train/evaluate qua public contract bằng graph double, không
-  import PyG;
-- Flower 1.32.1 boundary và federation thật 2 client x 3 round không failure.
-
-Chưa được xem là bằng chứng:
-
-- kết quả macro-F1 `0.8773` của Phase 1 chưa được reproduce;
-- repository chưa có tracked preprocessor/model artifact đủ để tái tạo run;
-- full IoT-23/PyG federation chưa chạy trong môi trường hiện tại;
-- LOSO Phase 1 hiện train trên toàn bộ edge trước khi chọn validation subset,
-  nên không dùng số LOSO cũ làm acceptance gate cho Phase 2.
-
-## Hướng phát triển kế tiếp
-
-1. Tạo một data-preparation command cho Phase 1 adapter, xuất contract bundle
-   và client manifest bất biến từ mỗi scenario; tuyệt đối không fit scaler ở
-   từng client.
-2. Chạy một-client equivalence gate: cùng initial state, sample, optimizer và
-   seed thì adapter local train phải khớp centralized reference trên train mask.
-3. Chạy 6 scenario-aligned client với FedAvg trước; log per-round train/test
-   confusion matrix, bytes upload/download và model-spec digest.
-4. Sau đó mới thêm FedProx sweep trên đúng client manifests và seeds của FedAvg.
-5. Chỉ sau khi hai baseline trên ổn định mới thiết kế IID/non-IID repartition,
-   DP, secure aggregation hoặc Kubernetes deployment.
-
-Phase 1 có thể được sửa song song, nhưng một artifact mới chỉ được Phase 2 nhận
-khi vượt qua contract validation và equivalence gate; không cần sửa core hay
-Flower runtime để thích nghi với refactor đó.
+Máy hiện tại chưa có raw IoT-23, `torch_geometric` hoặc `flwr`; `doctor` vì vậy
+fail rõ ràng trước preparation. Full six-scenario E-GraphSAGE/Flower result và
+centralized metric phải chạy trên môi trường có data/dependency; không được xem
+synthetic proof hay số Phase 1 cũ là bằng chứng thay thế.

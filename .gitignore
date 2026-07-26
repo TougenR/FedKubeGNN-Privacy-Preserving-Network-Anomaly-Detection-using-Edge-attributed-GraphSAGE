@@ -3,9 +3,11 @@
 # =====================================================
 
 # --- Dữ liệu thô & file trung gian ---
-data/
+/data/
 checkpoints/
 artifacts/*          # ignore mọi thứ TRONG artifacts/
+# Prepared graphs, run events, metrics, and checkpoints.
+artifacts/phase2/
 
 # --- Ngoại lệ: track kết quả cuối cùng GĐ1 ---
 !artifacts/phase1_results/
