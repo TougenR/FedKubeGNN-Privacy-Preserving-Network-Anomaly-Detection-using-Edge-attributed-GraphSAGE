@@ -23,6 +23,92 @@ Kết quả Phase 1 chính:
 - Kết luận đúng: model mạnh trên pooled transductive graph nhưng tổng quát hóa
   sang scenario mới còn yếu.
 
+## Kiến trúc đang có và kiến trúc cần triển khai tiếp
+
+### A. Những gì repository đã có và đã kiểm chứng
+
+```text
+IoT-23 conn.log.labeled
+        │
+        ▼
+flow_feeder (replay theo batch)
+        │ HTTP /predict
+        ▼
+FastAPI inference_service
+        │ clean + frozen preprocessor
+        ▼
+batch_local_graph (PyG)
+        │
+        ▼
+E-GraphSAGE checkpoint Phase 1 (.pt)
+        │
+        ▼
+label + confidence + probability map + entropy
+```
+
+Luồng trên được đóng gói bằng Docker và chạy bằng Minikube. Manifest hiện tại
+chỉ gồm Namespace, inference Deployment, ClusterIP Service và feeder Job.
+Feeder vẫn là replay dữ liệu IoT-23; chưa phải network collector thật.
+
+Song song với đó, Phase 2 đã có nền tảng code cho:
+
+```text
+6 scenario IoT-23
+        ▼
+train-only preprocessing + manifest/contract
+        ▼
+client graph artifacts
+        ▼
+centralized reference / FedAvg / FedProx
+        ▼
+best_model.npz + run/metric artifacts
+```
+
+Các lệnh và contract đã có, nhưng full run IoT-23 và deployment cloud chưa
+được nghiệm thu trên môi trường hiện tại.
+
+### B. Kiến trúc mục tiêu Hiếu cần triển khai
+
+```text
+                         CLOUD KUBERNETES - CENTRAL
+┌─────────────────────────────────────────────────────────────────────┐
+│ Ingress / Load Balancer + TLS hoặc mTLS                             │
+│        │                                                            │
+│        ▼                                                            │
+│ Flower Server (FedAvg/FedProx) ──► Model/Artifact Registry           │
+│        │                         (best checkpoint + provenance)      │
+│        └──────────────► Prometheus/Grafana hoặc observability backend │
+└─────────────────────────────────────────────────────────────────────┘
+                         ▲                  │
+                         │ secure Flower   │ model update
+                         │ communication   ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                         EDGE KUBERNETES                             │
+│                                                                     │
+│ Zeek hoặc Cilium Hubble ─► flow converter ─► local graph/inference   │
+│                                                                     │
+│ Falco DaemonSet ─────────────────────────► runtime syscall alert    │
+│                                                                     │
+│ Flower Client ───────────── local training + weight synchronization  │
+│                                                                     │
+│ Decision/Alert router: known-label alert, uncertainty alert và      │
+│ runtime alert (ba nguồn được theo dõi riêng)                        │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+Phần cần nhớ khi triển khai:
+
+- **Zeek hoặc Cilium Hubble** là nguồn network flow cho E-GraphSAGE.
+- **Falco** chỉ cung cấp syscall/process/runtime alert và chạy song song; không
+  thay thế flow collector.
+- Entropy hiện chỉ là uncertainty score. Chưa được phê duyệt threshold và chưa
+  đủ bằng chứng để gọi là zero-day detection.
+- Graph lúc inference hiện là `batch_local_graph`, khác với protocol graph khi
+  train; rolling-window graph là một hạng mục mở rộng, không được ngầm coi là
+  đã hoàn thành.
+- Cloud K8s, Ingress/mTLS, model registry, dashboard và autoscaling đều là
+  phần triển khai tương lai, chưa có trong PoC hiện tại.
+
 ## Blocker cần biết trước khi chạy lại Phase 3
 
 Artifact lịch sử không đủ contract triển khai:
