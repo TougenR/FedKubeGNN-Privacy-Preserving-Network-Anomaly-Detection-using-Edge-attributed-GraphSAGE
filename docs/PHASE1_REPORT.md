@@ -182,19 +182,26 @@ Khoảng cách này rất lớn và phản ánh thực tế: mô hình rất m�
 
 Nguyên nhân: IoT-23 có phân bố nhãn **lệch giữa các scenario** — mỗi loại malware tạo ra các lớp hành vi riêng mà các scenario khác không có. FL ở GĐ2 sẽ phải giải quyết đúng bài toán này (non-IID data across clients).
 
-### 5.3 Lớp Okiru-Attack (3 mẫu) gần như không học được
+### 5.3 Lớp Okiru-Attack (3 mẫu) không có bằng chứng học ổn định
 
-Lớp Okiru-Attack chỉ có **3 mẫu** trong toàn bộ dataset (chỉ ở 36-1). Ở mọi cấu hình, F1 = 0.0 cho lớp này. Đây là giới hạn dữ liệu thực tế — không thể học được từ 3 mẫu, và khi 36-1 bị held-out trong LOSO, lớp này hoàn toàn không xuất hiện trong train.
+Lớp Okiru-Attack chỉ có **3 mẫu** trong toàn bộ dataset (chỉ ở 36-1). Pooled
+E-GraphSAGE ghi nhận F1 = 0.1176 nhưng test support chỉ có 1 mẫu, nên con số này
+không đủ ổn định để diễn giải. Khi 36-1 bị held-out trong LOSO, lớp này hoàn
+toàn không xuất hiện trong train và F1 = 0.
 
-→ Ghi nhận trung thực: lớp cực hiếm này sẽ luôn là thách thức cho cả centralized GNN lẫn FL.
+→ Ghi nhận trung thực: không thể kết luận khả năng học lớp này từ ba mẫu; cần
+thêm dữ liệu hoặc thay đổi taxonomy có authority.
 
 ### 5.4 sage_edge_concat là ablation hợp lý
 
 sage_edge_concat (Phương án B) xếp nhì ở cả pooled (0.8371) lẫn LOSO (0.2055). Kết quả xác nhận: **nhồi edge vào node input (mean → concat) tốt hơn bỏ qua edge (GCN/GraphSAGE), nhưng kém hơn concat edge vào message (E-GraphSAGE)** — vì mất locality và mất per-edge distinction.
 
-### 5.5 Class_weight hiệu quả nhất
+### 5.5 Class_weight hiệu quả nhất trên pooled
 
-Class_weight luôn cho macro-F1 cao nhất và hội tụ nhanh nhất (best_epoch = 88 trên pooled). Undersample gần như bằng nhưng hội tụ chậm hơn (105 epoch). Mode none đạt 0.8643 nhưng hội tụ chậm nhất (150 epoch — chạm max).
+Class_weight cho macro-F1 cao nhất và hội tụ nhanh nhất trên pooled
+(best_epoch = 88). Tuy nhiên LOSO chọn `none`: mean macro-F1 của `none` là
+0.2331, cao hơn `class_weight` 0.2278 và `undersample` 0.2005. Vì vậy không có
+một imbalance mode thắng trên mọi protocol.
 
 ---
 
@@ -203,10 +210,13 @@ Class_weight luôn cho macro-F1 cao nhất và hội tụ nhanh nhất (best_epo
 | Hạn chế | Giải thích | Hướng khắc phục |
 |---|---|---|
 | per_scenario chưa chạy full | Chỉ có smoke-test 2 scenario, 20 epoch | Chạy lại với `--protocols per_scenario` trên vast.ai |
-| Lớp Okiru-Attack (3 mẫu) | F1 = 0.0 mọi cấu hình | Cần thêm dữ liệu hoặc gộp vào lớp cha (Okiru) |
+| Lớp Okiru-Attack (3 mẫu) | Không đủ support để ước lượng F1 ổn định | Cần thêm dữ liệu hoặc quyết định taxonomy có authority |
 | LOSO khắc nghiệt | macro-F1 ~0.23 do phân bố nhãn lệch giữa scenarios | FL có thể cải thiện bằng communication rounds; đây là motivator cho GĐ2 |
 | GAT yếu hơn kỳ vọng | macro-F1 = 0.623 (pooled), 0.185 (LOSO) | Có thể do attention mechanism overfit trên đồ thị có cấu trúc đơn giản |
 | Feature_dim = 55 | Số lượng feature trung bình, không có embedding sâu cho history/conn_state | Cân nhắc learning-based encoding cho categorical ở GĐ3 |
+| Shared preprocessor fit trên union | Có thể học thống kê/category từ validation/test trước edge split | Dùng benchmark Phase 2 train-only preprocessing |
+| Chỉ một seed | Chưa có variance hoặc confidence interval | Chạy thêm seed nếu ngân sách compute cho phép |
+| Checkpoint lịch sử thiếu feature schema | Không đủ contract để deploy an toàn | Rerun/export checkpoint cùng exact preprocessor và `feature_columns` |
 
 ---
 

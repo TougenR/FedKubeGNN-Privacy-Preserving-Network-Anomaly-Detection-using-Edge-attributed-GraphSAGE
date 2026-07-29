@@ -36,6 +36,10 @@ Application documents:
 - [`PHASE1_REPORT.md`](PHASE1_REPORT.md): historical centralized experiments.
 - [`PHASE2_ARCHITECTURE.md`](PHASE2_ARCHITECTURE.md): current preparation,
   federation, observability, artifact and run contract.
+- [`HANDOFF_TO_HIEU.md`](HANDOFF_TO_HIEU.md): current ownership, blockers and
+  ordered Phase 2/Phase 3 handoff.
+- [`../phase3_monitoring/README.md`](../phase3_monitoring/README.md): Minikube
+  inference PoC, artifact contract, validation and known limits.
 - [`kienthuc/huong-tiep-can-va-lua-chon-model.md`](kienthuc/huong-tiep-can-va-lua-chon-model.md):
   problem framing and why E-GraphSAGE is selected over pure CNNs.
 

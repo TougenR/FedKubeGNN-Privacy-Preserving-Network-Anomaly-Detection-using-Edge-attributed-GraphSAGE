@@ -50,7 +50,7 @@ import logging
 import os
 import random
 import sys
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 import torch
@@ -474,6 +474,7 @@ def save_checkpoint(
     imbalance_mode: str,
     val_macro_f1: float,
     history_meta: Dict[str, Any],
+    feature_columns: Optional[Sequence[str]] = None,
 ) -> None:
     """Lưu state_dict + metadata cần để reconstruct model sau này."""
     ckpt = {
@@ -486,6 +487,14 @@ def save_checkpoint(
         'val_macro_f1': float(val_macro_f1),
         'history_meta': dict(history_meta),
     }
+    if feature_columns is not None:
+        columns = [str(column) for column in feature_columns]
+        if len(columns) != int(feature_dim):
+            raise ValueError(
+                "save_checkpoint: feature_columns length "
+                f"{len(columns)} != feature_dim {feature_dim}."
+            )
+        ckpt['feature_columns'] = columns
     os.makedirs(os.path.dirname(os.path.abspath(path)) or '.', exist_ok=True)
     torch.save(ckpt, path)
     logger.info("Đã lưu checkpoint: %s", path)
@@ -722,6 +731,7 @@ def train_model(
             'val_ratio': val_ratio,
             'test_ratio': test_ratio,
         },
+        feature_columns=getattr(data, 'feature_columns', None),
     )
 
     history_out: Dict[str, Any] = dict(history)

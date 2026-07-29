@@ -846,6 +846,7 @@ def run_pooled(
             "protocol": "pooled",
             "n_scenarios": len(graphs),
         },
+        feature_columns=preprocessor.feature_columns,
     )
 
     # ---- CM PNG ----
@@ -1272,6 +1273,7 @@ def run_all(
                   f"#class={all_dfs[n]['detailed-label'].nunique()}")
         print(f"  → K = {K} (class union)")
     pre = fit_shared_preprocessor(list(all_dfs.values()))
+    pre.save(os.path.join(ckpt_dir, "preprocessor.pkl"))
     if verbose:
         print(
             f"  → shared preprocessor fit trên union "

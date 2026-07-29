@@ -197,6 +197,7 @@ def build_graph(
     # Metadata (không phải standard PyG field → gán sau).
     data.ip_to_idx = ip_to_idx
     data.feature_dim = feature_dim
+    data.feature_columns = list(feat_cols)
     data.num_classes = num_classes
     data.class_to_idx = dict(class_to_idx)  # copy để an toàn
 

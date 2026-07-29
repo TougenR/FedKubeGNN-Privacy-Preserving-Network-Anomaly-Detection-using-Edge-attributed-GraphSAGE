@@ -8,14 +8,14 @@
 
 Đồ án TTTN nhóm M06 (Nguyễn Khắc Bảo & Nguyễn Chí Hiếu): *Phát hiện hành vi
 độc hại trong Kubernetes bằng Federated Learning + GNN trên bộ dữ liệu IoT-23*.
-Đồ án có 3 giai đoạn; repo này chỉ phục vụ **Giai đoạn 1** do **Nguyễn Khắc Bảo**
-phụ trách: tiền xử lý IoT-23 → dựng đồ thị hành vi → huấn luyện **E-GraphSAGE**
-tập trung trên 1 máy, làm **mốc hiệu năng cơ sở (baseline)** để so sánh với
-Giai đoạn 2 (Federated Learning) sau này.
+Đồ án có 3 giai đoạn. Repo chứa baseline tập trung Phase 1, pipeline Federated
+Learning Phase 2 và Minikube inference PoC Phase 3. Ownership và việc còn lại
+được cập nhật tại `docs/HANDOFF_TO_HIEU.md`.
 
 Ràng buộc kế thừa cho GĐ2/GĐ3 (phải tôn trọng ngay từ GĐ1):
 - Pipeline tiền xử lý viết dạng **hàm/module tái sử dụng** (không code kiểu
-  notebook một lần), vì GĐ3 sẽ dùng lại để xử lý luồng sự kiện Falco real-time.
+  notebook một lần), vì GĐ3 sẽ dùng lại cho network flow từ Zeek/Cilium Hubble.
+  Falco là nguồn syscall/process alert song song, không phải input thay thế.
 - Cách xử lý mất cân bằng lớp phải **nhất quán** giữa baseline và các client FL.
 
 ## 2. Môi trường & nguyên tắc hạ tầng
@@ -58,15 +58,25 @@ Ràng buộc kế thừa cho GĐ2/GĐ3 (phải tôn trọng ngay từ GĐ1):
 
 - **Nhãn để train = `detailed-label`** (bài toán multi-class). Giữ `label`
   (Benign/Malicious) chỉ để đối chiếu nhanh. Bỏ `tunnel_parents`.
+## 3b. Dung lượng thật & nơi chạy tiền xử lý (CẬP NHẬT)
+
+- conn.log.labeled KHÔNG nhẹ đồng đều: 34-1 ~2.7MB, 3-1 ~23MB, 1-1 ~141MB,
+  nhưng 9-1 / 36-1 / 39-1 mỗi file nhiều GB → tổng 6 file ~13GB.
+- BẮT BUỘC đọc theo CHUNK (pandas chunksize / đọc từng dòng), KHÔNG load cả file
+  vào RAM. Undersample lớp đa số (PartOfAHorizontalPortScan) NGAY trong lúc đọc
+  từng chunk để bóp dung lượng xuống trước khi giữ lại.
+- Tiền xử lý FULL (tải 13GB + đọc) chạy trên vast.ai (RAM rộng, tải nhanh), lưu
+  ra 1 file .parquet gọn đã undersample → mới đưa file nhỏ này về Mac để dev model.
+- Máy Mac M2 chỉ chạy TEST MOCK với dữ liệu giả, không xử lý file thật.
+- Mỗi scenario có thể có format #fields khác nhau (tab/space, số cột chênh) →
+  đọc tên cột theo dòng #fields của TỪNG file, không hardcode, và không giả định
+  6 file giống nhau.
 
 ## 4. Quy tắc tiền xử lý (ĐÃ CHỐT — không tự đổi)
 
-- **Xử lý nhãn trước tiên (dễ quên nhưng quan trọng):** Flow Benign có
-  `detailed-label = "-"` (cột `label` mới là "Benign"). Vì bước tiếp theo sẽ
-  chuyển mọi `-` trong cột feature thành NaN, nên nếu làm theo thứ tự ngược
-  thì cả lớp Benign sẽ "biến mất" thành NaN và không train được. **Bắt buộc
-  đổi `detailed-label` từ `"-"` và `"(empty)"` thành `"Benign"` TRƯỚC**, rồi
-  mới xử lý `-` ở các cột feature.
+- **Xử lý nhãn trước tiên:** đổi `detailed-label` từ `"-"` / `"(empty)"` thành
+  `"Benign"` trước khi chuyển token thiếu ở các cột khác thành NaN. Đảo thứ tự
+  này sẽ làm mất lớp Benign.
 - **Giá trị thiếu:** Zeek dùng ký tự `-` cho "không có giá trị". Chuyển `-` thành
   `NaN` thực sự (không giữ dạng chuỗi) TRƯỚC khi ép kiểu.
   - Cột categorical (`service`): điền `NaN` thành nhãn riêng `"unknown"`
@@ -99,23 +109,13 @@ Ràng buộc kế thừa cho GĐ2/GĐ3 (phải tôn trọng ngay từ GĐ1):
 
 ## 5. Mất cân bằng lớp (ĐÃ CHỐT)
 
-IoT-23 lệch lớp tới hàng trăm triệu lần, nhưng **lớp đa số THAY ĐỔI THEO TỪNG
-SCENARIO** — KHÔNG hardcode một tên lớp cụ thể trong code. Phải **tự tính lớp
-đa số từ phân bố thật** của từng scenario (gọi `value_counts()` rồi lấy
-`idxmax()`). Ví dụ đã khảo sát từ dữ liệu thật:
-
-| Scenario          | Đa số                | Hiếm nhất                   | Tỉ lệ (max/min) |
-|---|---|---|---|
-| CTU-IoT-34-1 (Mirai) | **DDoS** (14 394)   | PartOfAHorizontalPortScan (122) | ~118×          |
-| (các scenario khác) | _sẽ tự tính khi chạy_ | _sẽ tự tính_                | _có thể rất lớn_ |
-
+IoT-23 lệch lớp tới hàng trăm triệu lần (PartOfAHorizontalPortScan áp đảo,
+C&C-Mirai chỉ vài mẫu).
 - **KHÔNG dùng SMOTE.** Nội suy giữa 2 flow sẽ tạo "cạnh giả" nối 2 IP chưa từng
   giao tiếp → phá vỡ tính đúng đắn của đồ thị.
 - **Ưu tiên:** `class-weighted loss` (gán trọng số cao cho lớp hiếm), và/hoặc
   **undersampling có kiểm soát** lớp đa số. Cả hai không làm hỏng cấu trúc đồ thị.
-- Nếu undersample thì làm **trước khi dựng đồ thị** (vì nó bỏ bớt cạnh) và
-  phải **tự xác định lớp đa số từ `value_counts()`** của scenario hiện tại,
-  không assume trước.
+- Nếu undersample thì làm **trước khi dựng đồ thị** (vì nó bỏ bớt cạnh).
 
 ## 6. Dựng đồ thị
 

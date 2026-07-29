@@ -26,6 +26,13 @@ python -m src.federated.cli run --task toy --strategy fedavg --rounds 2
 cần raw dataset để tạo artifact mới, nhưng không cần tải checkpoint Phase 1;
 initial E-GraphSAGE state và centralized reference được tạo lại từ config/seed.
 
+PoC **Giai đoạn 3** nằm trong `phase3_monitoring/`: FastAPI inference, labeled
+IoT-23 replay, Docker và Minikube. PoC hiện fail-closed nếu checkpoint và
+preprocessor không cùng feature schema; chưa claim zero-day detection hoặc
+production cloud readiness. Xem
+[README Phase 3](phase3_monitoring/README.md) và
+[bàn giao Bảo → Hiếu](docs/HANDOFF_TO_HIEU.md).
+
 ## Cấu trúc repo
 
 ```
@@ -238,6 +245,8 @@ ls -la artifacts/phase1_results/
 - **[Báo cáo Giai đoạn 1](docs/PHASE1_REPORT.md)** — kết quả thực nghiệm, phân tích, phát hiện chính
 - **[Tài liệu bàn giao Giai đoạn 2](docs/HANDOFF_PHASE2.md)** — hướng dẫn cho người làm Federated Learning
 - **[Kiến trúc Phase 2](docs/PHASE2_ARCHITECTURE.md)** — contract, trust boundary, cách chạy và validation gates
+- **[Phase 3 Minikube PoC](phase3_monitoring/README.md)** — inference contract, replay evaluation và giới hạn
+- **[Bàn giao Bảo → Hiếu](docs/HANDOFF_TO_HIEU.md)** — ownership, blocker và thứ tự việc còn lại
 - Quyết định thiết kế, quy tắc tiền xử lý, mô hình: xem `CLAUDE.md`.
 - Dataset: <https://mcfp.felk.cvut.cz/publicDatasets/IoT-23-Dataset/>
 - PyTorch Geometric: <https://pytorch-geometric.readthedocs.io/>

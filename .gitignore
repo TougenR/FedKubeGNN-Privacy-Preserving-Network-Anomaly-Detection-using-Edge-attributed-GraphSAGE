@@ -4,6 +4,7 @@
 
 # --- Dữ liệu thô & file trung gian ---
 /data/
+phase3_monitoring/flow_feeder/sample_data/
 checkpoints/
 artifacts/*          # ignore mọi thứ TRONG artifacts/
 # Prepared graphs, run events, metrics, and checkpoints.
