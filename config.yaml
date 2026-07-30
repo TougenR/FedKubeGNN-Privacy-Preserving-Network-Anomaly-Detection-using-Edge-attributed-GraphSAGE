@@ -149,3 +149,20 @@ experiments:
   # Thư mục output (CSV + confusion matrix PNG + checkpoint).
   # run_experiments sẽ tạo thêm sub-dir ``checkpoints/`` bên trong.
   out_dir: artifacts/phase1_results
+
+# -------- 5. Phase 1 clean rerun (không dùng historical Phase A selection) --------
+phase1_clean:
+  bundle_schema_version: 1
+  output_root: artifacts/phase1_clean
+  protocols: [pooled, loso]
+  imbalance_mode: class_weight
+  seeds: [42, 1337, 2026]
+  labels:
+    - Attack
+    - Benign
+    - C&C
+    - C&C-HeartBeat
+    - DDoS
+    - Okiru
+    - Okiru-Attack
+    - PartOfAHorizontalPortScan
