@@ -66,6 +66,7 @@ class DatasetVerifierTests(unittest.TestCase):
             complete = build_manifest(
                 {name: str(path) for name in REQUIRED_SCENARIOS},
                 chunksize=3,
+                cache_dir=Path(temp) / "cache",
             )
             self.assertTrue(complete["complete"])
             for record in complete["scenarios"]:
@@ -78,7 +79,11 @@ class DatasetVerifierTests(unittest.TestCase):
                 self.assertEqual(record["unique_destination_ips"], 8)
                 self.assertEqual(len(record["sha256"]), 64)
 
-            incomplete = build_manifest({"3-1": str(path)}, chunksize=3)
+            incomplete = build_manifest(
+                {"3-1": str(path)},
+                chunksize=3,
+                cache_dir=Path(temp) / "cache",
+            )
             self.assertFalse(incomplete["complete"])
             missing = {
                 record["scenario"]

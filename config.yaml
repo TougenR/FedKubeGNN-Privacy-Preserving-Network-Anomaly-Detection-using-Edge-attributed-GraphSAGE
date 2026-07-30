@@ -154,6 +154,9 @@ experiments:
 phase1_clean:
   bundle_schema_version: 1
   output_root: artifacts/phase1_clean
+  # Cache chỉ chứa parsed + deterministic cleaned rows trước split/fit.
+  cache_dir: artifacts/data_cache
+  cache_format: parquet
   protocols: [pooled, loso]
   imbalance_mode: class_weight
   seeds: [42, 1337, 2026]

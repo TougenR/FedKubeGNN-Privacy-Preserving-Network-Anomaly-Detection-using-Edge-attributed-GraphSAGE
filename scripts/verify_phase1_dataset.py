@@ -10,8 +10,8 @@ or seriously malformed dataset.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
+import logging
 import os
 import sys
 from collections import Counter
@@ -26,9 +26,8 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
-from src.data_io import split_label_column
+from src.phase1_data_cache import ensure_canonical_cache, iter_cache_chunks
 from src.phase1_clean import FIXED_LABELS
-from src.preprocess import clean_flows
 
 
 REQUIRED_SCENARIOS = ("1-1", "3-1", "9-1", "34-1", "36-1", "39-1")
@@ -70,34 +69,6 @@ def scenarios_from_config(config_path: Path) -> dict[str, str]:
     }
 
 
-def _field_names(path: Path) -> list[str]:
-    canonical = {
-        "det_label": "detailed-label",
-        "detailed_label": "detailed-label",
-        "label_val": "label",
-    }
-    with path.open("r", encoding="utf-8", errors="replace") as handle:
-        for line in handle:
-            if line.startswith("#fields"):
-                parts = line.rstrip("\n").split("\t")
-                if len(parts) < 2:
-                    raise ValueError("Invalid #fields row.")
-                return [canonical.get(name, name) for name in parts[1:]]
-    raise ValueError("Missing #fields row; not a readable Zeek conn log.")
-
-
-def _fingerprint_and_raw_rows(path: Path) -> tuple[str, int]:
-    digest = hashlib.sha256()
-    raw_rows = 0
-    with path.open("rb") as handle:
-        for binary_line in handle:
-            digest.update(binary_line)
-            stripped = binary_line.strip()
-            if stripped and not stripped.startswith(b"#"):
-                raw_rows += 1
-    return digest.hexdigest(), raw_rows
-
-
 def inspect_scenario(
     name: str,
     path_value: str | os.PathLike[str],
@@ -105,6 +76,8 @@ def inspect_scenario(
     chunksize: int = 200_000,
     expected_labels: Iterable[str] = FIXED_LABELS,
     max_parse_errors: int = 0,
+    cache_dir: str | os.PathLike[str] = "artifacts/data_cache",
+    rebuild_cache: bool = False,
 ) -> dict[str, Any]:
     """Return a complete verification record for one scenario."""
 
@@ -129,6 +102,9 @@ def inspect_scenario(
         "serious_parser_error": False,
         "status": "ERROR",
         "error": None,
+        "cache_status": None,
+        "cache_path": None,
+        "raw_open_count": 0,
     }
     if not path.is_file():
         record["error"] = "FILE_NOT_FOUND"
@@ -142,48 +118,38 @@ def inspect_scenario(
     record["readable"] = True
     record["file_size_bytes"] = int(path.stat().st_size)
     try:
-        sha256, raw_rows = _fingerprint_and_raw_rows(path)
-        record["sha256"] = sha256
-        record["raw_data_rows"] = raw_rows
-        names = _field_names(path)
-        parser_bad_lines = 0
-
-        def bad_line(_: list[str]) -> None:
-            nonlocal parser_bad_lines
-            parser_bad_lines += 1
-            return None
-
-        reader = pd.read_csv(
+        cache_path, cache_manifest, cache_status = ensure_canonical_cache(
             path,
-            sep="\t",
-            comment="#",
-            header=None,
-            names=names,
-            na_values=[],
-            keep_default_na=False,
-            skip_blank_lines=True,
-            dtype=str,
-            engine="python",
-            on_bad_lines=bad_line,
+            name,
+            cache_dir=cache_dir,
+            rebuild_cache=rebuild_cache,
             chunksize=chunksize,
+        )
+        parsed_rows = int(cache_manifest["parsed_rows"])
+        parser_bad_lines = int(cache_manifest.get("parse_error_rows", 0))
+        raw_rows = parsed_rows + parser_bad_lines
+        record["sha256"] = str(cache_manifest["fingerprint"])
+        record["raw_data_rows"] = raw_rows
+        record["cache_status"] = cache_status
+        record["cache_path"] = str(cache_path)
+        record["raw_open_count"] = (
+            int(cache_manifest.get("raw_open_count", 0))
+            if cache_status == "MISS"
+            else 0
         )
         label_counts: Counter[str] = Counter()
         source_ips: set[str] = set()
         destination_ips: set[str] = set()
         missing_columns: set[str] = set()
-        parsed_rows = 0
         clean_rows = 0
-        for raw_chunk in reader:
-            parsed_rows += len(raw_chunk)
-            parsed = split_label_column(raw_chunk)
+        for clean in iter_cache_chunks(cache_path):
             missing_columns.update(
                 column
                 for column in REQUIRED_PARSED_COLUMNS
-                if column not in parsed.columns
+                if column not in clean.columns
             )
             if missing_columns:
                 continue
-            clean = clean_flows(parsed)
             clean_rows += len(clean)
             label_counts.update(
                 clean["detailed-label"].astype(str).tolist()
@@ -195,8 +161,7 @@ def inspect_scenario(
                 clean["id.resp_h"].dropna().astype(str).tolist()
             )
 
-        inferred_skips = max(raw_rows - parsed_rows, 0)
-        parse_errors = max(parser_bad_lines, inferred_skips)
+        parse_errors = parser_bad_lines
         record.update(
             {
                 "parsed_rows": int(parsed_rows),
@@ -259,6 +224,8 @@ def build_manifest(
     *,
     chunksize: int = 200_000,
     max_parse_errors: int = 0,
+    cache_dir: str | os.PathLike[str] = "artifacts/data_cache",
+    rebuild_cache: bool = False,
 ) -> dict[str, Any]:
     records: list[dict[str, Any]] = []
     for name in REQUIRED_SCENARIOS:
@@ -287,6 +254,9 @@ def build_manifest(
                     "serious_parser_error": False,
                     "status": "ERROR",
                     "error": "SCENARIO_NOT_SUPPLIED",
+                    "cache_status": None,
+                    "cache_path": None,
+                    "raw_open_count": 0,
                 }
             )
             continue
@@ -296,6 +266,8 @@ def build_manifest(
                 path,
                 chunksize=chunksize,
                 max_parse_errors=max_parse_errors,
+                cache_dir=cache_dir,
+                rebuild_cache=rebuild_cache,
             )
         )
     supplied_extra = sorted(set(scenario_paths) - set(REQUIRED_SCENARIOS))
@@ -352,7 +324,9 @@ def print_summary(manifest: Mapping[str, Any], output_dir: Path) -> None:
             f"size={size_text} | raw={record['raw_data_rows']} | "
             f"parsed={record['parsed_rows']} | "
             f"parse_errors={record['parse_error_rows']} | "
-            f"labels={len(record['label_counts'])}"
+            f"labels={len(record['label_counts'])} | "
+            f"cache={record.get('cache_status') or 'N/A'} | "
+            f"raw_opens={record.get('raw_open_count', 0)}"
         )
         if record["error"]:
             print(f"  error: {record['error']}")
@@ -380,6 +354,16 @@ def _parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--chunksize", type=int, default=200_000)
     parser.add_argument(
+        "--cache-dir",
+        default="artifacts/data_cache",
+        help="Canonical cleaned-data cache shared with src.phase1_clean.",
+    )
+    parser.add_argument(
+        "--rebuild-cache",
+        action="store_true",
+        help="Rebuild cache for the current raw fingerprints.",
+    )
+    parser.add_argument(
         "--max-parse-errors",
         type=int,
         default=0,
@@ -390,6 +374,10 @@ def _parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parser().parse_args(argv)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    )
     if args.chunksize < 1 or args.max_parse_errors < 0:
         raise SystemExit("--chunksize must be positive and --max-parse-errors nonnegative.")
     try:
@@ -405,6 +393,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         paths,
         chunksize=args.chunksize,
         max_parse_errors=args.max_parse_errors,
+        cache_dir=args.cache_dir,
+        rebuild_cache=args.rebuild_cache,
     )
     output_dir = Path(args.out_dir)
     write_manifest(manifest, output_dir)

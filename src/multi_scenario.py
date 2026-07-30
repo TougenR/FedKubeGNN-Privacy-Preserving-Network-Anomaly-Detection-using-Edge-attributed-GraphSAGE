@@ -195,6 +195,12 @@ def load_all_scenarios(
     paths: Dict[str, str],
     cap_per_class: Optional[int] = None,
     chunksize: int = 200_000,
+    *,
+    cache_enabled: Optional[bool] = None,
+    cache_dir: str = "artifacts/data_cache",
+    rebuild_cache: bool = False,
+    cache_format: str = "parquet",
+    load_reports: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, pd.DataFrame]:
     """
     Đọc + clean MỌI scenario; trả ``dict { name → df_clean }``.
@@ -215,6 +221,14 @@ def load_all_scenarios(
         ``None`` = đọc nguyên.
     chunksize : int
         Số dòng mỗi chunk khi cap.
+    cache_enabled : bool | None
+        ``None`` giữ nguyên historical loader. ``True`` dùng canonical
+        scenario cache; ``False`` dùng cùng canonical parser nhưng không lưu.
+        Clean Phase 1 truyền cờ này tường minh, các caller cũ không đổi.
+    cache_dir, rebuild_cache, cache_format
+        Điều khiển cache canonical pre-split. Cache không chứa fitted state.
+    load_reports : list | None
+        Nếu được truyền, append báo cáo HIT/MISS, tốc độ và raw-open count.
 
     Returns
     -------
@@ -233,7 +247,22 @@ def load_all_scenarios(
             raise FileNotFoundError(
                 f"load_all_scenarios: scenario '{name}' thiếu file {path}."
             )
-        if cap_per_class is None:
+        if cache_enabled is not None:
+            from src.phase1_data_cache import load_canonical_scenario
+
+            df_clean, report = load_canonical_scenario(
+                path,
+                name,
+                cache_dir=cache_dir,
+                cache_enabled=cache_enabled,
+                rebuild_cache=rebuild_cache,
+                cache_format=cache_format,
+                cap_per_class=cap_per_class,
+                chunksize=chunksize,
+            )
+            if load_reports is not None:
+                load_reports.append(report.to_dict())
+        elif cap_per_class is None:
             df_clean = clean_flows(load_scenario(path))
             logger.info(
                 "load_all_scenarios: %s (whole-file) → %d dòng.",

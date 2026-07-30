@@ -16,6 +16,7 @@ import argparse
 import copy
 import hashlib
 import json
+import logging
 import math
 import os
 import subprocess
@@ -123,12 +124,17 @@ def with_stable_row_ids(
     """Attach deterministic scenario/position IDs before any row transformation."""
 
     output = frame.reset_index(drop=True).copy()
-    output[ROW_ID_COLUMN] = [
-        hashlib.sha256(
-            f"phase1-clean-v1:{scenario}:{position}".encode("utf-8")
-        ).hexdigest()
-        for position in range(len(output))
-    ]
+    if ROW_ID_COLUMN not in output:
+        output[ROW_ID_COLUMN] = [
+            hashlib.sha256(
+                f"phase1-clean-v1:{scenario}:{position}".encode("utf-8")
+            ).hexdigest()
+            for position in range(len(output))
+        ]
+    elif output[ROW_ID_COLUMN].isna().any():
+        raise CleanProtocolError(f"Missing stable row IDs in {scenario!r}.")
+    else:
+        output[ROW_ID_COLUMN] = output[ROW_ID_COLUMN].astype(str)
     if output[ROW_ID_COLUMN].duplicated().any():
         raise CleanProtocolError(f"Duplicate stable row IDs in {scenario!r}.")
     return output
@@ -1471,6 +1477,25 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--seed", type=int)
     parser.add_argument("--epochs", type=int)
     parser.add_argument("--cap-per-class", type=int)
+    parser.add_argument(
+        "--cache-dir",
+        help="Canonical cleaned-data cache root (default: artifacts/data_cache).",
+    )
+    parser.add_argument(
+        "--rebuild-cache",
+        action="store_true",
+        help="Rebuild the exact current scenario fingerprint cache.",
+    )
+    parser.add_argument(
+        "--cache-format",
+        choices=("parquet",),
+        default=None,
+    )
+    parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="Parse canonically but do not persist/reuse cleaned data.",
+    )
     parser.add_argument("--out-dir")
     parser.add_argument("--toy-smoke", action="store_true")
     return parser
@@ -1483,6 +1508,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     with Path(args.config).open(encoding="utf-8") as handle:
         config = yaml.safe_load(handle)
+    logging.basicConfig(
+        level=getattr(
+            logging,
+            str(config.get("logging", {}).get("level", "INFO")).upper(),
+            logging.INFO,
+        ),
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    )
     fixed_class_to_idx(config)
     resolve_clean_imbalance_mode(config)
     seed = int(
@@ -1502,7 +1535,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.cap_per_class is not None
         else config.get("experiments", {}).get("cap_per_class")
     )
-    frames = load_all_scenarios(paths, cap_per_class=cap)
     output_root = Path(
         args.out_dir
         or config.get("phase1_clean", {}).get(
@@ -1511,6 +1543,32 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     if output_root.resolve() == HISTORICAL_OUTPUT.resolve():
         raise CleanProtocolError("Clean output cannot be historical output.")
+    clean_config = config.get("phase1_clean", {})
+    cache_dir = str(
+        args.cache_dir
+        or clean_config.get("cache_dir", "artifacts/data_cache")
+    )
+    cache_format = str(
+        args.cache_format
+        or clean_config.get("cache_format", "parquet")
+    )
+    load_reports: list[dict[str, Any]] = []
+    frames = load_all_scenarios(
+        paths,
+        cap_per_class=cap,
+        cache_enabled=not args.no_cache,
+        cache_dir=cache_dir,
+        rebuild_cache=args.rebuild_cache,
+        cache_format=cache_format,
+        load_reports=load_reports,
+    )
+    print(
+        json.dumps(
+            {"phase1_data_load": load_reports},
+            indent=2,
+            sort_keys=True,
+        )
+    )
     summaries: list[dict[str, Any]] = []
     for protocol in protocols:
         if protocol == "pooled":

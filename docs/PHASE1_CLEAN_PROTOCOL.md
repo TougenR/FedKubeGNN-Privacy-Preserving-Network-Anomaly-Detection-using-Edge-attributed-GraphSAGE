@@ -12,6 +12,7 @@ the feature implementation, or the closed-set classification task.
 The policy source is `config.yaml:phase1_clean`:
 
 - output root: `artifacts/phase1_clean`;
+- canonical cleaned-data cache: `artifacts/data_cache`;
 - final imbalance mode: `class_weight`;
 - seeds: `42`, `1337`, and `2026`;
 - fixed external eight-class taxonomy.
@@ -40,6 +41,53 @@ row position. The runner resolves masks from these IDs after transformation
 rather than assuming that intermediate DataFrame order is unchanged.
 
 `per_scenario` uses the same boundary independently for each scenario.
+
+## Canonical cleaned-data cache
+
+The clean runner parses every scenario once at process start, before pooled or
+LOSO preparation. It stores the deterministic, pre-split result at:
+
+```text
+artifacts/data_cache/<scenario>/<fingerprint>.parquet
+```
+
+The fingerprint covers raw file size, raw `mtime_ns`, the parser/cleaning code
+digest, and the canonical schema contract. A raw-file, parser, cleaning-rule,
+or schema change therefore creates a different immutable cache path. A
+fingerprint lock serializes concurrent builders: if several seed processes
+start together, one builds while the others wait and then read the completed
+cache.
+
+Allowed cache fields are parsed raw columns retained by `clean_flows`,
+deterministically cleaned values, canonical detailed labels, source/destination
+identifiers, missing indicators, and stable row IDs. It never contains split
+membership, masks, scaler values, learned category vocabulary, class weights,
+undersampling output, transformed features, graph tensors, or model state.
+`cap_per_class` is applied while reading the canonical cache, so pilot and full
+caps share the same parsed data version.
+
+Split-before-fit remains unchanged: each protocol/seed derives its membership
+from stable IDs, then fits the preprocessor on training rows only.
+
+### Raw-open trace
+
+Before this cache, the capped loader opened each scenario twice per clean
+process (header scan plus pandas parse), and each seed repeated that work. The
+old verifier opened each raw file three times and did not warm the runner.
+
+With the canonical path:
+
+| Operation for one scenario/version | Raw opens | Raw parse/clean passes |
+|---|---:|---:|
+| Verifier or clean runner, first cache MISS | 1 | 1 |
+| Pooled plus every LOSO fold in that process | 0 additional | 0 additional |
+| Pilot/full/different seed after cache exists | 0 | 0 |
+| `--no-cache`, per process | 1 | 1 |
+| `--rebuild-cache`, per invocation | 1 | 1 |
+
+Thus, in the intended sequence `verifier -> pilot -> seeds 42/1337/2026`, the
+verifier performs the sole raw parse and every training process is a HIT.
+Parquet reads still occur per process; raw parsing does not.
 
 ## LOSO protocol
 
@@ -139,8 +187,14 @@ Verify all six required raw scenarios and write
 ```bash
 python scripts/verify_phase1_dataset.py \
   --config config.yaml \
-  --out-dir artifacts/phase1_clean
+  --out-dir artifacts/phase1_clean \
+  --cache-dir artifacts/data_cache
 ```
+
+The verifier builds or reuses the same canonical cache used by training. Its
+summary reports cache HIT/MISS and raw-open count. The `sha256` manifest field
+is the canonical fingerprint digest, deliberately based on raw stat identity
+instead of rereading a 13 GB dataset solely to hash every byte.
 
 The verifier accepts the same explicit scenario format as the clean runner:
 
@@ -187,6 +241,34 @@ for seed in 42 1337 2026; do
     --out-dir "artifacts/phase1_clean/seed-$seed"
 done
 ```
+
+The default is cache enabled. Useful controls are:
+
+```text
+--cache-dir PATH
+--rebuild-cache
+--cache-format parquet
+--no-cache
+```
+
+Do not use `--rebuild-cache` for every seed. Use it only after intentionally
+changing parser/cleaning code or when diagnosing a damaged cache.
+
+### Observed cache benchmark
+
+No model training was involved. On the local Mac, with pandas parsing and
+PyArrow 25 Parquet I/O:
+
+| Dataset | Parsed rows | MISS | HIT | Raw opens MISS/HIT |
+|---|---:|---:|---:|---:|
+| Toy Zeek fixture | 720 | 0.264 s | 0.021 s | 1 / 0 |
+| Real IoT-23 `34-1` (2.8 MiB) | 23,145 | ~0.34 s | ~0.01 s | 1 / 0 |
+
+The large `39-1` speedup depends on disk and Parquet compression, but its raw
+file is no longer reparsed by every fold or seed. Progress logs report scenario,
+bytes, rows, elapsed time, HIT/MISS, rows/s, MiB/s, and raw-open count.
+For capped reads, the HIT path scans the label column by Parquet row group and
+loads full columns only for rows needed by the cap.
 
 Analyze all completed seed roots:
 
