@@ -83,3 +83,32 @@ nohup.out
 # Harness core maintenance binary
 scripts/bin/harness
 scripts/bin/harness.exe
+
+# --- Phase 1 clean: report and deployment allowlist ---
+# Raw predictions and complete per-seed/LOSO bundles are reproducibility
+# artifacts, not source-controlled files. They are backed up outside Git.
+/artifacts/phase1_clean/seed-*/
+/artifacts/phase1_clean/**/predictions.csv
+
+# Keep the small, report-ready deliverables and provenance files.
+!/artifacts/phase1_clean/
+!/artifacts/phase1_clean/report_analysis/
+!/artifacts/phase1_clean/report_analysis/**
+!/artifacts/phase1_clean/dataset_manifest.json
+!/artifacts/phase1_clean/dataset_manifest.csv
+!/artifacts/phase1_clean/config_phase1_train.yaml
+!/artifacts/phase1_clean/remote_git_status.txt
+!/artifacts/phase1_clean/remote_worktree.diff
+!/artifacts/phase1_clean/provenance_sha256.txt
+
+# Keep only the pooled seed-42 runtime bundle for the Phase 3 handoff.
+!/artifacts/phase1_clean/seed-42-full/
+/artifacts/phase1_clean/seed-42-full/*
+!/artifacts/phase1_clean/seed-42-full/pooled-seed-42/
+!/artifacts/phase1_clean/seed-42-full/pooled-seed-42/model.pt
+!/artifacts/phase1_clean/seed-42-full/pooled-seed-42/preprocessor.pkl
+!/artifacts/phase1_clean/seed-42-full/pooled-seed-42/schema.json
+!/artifacts/phase1_clean/seed-42-full/pooled-seed-42/labels.json
+!/artifacts/phase1_clean/seed-42-full/pooled-seed-42/metadata.json
+!/artifacts/phase1_clean/seed-42-full/pooled-seed-42/metrics.json
+!/artifacts/phase1_clean/seed-42-full/pooled-seed-42/split_manifest.json

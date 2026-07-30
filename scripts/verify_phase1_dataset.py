@@ -27,7 +27,7 @@ if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
 from src.phase1_data_cache import ensure_canonical_cache, iter_cache_chunks
-from src.phase1_clean import FIXED_LABELS
+from src.phase1_contract import FIXED_LABELS
 
 
 REQUIRED_SCENARIOS = ("1-1", "3-1", "9-1", "34-1", "36-1", "39-1")

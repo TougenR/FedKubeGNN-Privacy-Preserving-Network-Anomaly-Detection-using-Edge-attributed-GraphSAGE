@@ -9,7 +9,7 @@ from scripts.verify_phase1_dataset import (
     build_manifest,
     parse_scenario_arguments,
 )
-from src.phase1_clean import FIXED_LABELS
+from src.phase1_contract import FIXED_LABELS
 
 
 def _zeek_fixture() -> str:

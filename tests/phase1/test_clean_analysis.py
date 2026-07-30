@@ -6,11 +6,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from scripts.analyze_phase1_clean import (
     NOT_AVAILABLE,
     PROBABILITY_COLUMNS,
+    _entropy_products,
     aggregate_seed_metrics,
     analyze_bundle,
     binary_metrics,
@@ -19,7 +21,101 @@ from scripts.analyze_phase1_clean import (
     seen_class_macro_f1,
     write_analysis,
 )
-from src.phase1_clean import FIXED_LABELS
+from src.phase1_contract import FIXED_LABELS
+
+
+def _write_report_bundle(
+    root: Path,
+    *,
+    protocol: str,
+    seed: int,
+    held_out: str | None,
+) -> Path:
+    name = (
+        f"pooled-seed-{seed}"
+        if protocol == "pooled"
+        else f"loso-held-out-{held_out}-seed-{seed}"
+    )
+    bundle = root / name
+    bundle.mkdir(parents=True)
+    support = {
+        split: {label: 4 for label in FIXED_LABELS}
+        for split in ("train", "validation", "test")
+    }
+    if protocol == "loso":
+        support["train"]["DDoS"] = 0
+        support["validation"]["DDoS"] = 0
+    metadata = {
+        "protocol": protocol,
+        "seed": seed,
+        "held_out": held_out,
+        "class_support": support,
+        "best_epoch": 2,
+        "validation_metric": 0.6,
+    }
+    rows = []
+    for index, true_label in enumerate(FIXED_LABELS):
+        predicted_label = (
+            true_label
+            if index % 3 != 0
+            else FIXED_LABELS[(index + 1) % len(FIXED_LABELS)]
+        )
+        if true_label == "DDoS" and protocol == "loso":
+            probabilities = np.full(len(FIXED_LABELS), 1 / len(FIXED_LABELS))
+        else:
+            probabilities = np.full(len(FIXED_LABELS), 0.2 / 7)
+            probabilities[FIXED_LABELS.index(predicted_label)] = 0.8
+        row = {
+            "row_id": f"{protocol}-{seed}-{index}",
+            "scenario": held_out or "1-1",
+            "split": "test",
+            "protocol": protocol,
+            "seed": seed,
+            "true_label": true_label,
+            "predicted_label": predicted_label,
+            "true_class_train_support": support["train"][true_label],
+            "true_class_absent_from_train": (
+                support["train"][true_label] == 0
+            ),
+            "entropy": float(
+                -np.sum(
+                    probabilities
+                    * np.log(np.clip(probabilities, 1e-12, 1.0))
+                )
+            ),
+        }
+        row.update(dict(zip(PROBABILITY_COLUMNS, probabilities)))
+        rows.append(row)
+    metrics = {
+        "best_epoch": 2,
+        "validation_macro_f1": 0.6,
+        "final": {
+            "accuracy": 0.5,
+            "weighted_f1": 0.5,
+            "macro_f1": 0.5,
+        },
+        "history": [
+            {
+                "epoch": epoch,
+                "train_loss": 1.0 / epoch,
+                "validation_macro_f1": 0.2 * epoch,
+            }
+            for epoch in (1, 2, 3)
+        ],
+    }
+    (bundle / "metadata.json").write_text(
+        json.dumps(metadata), encoding="utf-8"
+    )
+    (bundle / "metrics.json").write_text(
+        json.dumps(metrics), encoding="utf-8"
+    )
+    (bundle / "split_manifest.json").write_text(
+        json.dumps({"seed": seed, "protocol": protocol}),
+        encoding="utf-8",
+    )
+    (bundle / "model.pt").write_bytes(b"fixture")
+    pd.DataFrame(rows).to_csv(bundle / "predictions.csv", index=False)
+    return bundle
 
 
 class Phase1CleanAnalysisTests(unittest.TestCase):
@@ -125,6 +221,112 @@ class Phase1CleanAnalysisTests(unittest.TestCase):
             "0.700000 ± 0.100000",
         )
 
+    def test_three_seed_aggregation_reports_min_max_and_seed_count(self):
+        frame = pd.DataFrame(
+            [
+                {"held_out": "34-1", "seed": seed, "score": score}
+                for seed, score in ((42, 0.1), (1337, 0.2), (2026, 0.3))
+            ]
+        )
+        result = aggregate_seed_metrics(
+            frame,
+            group_columns=("held_out",),
+            metric_columns=("score",),
+        )
+        self.assertEqual(int(result.iloc[0]["seed_count"]), 3)
+        self.assertAlmostEqual(float(result.iloc[0]["score_mean"]), 0.2)
+        self.assertAlmostEqual(float(result.iloc[0]["score_min"]), 0.1)
+        self.assertAlmostEqual(float(result.iloc[0]["score_max"]), 0.3)
+
+    def test_prediction_audit_entropy_groups_and_fixed_confusion_order(self):
+        with tempfile.TemporaryDirectory(prefix="phase1-report-") as temp:
+            bundle = _write_report_bundle(
+                Path(temp),
+                protocol="loso",
+                seed=42,
+                held_out="34-1",
+            )
+            run = analyze_bundle(bundle)
+            self.assertEqual(run["prediction_status"], "AVAILABLE")
+            self.assertEqual(
+                run["prediction_audit"]["held_out"],
+                "DERIVED_FROM_METADATA",
+            )
+            self.assertEqual(
+                run["prediction_audit"]["class_present_in_train"],
+                "DERIVED_FROM_EXPORTED_ABSENCE_FLAG",
+            )
+            self.assertEqual(run["confusion_matrix"].shape, (8, 8))
+            attack_index = FIXED_LABELS.index("Attack")
+            benign_index = FIXED_LABELS.index("Benign")
+            self.assertEqual(
+                int(run["confusion_matrix"][attack_index, benign_index]), 1
+            )
+            groups = set(run["entropy_summary"]["group"])
+            self.assertEqual(
+                groups,
+                {
+                    "known_correct",
+                    "known_incorrect",
+                    "absent_from_train",
+                    "benign",
+                    "malicious",
+                },
+            )
+            absent = run["entropy_detection"][
+                run["entropy_detection"]["comparison"]
+                == "absent_from_train vs known_correct"
+            ].iloc[0]
+            self.assertEqual(absent["status"], "AVAILABLE")
+            self.assertTrue(math.isfinite(float(absent["auroc"])))
+            self.assertTrue(math.isfinite(float(absent["auprc"])))
+
+    def test_report_ready_end_to_end_single_seed(self):
+        with tempfile.TemporaryDirectory(prefix="phase1-report-") as temp:
+            root = Path(temp)
+            pooled = _write_report_bundle(
+                root,
+                protocol="pooled",
+                seed=42,
+                held_out=None,
+            )
+            loso = _write_report_bundle(
+                root,
+                protocol="loso",
+                seed=42,
+                held_out="34-1",
+            )
+            output = root / "report_analysis"
+            result = write_analysis(
+                [analyze_bundle(pooled), analyze_bundle(loso)],
+                output,
+                [root],
+            )
+            self.assertTrue(result["single_seed"])
+            self.assertEqual(
+                result["statistical_uncertainty"], NOT_AVAILABLE
+            )
+            self.assertGreaterEqual(result["figures_created"], 10)
+            for filename in (
+                "pooled_metrics_by_seed.csv",
+                "loso_metrics_by_seed.csv",
+                "loso_aggregate.csv",
+                "class_support.csv",
+                "per_class_metrics.csv",
+                "entropy_summary.csv",
+                "entropy_detection_metrics.csv",
+                "report.md",
+                "FIGURE_SELECTION.md",
+            ):
+                self.assertTrue((output / filename).is_file(), filename)
+            self.assertFalse(
+                (output / "figures" / "fig15_seed_stability.png").exists()
+            )
+            selection = (output / "FIGURE_SELECTION.md").read_text(
+                encoding="utf-8"
+            )
+            self.assertLessEqual(selection.count("figures/fig"), 15)
+
     def test_missing_prediction_artifact_is_reported_without_inference(self):
         with tempfile.TemporaryDirectory(prefix="phase1-analysis-") as temp:
             root = Path(temp)
@@ -163,7 +365,7 @@ class Phase1CleanAnalysisTests(unittest.TestCase):
             output = root / "analysis"
             result = write_analysis([run], output, [root])
             self.assertFalse(result["entropy_available"])
-            self.assertFalse((output / "entropy_summary.csv").exists())
+            self.assertTrue((output / "entropy_summary.csv").exists())
             report = (output / "report.md").read_text(encoding="utf-8")
             self.assertIn("NOT_AVAILABLE", report)
             self.assertIn("probability::<fixed-label>", report)

@@ -1,0 +1,64 @@
+protocol,seed,held_out,comparison,AUROC,AUPRC,direction,positive_count,negative_count,status,reason
+loso,1337,1-1,absent_from_train vs known_correct,NOT_AVAILABLE,NOT_AVAILABLE,higher_entropy_indicates_absent_from_train,0,16800,NOT_AVAILABLE,Requires at least one positive and one negative sample.
+loso,1337,1-1,known_incorrect vs known_correct,0.7723187102927206,0.4373245064628165,higher_entropy_indicates_known_incorrect,3208,16800,AVAILABLE,
+loso,1337,1-1,malicious vs benign,0.9196106614708232,0.8776299710712153,higher_entropy_indicates_malicious,10008,10000,AVAILABLE,
+loso,1337,3-1,absent_from_train vs known_correct,NOT_AVAILABLE,NOT_AVAILABLE,higher_entropy_indicates_absent_from_train,0,18687,NOT_AVAILABLE,Requires at least one positive and one negative sample.
+loso,1337,3-1,known_incorrect vs known_correct,0.8607546093742484,0.5417615365993408,higher_entropy_indicates_known_incorrect,1819,18687,AVAILABLE,
+loso,1337,3-1,malicious vs benign,0.5194717360262132,0.8374695174206706,higher_entropy_indicates_malicious,15970,4536,AVAILABLE,
+loso,1337,34-1,absent_from_train vs known_correct,0.5058532816537468,0.9071441727666822,higher_entropy_indicates_absent_from_train,10000,1935,AVAILABLE,
+loso,1337,34-1,known_incorrect vs known_correct,0.968418434812146,0.9855528361968462,higher_entropy_indicates_known_incorrect,6816,1935,AVAILABLE,
+loso,1337,34-1,malicious vs benign,0.7067884284185249,0.9666467481733393,higher_entropy_indicates_malicious,16828,1923,AVAILABLE,
+loso,1337,36-1,absent_from_train vs known_correct,0.9996244273460371,0.9999499975034986,higher_entropy_indicates_absent_from_train,20003,2663,AVAILABLE,
+loso,1337,36-1,known_incorrect vs known_correct,NOT_AVAILABLE,NOT_AVAILABLE,higher_entropy_indicates_known_incorrect,0,2663,NOT_AVAILABLE,Requires at least one positive and one negative sample.
+loso,1337,36-1,malicious vs benign,0.9996244273460371,0.9999499975034986,higher_entropy_indicates_malicious,20003,2663,AVAILABLE,
+loso,1337,39-1,absent_from_train vs known_correct,NOT_AVAILABLE,NOT_AVAILABLE,higher_entropy_indicates_absent_from_train,0,17559,NOT_AVAILABLE,Requires at least one positive and one negative sample.
+loso,1337,39-1,known_incorrect vs known_correct,0.9593424285421028,0.8571469588053187,higher_entropy_indicates_known_incorrect,1985,17559,AVAILABLE,
+loso,1337,39-1,malicious vs benign,0.4796122236475543,0.7296323106001217,higher_entropy_indicates_malicious,12207,7337,AVAILABLE,
+loso,1337,9-1,absent_from_train vs known_correct,NOT_AVAILABLE,NOT_AVAILABLE,higher_entropy_indicates_absent_from_train,0,19849,NOT_AVAILABLE,Requires at least one positive and one negative sample.
+loso,1337,9-1,known_incorrect vs known_correct,0.9941131703300314,0.7802683630163733,higher_entropy_indicates_known_incorrect,151,19849,AVAILABLE,
+loso,1337,9-1,malicious vs benign,0.74663709,0.7861290971142324,higher_entropy_indicates_malicious,10000,10000,AVAILABLE,
+pooled,1337,ALL,absent_from_train vs known_correct,NOT_AVAILABLE,NOT_AVAILABLE,higher_entropy_indicates_absent_from_train,0,23937,NOT_AVAILABLE,Requires at least one positive and one negative sample.
+pooled,1337,ALL,known_incorrect vs known_correct,0.9052089344419211,0.35694538249940416,higher_entropy_indicates_known_incorrect,364,23937,AVAILABLE,
+pooled,1337,ALL,malicious vs benign,0.8047852648748046,0.865606341530318,higher_entropy_indicates_malicious,17007,7294,AVAILABLE,
+loso,2026,1-1,absent_from_train vs known_correct,NOT_AVAILABLE,NOT_AVAILABLE,higher_entropy_indicates_absent_from_train,0,9519,NOT_AVAILABLE,Requires at least one positive and one negative sample.
+loso,2026,1-1,known_incorrect vs known_correct,0.8073038983075241,0.8472626186955927,higher_entropy_indicates_known_incorrect,10489,9519,AVAILABLE,
+loso,2026,1-1,malicious vs benign,0.37785527577937644,0.6142302869719743,higher_entropy_indicates_malicious,10008,10000,AVAILABLE,
+loso,2026,3-1,absent_from_train vs known_correct,NOT_AVAILABLE,NOT_AVAILABLE,higher_entropy_indicates_absent_from_train,0,20263,NOT_AVAILABLE,Requires at least one positive and one negative sample.
+loso,2026,3-1,known_incorrect vs known_correct,0.6779180931247918,0.029421866514177136,higher_entropy_indicates_known_incorrect,243,20263,AVAILABLE,
+loso,2026,3-1,malicious vs benign,0.4707706054893489,0.8247011911315942,higher_entropy_indicates_malicious,15970,4536,AVAILABLE,
+loso,2026,34-1,absent_from_train vs known_correct,0.2881044255319149,0.7917393497989655,higher_entropy_indicates_absent_from_train,10000,3525,AVAILABLE,
+loso,2026,34-1,known_incorrect vs known_correct,0.7264492594311585,0.6829223701539626,higher_entropy_indicates_known_incorrect,5226,3525,AVAILABLE,
+loso,2026,34-1,malicious vs benign,0.7206234600703257,0.9696188325559645,higher_entropy_indicates_malicious,16828,1923,AVAILABLE,
+loso,2026,36-1,absent_from_train vs known_correct,0.9994366785650571,0.9995220900811518,higher_entropy_indicates_absent_from_train,20003,2663,AVAILABLE,
+loso,2026,36-1,known_incorrect vs known_correct,NOT_AVAILABLE,NOT_AVAILABLE,higher_entropy_indicates_known_incorrect,0,2663,NOT_AVAILABLE,Requires at least one positive and one negative sample.
+loso,2026,36-1,malicious vs benign,0.9994366785650571,0.9995220900811518,higher_entropy_indicates_malicious,20003,2663,AVAILABLE,
+loso,2026,39-1,absent_from_train vs known_correct,NOT_AVAILABLE,NOT_AVAILABLE,higher_entropy_indicates_absent_from_train,0,17489,NOT_AVAILABLE,Requires at least one positive and one negative sample.
+loso,2026,39-1,known_incorrect vs known_correct,0.9574561639648642,0.900050370256924,higher_entropy_indicates_known_incorrect,2055,17489,AVAILABLE,
+loso,2026,39-1,malicious vs benign,0.6501657234565542,0.7992773341408199,higher_entropy_indicates_malicious,12207,7337,AVAILABLE,
+loso,2026,9-1,absent_from_train vs known_correct,NOT_AVAILABLE,NOT_AVAILABLE,higher_entropy_indicates_absent_from_train,0,16491,NOT_AVAILABLE,Requires at least one positive and one negative sample.
+loso,2026,9-1,known_incorrect vs known_correct,0.903910142511648,0.5564198584618923,higher_entropy_indicates_known_incorrect,3509,16491,AVAILABLE,
+loso,2026,9-1,malicious vs benign,0.23749410000000004,0.558178751246274,higher_entropy_indicates_malicious,10000,10000,AVAILABLE,
+pooled,2026,ALL,absent_from_train vs known_correct,NOT_AVAILABLE,NOT_AVAILABLE,higher_entropy_indicates_absent_from_train,0,23912,NOT_AVAILABLE,Requires at least one positive and one negative sample.
+pooled,2026,ALL,known_incorrect vs known_correct,0.9113199770194225,0.2736470735426793,higher_entropy_indicates_known_incorrect,389,23912,AVAILABLE,
+pooled,2026,ALL,malicious vs benign,0.7440653315779806,0.835169276768579,higher_entropy_indicates_malicious,17015,7286,AVAILABLE,
+loso,42,1-1,absent_from_train vs known_correct,NOT_AVAILABLE,NOT_AVAILABLE,higher_entropy_indicates_absent_from_train,0,13836,NOT_AVAILABLE,Requires at least one positive and one negative sample.
+loso,42,1-1,known_incorrect vs known_correct,0.937043765575709,0.8889709869657322,higher_entropy_indicates_known_incorrect,6172,13836,AVAILABLE,
+loso,42,1-1,malicious vs benign,0.9235676758593125,0.8686176568305506,higher_entropy_indicates_malicious,10008,10000,AVAILABLE,
+loso,42,3-1,absent_from_train vs known_correct,NOT_AVAILABLE,NOT_AVAILABLE,higher_entropy_indicates_absent_from_train,0,19492,NOT_AVAILABLE,Requires at least one positive and one negative sample.
+loso,42,3-1,known_incorrect vs known_correct,0.922159639862366,0.3246286263614966,higher_entropy_indicates_known_incorrect,1014,19492,AVAILABLE,
+loso,42,3-1,malicious vs benign,0.5284390706118948,0.8427460779519973,higher_entropy_indicates_malicious,15970,4536,AVAILABLE,
+loso,42,34-1,absent_from_train vs known_correct,0.3082325587985265,0.7961193681583006,higher_entropy_indicates_absent_from_train,10000,3529,AVAILABLE,
+loso,42,34-1,known_incorrect vs known_correct,0.9857063848818873,0.9902252205877564,higher_entropy_indicates_known_incorrect,5222,3529,AVAILABLE,
+loso,42,34-1,malicious vs benign,0.7435773970060299,0.9717540178645792,higher_entropy_indicates_malicious,16828,1923,AVAILABLE,
+loso,42,36-1,absent_from_train vs known_correct,0.9648812445225629,0.9947061299125195,higher_entropy_indicates_absent_from_train,20003,2662,AVAILABLE,
+loso,42,36-1,known_incorrect vs known_correct,1.0,1.0,higher_entropy_indicates_known_incorrect,1,2662,AVAILABLE,
+loso,42,36-1,malicious vs benign,0.9645189158539474,0.9943092670676237,higher_entropy_indicates_malicious,20003,2663,AVAILABLE,
+loso,42,39-1,absent_from_train vs known_correct,NOT_AVAILABLE,NOT_AVAILABLE,higher_entropy_indicates_absent_from_train,0,17836,NOT_AVAILABLE,Requires at least one positive and one negative sample.
+loso,42,39-1,known_incorrect vs known_correct,0.9444417928532298,0.7750615512227439,higher_entropy_indicates_known_incorrect,1708,17836,AVAILABLE,
+loso,42,39-1,malicious vs benign,0.48944099634090105,0.7304430513319171,higher_entropy_indicates_malicious,12207,7337,AVAILABLE,
+loso,42,9-1,absent_from_train vs known_correct,NOT_AVAILABLE,NOT_AVAILABLE,higher_entropy_indicates_absent_from_train,0,19802,NOT_AVAILABLE,Requires at least one positive and one negative sample.
+loso,42,9-1,known_incorrect vs known_correct,0.8936432805991436,0.13213574238688439,higher_entropy_indicates_known_incorrect,198,19802,AVAILABLE,
+loso,42,9-1,malicious vs benign,0.37700359999999994,0.6059800409027378,higher_entropy_indicates_malicious,10000,10000,AVAILABLE,
+pooled,42,ALL,absent_from_train vs known_correct,NOT_AVAILABLE,NOT_AVAILABLE,higher_entropy_indicates_absent_from_train,0,23953,NOT_AVAILABLE,Requires at least one positive and one negative sample.
+pooled,42,ALL,known_incorrect vs known_correct,0.9103532372543741,0.31198719357833155,higher_entropy_indicates_known_incorrect,348,23953,AVAILABLE,
+pooled,42,ALL,malicious vs benign,0.7735920117151394,0.8477890113673546,higher_entropy_indicates_malicious,17025,7276,AVAILABLE,

@@ -40,22 +40,13 @@ from phase3_monitoring.inference_service.model_loader import (
 from src.graph_build import build_graph
 from src.imbalance import undersample_majority
 from src.model import build_model
+from src.phase1_contract import FIXED_LABELS
 from src.preprocess import Preprocessor, fit_preprocessor, transform
 from src.train import get_device, make_criterion, safe_stratified_split, set_seed
 
 
 BUNDLE_SCHEMA_VERSION = 1
 ROW_ID_COLUMN = "_clean_row_id"
-FIXED_LABELS = (
-    "Attack",
-    "Benign",
-    "C&C",
-    "C&C-HeartBeat",
-    "DDoS",
-    "Okiru",
-    "Okiru-Attack",
-    "PartOfAHorizontalPortScan",
-)
 CLEAN_IMBALANCE_MODE = "class_weight"
 HISTORICAL_OUTPUT = Path("artifacts/phase1_results")
 

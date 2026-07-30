@@ -274,15 +274,27 @@ Analyze all completed seed roots:
 
 ```bash
 python scripts/analyze_phase1_clean.py \
-  artifacts/phase1_clean/seed-* \
-  --output-dir artifacts/phase1_clean/analysis
+  artifacts/phase1_clean/seed-42-full \
+  artifacts/phase1_clean/seed-1337-full \
+  artifacts/phase1_clean/seed-2026-full \
+  --output-dir artifacts/phase1_clean/report_analysis
 ```
 
-The analyzer writes `summary.csv`, pooled/LOSO summaries, class support,
-binary metrics, `report.md`, confusion figures when predictions are present,
-and `entropy_summary.csv` only when a complete fixed-order probability or
-logit artifact exists. Missing artifacts are reported as `NOT_AVAILABLE`; no
-metric is reconstructed by assumption.
+The analyzer writes report-ready pooled/LOSO/aggregate, support, per-class,
+binary, entropy, prediction-audit, artifact-inventory, and optional historical
+comparison tables. It creates independent 300-DPI PNG and PDF figures for
+pooled-vs-LOSO, LOSO folds, metric decomposition, class availability/support,
+entropy, learning curves, fixed-order confusion matrices, per-class recall,
+and three-seed stability. `report.md` and `FIGURE_SELECTION.md` distinguish the
+six main-report figures from appendix material.
+
+With one seed it records `single_seed=true` and
+`statistical_uncertainty=NOT_AVAILABLE`. Missing probability/history fields
+remain explicit `NOT_AVAILABLE`; no samples or metrics are reconstructed by
+assumption. Current clean bundles already contain learning history,
+probabilities, logits, entropy, and per-class train support. `held_out` and
+`class_present_in_train` are safely derived during analysis from bundle
+metadata/support, so existing models do not need retraining.
 
 Each output root must be new or contain no colliding run directories. Do not
 point `--out-dir` at `artifacts/phase1_results`.

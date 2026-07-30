@@ -1,0 +1,8 @@
+fa428d31690d68995124eac936d1a1caca191eb9fd46e44e1939026bca9ea1a9  dataset_manifest.json
+a1f583ddd0b2bf84047cdcf450e82a61aeb20272fea8aecf7a664fcdf41f4095  dataset_manifest.csv
+038bdd7c71f24f9c1ea3df9cb4ff9f6c48bcc0e5257860777c4a962b00a9a4ee  config_phase1_train.yaml
+4e3a21410f935d66149c9e21a962485d3102bfb98f21a56bc84e53d8d4b38598  remote_git_status.txt
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  remote_worktree.diff
+9fbad7c3fe3aae54865101d70acee66f220ca73c64bd163d41eb1438ec91ce93  ../../logs/phase1-full-seed42.log
+3f9e7f13b6a19d20510af599a335b3cc21f483f2d92d026693e8cea976e6603b  ../../logs/phase1-full-seed1337.log
+e3193c8d4f484eb969dcc00ed284c4d69b6b7f21f040e09102393fd0ce3081ce  ../../logs/phase1-full-seed2026.log
