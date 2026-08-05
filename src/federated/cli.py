@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Sequence
 
 from src.federated.config import load_phase2_config
+from src.federated.analysis import analyze_prepared_dataset
 from src.federated.contracts.task import LocalTrainConfig
 from src.federated.data.manifest import PreparedDatasetManifest
 from src.federated.data.preparation import doctor, prepare_iot23
@@ -62,6 +63,13 @@ def _parser() -> argparse.ArgumentParser:
     commands.add_parser("prepare", help="prepare immutable six-client artifacts")
     validate = commands.add_parser("validate", help="verify manifest and all checksums")
     validate.add_argument("--dataset", required=True)
+    analyze_data = commands.add_parser(
+        "analyze-data",
+        help="write immutable balance, feature, and graph-topology evidence",
+    )
+    analyze_data.add_argument("--dataset", required=True)
+    analyze_data.add_argument("--output", required=True)
+    analyze_data.add_argument("--no-figures", action="store_true")
     run = commands.add_parser(
         "run", help="run FedAvg or FedProx using validation per round"
     )
@@ -122,6 +130,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         }
         observer.emit("dataset.validated", component="validation", **result)
         print(json.dumps(result, indent=2, sort_keys=True))
+        return 0
+    if args.command == "analyze-data":
+        path = analyze_prepared_dataset(
+            args.dataset,
+            args.output,
+            render_figures=not args.no_figures,
+        )
+        print(path)
         return 0
     if args.command == "run":
         task_name = args.task or config.components.task

@@ -4,14 +4,13 @@ Date: 2026-07-29
 
 ## Status
 
-The explicitly approved platform resume plan has been applied and the Central
-GKE, Edge GKE, and Jenkins VM are running. Terraform reports no drift. GitHub
-Actions is green, Jenkins has built, scanned, and published the immutable
-application image, and Argo CD plus the Central/Edge operators are bootstrapped.
-The GitOps digest commit and environment-only loop guard are proven. All six
-public IoT-23 sources have finished downloading and are being prepared on the
-Jenkins VM rather than the space-constrained local workstation. Dataset upload,
-the FedKube ApplicationSet, and the acceptance demo remain.
+Completed. The approved platform is running, Terraform reports no drift, and
+the full GitHub-to-Jenkins-to-Argo CD flow has been proven. The immutable
+six-scenario dataset was synchronized to Central and Edge, FedAvg and FedProx
+each completed 30 full-participation rounds, artifacts and figures were stored
+in GCS, and the final Central/Edge applications are `Synced/Healthy`. Training
+is disabled and its completed Job has been pruned; the billable GKE and Jenkins
+infrastructure remains running.
 
 ## Outcome
 
@@ -132,13 +131,13 @@ Out of scope:
   ECK plus External Secrets on both clusters.
 - [x] Replace the read-only/invalid Docker Hub credential and complete the
   immutable image push/digest commit.
-- [ ] Upload the validated prepared dataset and submit the FedKube
+- [x] Upload the validated prepared dataset and submit the FedKube
   ApplicationSet.
 - [x] Add and validate post-training federated metric visualization.
-- [ ] Run the acceptance demo.
+- [x] Run the acceptance demo.
 - [x] On user approval, destroy the main platform to stop ongoing compute and
   network charges while retaining the project and Terraform state bucket.
-- [ ] Store end-to-end evidence and move this plan to completed.
+- [x] Store end-to-end evidence and move this plan to completed.
 
 ## Decisions
 
@@ -392,13 +391,40 @@ Observed 2026-08-05:
   compatibility fix selects supported FAB format v0 and adds `flwr build` to
   the Jenkins image smoke gate. A read-only bind-mount build produced a FAB
   successfully; the focused 49-test suite and Ruff passed.
+- The final immutable application release is
+  `sha256:f5190ed38506bc35237d13739c88da0d83083bec354d41f3fd1a91d80cb7e112`.
+  Central SuperLink is `3/3` Ready and all six Edge ClientApp/SuperNode pods are
+  `2/2` Ready with zero restarts and that exact application digest.
+- FedAvg Flower run `17811169363997020062` completed 30 rounds, selected round
+  22, and recorded test accuracy `0.738921`, weighted-F1 `0.651059`, and
+  fixed-eight macro-F1 `0.456556`. FedProx run `3633982830113530101` completed
+  30 rounds, selected round 21, and recorded test accuracy `0.739045`,
+  weighted-F1 `0.651185`, and macro-F1 `0.456691`.
+- Elasticsearch contains exactly 180 `flower.client_train_completed` events
+  for each final strategy: 30 for each of clients `1-1`, `3-1`, `34-1`,
+  `36-1`, `39-1`, and `9-1`. Both matching `flower.server_completed` events
+  record 30 rounds and the same best rounds and macro-F1 values as the durable
+  artifacts. Elasticsearch is green with one node, 40 active shards, and zero
+  unassigned shards.
+- GCS contains the per-run configuration, 30 validation records, 30
+  checkpoints, final summaries, and eight PNG/PDF visualization outputs under
+  immutable run paths. The generated learning curves, final metrics,
+  per-class F1, and confusion matrices were downloaded and visually checked.
+- GitHub Actions run `30998975775` passed. Jenkins build 19 built, tested,
+  scanned, and published the final digest; build 20 proved the environment-only
+  loop guard. The accepted training enable commit was `ae03b38`; the safe
+  disable commit `a4a9256` was environment-only and Jenkins build 22 skipped
+  build/publish as designed.
+- Final runtime inspection shows every Argo CD application `Synced/Healthy` at
+  the safe disabled revision and no remaining training Job. The metric gap is
+  now tracked separately in `phase3-metric-improvement.md` and its Phase 3A
+  data/imbalance prerequisite.
 
 ## Result
 
-The approved Phase 3 platform is running without Terraform drift. GitHub CI,
-Jenkins build/scan/publish, the GitOps loop guard, dataset synchronization,
-Central/Edge runtime registration, ECK, Kibana, Filebeat, and immutable image
-rollout are verified. Training is disabled at a recoverable checkpoint. The
-remaining sequence is to resolve the Argo health/drift gate, enable the single
-accepted six-scenario training Job, complete FedAvg and FedProx, generate the
-post-training figures, upload all evidence to GCS, and verify logs in Kibana.
+The Phase 3 infrastructure and acceptance pipeline are complete. GitHub CI,
+Jenkins build/scan/publish, the loop guard, Argo-only deployment, immutable
+dataset synchronization, six-client TLS federation, both 30-round strategies,
+GCS model/evidence persistence, Kibana/Elasticsearch logs, and automatic
+visualization are all verified. Training is disabled at a recoverable state;
+the running platform continues to incur GCP cost until explicitly destroyed.
