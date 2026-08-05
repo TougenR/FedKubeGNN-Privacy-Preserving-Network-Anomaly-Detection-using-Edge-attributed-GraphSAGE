@@ -137,26 +137,59 @@ test data for model or hyperparameter selection.
 - [x] Evaluate FedPer test exactly once per seed after validation selection:
   macro-F1 `0.994073`, `0.994143`, and `0.923161` (mean `0.970459 ±
   0.033444`).
+- [x] Build and deploy immutable FedPer image digest
+  `sha256:4ed1afba8302d595935fd905ed700d6d01040b1fb84e3182e6c47fda86becc7e`
+  through Jenkins and Argo CD.
+- [x] Complete one bounded GKE FedPer run over all six Edge clients: 30 rounds,
+  five local epochs, zero client failures, validation macro-F1 `0.994171`, and
+  final test macro-F1 `0.994073`.
+- [x] Persist 30 versioned private-head checkpoints per Edge PVC and upload the
+  shared checkpoint, immutable run evidence, summary, round metrics, and
+  visualizations to the GCS model-artifacts bucket.
 
 ## Current decision (2026-08-05)
 
 - The class-aware global model still has zero F1 for `C&C-HeartBeat`, while the
   local state for client `36-1` can learn that class. This is sufficient
   authority for the personalized-head experiment.
-- FedPer is diagnostic first, not yet a Flower/GKE production strategy. No
-  infrastructure or Argo CD change is authorized until local evidence supports
-  it.
+- FedPer remains a diagnostic treatment rather than a blanket production data
+  policy. Explicit deployment approval was received after the local evidence,
+  and the bounded Flower/GKE integration run below is now complete.
 - Local evidence now supports FedPer as the leading natural-non-IID candidate.
   `C&C-HeartBeat` test F1 is `1.0`, `1.0`, and `0.685076`, compared with zero
   for all class-aware global checkpoints. Compact evidence and figures are in
   `artifacts/phase3_analysis/fedper/`; full checkpoints remain Git-ignored in
   `artifacts/phase2/runs/phase3d/`.
-- Production integration must preserve client-head ownership and define a
-  cold-start policy for a new Edge before changing the Flower/GKE protocol.
+- The Flower/GKE integration preserves client-head ownership and enforces the
+  approved cold-start policy: an Edge starts from the immutable initial head
+  and is not inference-ready before its first successful local round.
 - [x] Prove Flower FedPer partial-state transport and Edge-local durable head
   recovery with the approved cold-start policy.
 - [x] Add one PVC per Flower client and render/dry-run the bounded FedPer Helm
   workflow without enabling training or changing a live cluster.
-- [ ] Build/push the FedPer image, update immutable environment digests, then
-  enable one bounded FedPer GKE run through Argo CD after explicit deployment
+- [x] Build/push the FedPer image, update immutable environment digests, and
+  complete one bounded FedPer GKE run through Argo CD after explicit deployment
   approval.
+
+## GKE FedPer evidence (2026-08-05)
+
+- Git commit/release: `83e57c68fd41996c7c91f9edd5af3a1e1af391c4`;
+  Flower run ID: `14339380272482304688`.
+- Dataset: `iot23-seven-natural-3be7796b1ee27bc3`, digest
+  `c5ab9c02896c08c9f60e8efb9672a2090cbe595e4c344308f5e4dc2b0e51319a`.
+- Runtime contract: FedPer shared `layers.*`, Edge-local `head.*`, six of six
+  clients in every train/evaluate step, 30 rounds, five local epochs, and zero
+  failures.
+- Best/final validation macro-F1: `0.9941709664789821` at round 30. Final test:
+  macro-F1 `0.9940726452547172`, weighted-F1 `0.9917202200368859`, accuracy
+  `0.9917290757962307`, and loss `0.045511027067622556` over 24,302 examples.
+- Every client PVC contains `head-0001.npz` through `head-0030.npz`; metadata
+  reports `ready=true`, `completed_rounds=30`, and the same Flower run ID.
+- Immutable summary:
+  `gs://fedlearning-20260729-hn-fedkube-model-artifacts/runs/fedper/runs/fedper-20260805T162143974378Z-270b7ffe84/metrics/summary.json`.
+- PNG/PDF learning curves, confusion matrices, final metrics, per-class F1,
+  and their CSV/manifest are under
+  `gs://fedlearning-20260729-hn-fedkube-model-artifacts/runs/visualizations/83e57c68fd41996c7c91f9edd5af3a1e1af391c4/`.
+- Argo CD reported both `fedkube-central` and `fedkube-edge-01` as
+  `Synced/Healthy` after the run. Training is disabled in Git immediately after
+  evidence verification; the six private-head PVCs are retained.
