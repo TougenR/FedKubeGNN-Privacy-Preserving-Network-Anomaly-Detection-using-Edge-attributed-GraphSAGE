@@ -336,12 +336,33 @@ Observed 2026-08-05:
   ServerApp now uses `--insecure` only on localhost (external Fleet TLS remains
   enabled), Secret Manager version 2 removes only CR/LF, and the ExternalSecret
   release annotation forces a refresh without storing secret material in Git.
+- GitHub Actions run `30979358740` passed. Jenkins build 11 passed its full
+  test/import/Trivy pipeline, published release
+  `7ebc5a0a8c7d7cd15912ae035566efbfaa4fcd9a` at immutable digest
+  `sha256:3816bd60acb88fffaeacd18c31f1daacebc50b51c4b9f57fdf4e35e7c7da5101`,
+  and pushed GitOps commit `db79566`. Jenkins build 12 then proved the
+  environment-only loop guard with `build=false` and `SUCCESS`.
+- The new Central and Edge Dataset Sync Jobs completed. Central SuperLink is
+  `3/3` Ready, all six Edge ClientApp/SuperNode pods are `2/2` Ready with zero
+  restarts, and all six SuperNodes logged successful TLS registration with
+  distinct node IDs. The application containers are running the exact Jenkins
+  digest. Elasticsearch, Kibana, and both Filebeat DaemonSets are Ready.
+- Training remains intentionally disabled as a safe resume checkpoint. The
+  current Central Argo operation was terminated after all wave-zero workloads
+  became Ready because Argo classifies the valid single-node Elasticsearch
+  `yellow` state as `Progressing` and otherwise waits indefinitely before the
+  release-specific elastic-init Job. Edge is healthy but both applications
+  retain expected drift from generated ExternalSecret fields and old completed
+  Jobs. Before starting training, make the single-node Elasticsearch health
+  policy explicit, remove that drift through GitOps, and require both apps to
+  report `Synced/Healthy`.
 
 ## Result
 
 The approved Phase 3 platform is running without Terraform drift. GitHub CI,
-Jenkins build/scan/publish, the GitOps loop guard, Argo CD, Edge registration,
-ECK, and External Secrets are verified. The Docker Hub credential blocker is
-resolved. Once preparation and upload complete, the FedKube ApplicationSet can
-be submitted and the prepared
-six-scenario dataset can drive the end-to-end acceptance demo.
+Jenkins build/scan/publish, the GitOps loop guard, dataset synchronization,
+Central/Edge runtime registration, ECK, Kibana, Filebeat, and immutable image
+rollout are verified. Training is disabled at a recoverable checkpoint. The
+remaining sequence is to resolve the Argo health/drift gate, enable the single
+accepted six-scenario training Job, complete FedAvg and FedProx, generate the
+post-training figures, upload all evidence to GCS, and verify logs in Kibana.
