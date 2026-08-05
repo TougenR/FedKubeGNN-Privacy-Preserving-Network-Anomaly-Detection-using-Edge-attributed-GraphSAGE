@@ -15,4 +15,7 @@ state remain unchanged.
 C&C, C&C-HeartBeat, DDoS, Okiru, and Okiru-Attack all have zero validation F1
 at the selected round. More frequent aggregation with one local epoch does not
 recover private classes and substantially reduces the validation objective.
-The configuration is not promoted.
+The configuration is not promoted. The implementation recreates Adam at every
+client/round boundary, so `150 × 1` also resets Adam moments five times more
+often than `30 × 5`; the result cannot be attributed to client drift alone.
+The next optimizer/LR experiment must account for this reset behavior.

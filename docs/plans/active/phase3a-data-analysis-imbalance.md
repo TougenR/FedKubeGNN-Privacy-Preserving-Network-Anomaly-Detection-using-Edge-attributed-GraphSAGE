@@ -196,4 +196,7 @@ generalization. Loss/aggregation corrections are evaluated first.
   client-drift experiment (`150 rounds × 1 local epoch` versus `30 × 5`)
   reached only `0.315973` at round 84, delta `-0.139753`, and is rejected.
   More frequent aggregation alone does not recover private classes. Both
-  experiments recorded `test_evaluations=0`.
+  experiments recorded `test_evaluations=0`. Because the adapter recreates
+  Adam every client/round, `150 × 1` also resets optimizer moments five times
+  more often; follow-up LR/optimizer experiments must separate that effect
+  before attributing the drop purely to client drift.
