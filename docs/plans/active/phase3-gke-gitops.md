@@ -134,7 +134,7 @@ Out of scope:
   immutable image push/digest commit.
 - [ ] Upload the validated prepared dataset and submit the FedKube
   ApplicationSet.
-- [ ] Add and validate post-training federated metric visualization.
+- [x] Add and validate post-training federated metric visualization.
 - [ ] Run the acceptance demo.
 - [x] On user approval, destroy the main platform to stop ongoing compute and
   network charges while retaining the project and Terraform state bucket.
@@ -301,6 +301,27 @@ Observed 2026-08-05:
   matrices were visually inspected. The full host suite's four unrelated
   Phase 1/3 imports still require `torch_geometric`, so the dependency-complete
   GitHub/Jenkins image remains the final integration gate.
+- GitHub Actions run `30977169034` passed all Python, infrastructure, and
+  security jobs. Jenkins build 5 built the dependency-complete image, imported
+  Matplotlib plus the visualizer and Flower apps, passed the Trivy CRITICAL
+  gate, and published release `9405bc26a1d31d04198ec6541fc3ecde4cf0f04f`
+  at `sha256:22aa63946aadca1659db21029e5ba8422524fba21aad36da9fc02308f6d1a06d`.
+  Registry inspection confirms linux/amd64. GitOps commit `497b169` pins that
+  digest in both environments; Jenkins build 6 proved the environment-only
+  loop guard again with `build=false` and SUCCESS.
+- Preparation completed transactionally as `iot23-0d9bbeb9f9ed0a3f` with six
+  clients and dataset digest
+  `68fc6fc0cb8974aba1d431113b39dbf82f98457159c04d6a14b22feaa4b0cb89`.
+  Validation passed independently on the Jenkins VM with the released image
+  and again after copying all 58 files locally. All six raw byte sizes match
+  the Phase 1 dataset manifest; its named `sha256` field is a cache fingerprint
+  containing mtime/parser state, not a raw-file digest. The prepared manifest
+  records raw SHA-256 values separately. GCS contains the matching 58 objects,
+  30,176,293 bytes, and the downloaded manifest SHA-256 matches local.
+- The first ApplicationSet reconciliation exposed a sync-wave dependency bug:
+  the dataset Job at wave `-1` could not create a pod because its workload KSA
+  and PVC were still at default wave `0`. Both prerequisites now use wave `-2`
+  so Argo can preserve dataset-before-workload ordering without live patches.
 
 ## Result
 

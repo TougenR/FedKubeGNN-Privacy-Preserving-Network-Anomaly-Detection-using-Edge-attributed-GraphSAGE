@@ -4,6 +4,8 @@ metadata:
   name: {{ include "fedkube.fullname" . }}-dataset
   labels:
     {{- include "fedkube.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
 spec:
   accessModes: [ReadWriteOnce]
   storageClassName: {{ .Values.dataset.storageClassName }}
