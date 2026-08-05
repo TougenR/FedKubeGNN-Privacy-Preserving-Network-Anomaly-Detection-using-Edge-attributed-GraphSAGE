@@ -8,6 +8,7 @@ from pathlib import Path
 
 from src.federated.experiments.visualization import (
     visualize_class_aware_summary,
+    visualize_personalized_summary,
     visualize_runs,
 )
 
@@ -102,6 +103,53 @@ def _completed_run(
 
 
 class VisualizationTests(unittest.TestCase):
+    def test_personalized_summary_renders_without_test_evaluation(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            summary = root / "summary.json"
+            summary.write_text(
+                json.dumps(
+                    {
+                        "validation": {
+                            "sample_fedavg": {"42": 0.5, "1337": 0.51},
+                            "class_aware": {"42": 0.7, "1337": 0.71},
+                            "fedper": {
+                                "42": {
+                                    "macro_f1": 0.9,
+                                    "round_macro_f1": [0.5, 0.9],
+                                },
+                                "1337": {
+                                    "macro_f1": 0.91,
+                                    "round_macro_f1": [0.51, 0.91],
+                                },
+                            },
+                        },
+                        "test": {
+                            "fedper": {
+                                seed: {
+                                    "accuracy": 0.92,
+                                    "weighted_f1": 0.91,
+                                    "macro_f1": 0.9,
+                                    "per_class_f1": {
+                                        "Benign": 0.95,
+                                        "Attack": 0.85,
+                                    },
+                                }
+                                for seed in ("42", "1337")
+                            }
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            output = root / "visualizations"
+            manifest_path = visualize_personalized_summary(summary, output)
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            self.assertTrue(manifest["test_evaluation_reused"])
+            self.assertEqual(len(manifest["figures"]), 8)
+            for name in manifest["figures"]:
+                self.assertGreater((output / name).stat().st_size, 0)
+
     def test_class_aware_summary_renders_without_test_evaluation(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

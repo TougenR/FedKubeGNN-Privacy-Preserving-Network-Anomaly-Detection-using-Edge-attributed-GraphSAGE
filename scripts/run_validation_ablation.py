@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+from urllib.parse import quote
 
 import numpy as np
 
@@ -18,7 +19,10 @@ from src.federated.core.aggregation import (
     class_balanced_client_weights,
     class_support_head_fedavg,
 )
-from src.federated.core.simulation import run_federated_simulation
+from src.federated.core.simulation import (
+    run_federated_simulation,
+    run_fedper_simulation,
+)
 from src.federated.data.manifest import PreparedDatasetManifest
 from src.federated.data.storage import load_graph_arrays
 from src.federated.experiments.factory import manifest_task
@@ -57,8 +61,21 @@ def main() -> int:
         default="sample_fedavg",
     )
     parser.add_argument("--local-state-diagnostics", action="store_true")
+    parser.add_argument(
+        "--personalization",
+        choices=("none", "fedper_head"),
+        default="none",
+    )
     parser.add_argument("--clients", nargs="+")
     args = parser.parse_args()
+
+    if args.personalization != "none" and args.aggregation != "sample_fedavg":
+        parser.error(
+            "FedPer initially requires sample_fedavg so personalization is "
+            "the only changed treatment."
+        )
+    if args.personalization != "none" and args.local_state_diagnostics:
+        parser.error("FedPer does not use --local-state-diagnostics.")
 
     output = Path(args.output)
     if output.exists() and any(output.iterdir()):
@@ -117,23 +134,34 @@ def main() -> int:
         aggregation_weights = class_balanced_client_weights(support_matrix)
     rounds = args.rounds or config.training.rounds
     proximal_mu = config.federation.proximal_mu if args.strategy == "fedprox" else 0.0
-    result = run_federated_simulation(
-        task,
-        num_rounds=rounds,
-        train_config=LocalTrainConfig(
-            local_epochs=config.training.local_epochs,
-            learning_rate=config.training.learning_rate,
-            weight_decay=config.training.weight_decay,
-            grad_clip=config.training.grad_clip,
-            optimizer=config.training.optimizer,
-            proximal_mu=proximal_mu,
-            seed=config.training.seed,
-        ),
-        evaluate_split="val",
-        aggregate_fn=aggregate_fn,
-        diagnose_local_states=args.local_state_diagnostics,
-        client_ids=participants,
+    train_config = LocalTrainConfig(
+        local_epochs=config.training.local_epochs,
+        learning_rate=config.training.learning_rate,
+        weight_decay=config.training.weight_decay,
+        grad_clip=config.training.grad_clip,
+        optimizer=config.training.optimizer,
+        proximal_mu=proximal_mu,
+        seed=config.training.seed,
     )
+    if args.personalization == "fedper_head":
+        result = run_fedper_simulation(
+            task,
+            num_rounds=rounds,
+            train_config=train_config,
+            personalized_prefixes=("head.",),
+            evaluate_split="val",
+            client_ids=participants,
+        )
+    else:
+        result = run_federated_simulation(
+            task,
+            num_rounds=rounds,
+            train_config=train_config,
+            evaluate_split="val",
+            aggregate_fn=aggregate_fn,
+            diagnose_local_states=args.local_state_diagnostics,
+            client_ids=participants,
+        )
     records = []
     for item in result.rounds:
         client_diagnostics = {}
@@ -164,18 +192,40 @@ def main() -> int:
     best = max(records, key=lambda item: item["validation_metrics"]["macro_f1"])
     if result.best_round != best["round"]:
         raise RuntimeError("Runner best-state round differs from recorded validation.")
-    np.savez(output / "final_state.npz", **result.final_state)
-    np.savez(output / "best_state.npz", **result.best_state)
+    if args.personalization == "fedper_head":
+        np.savez(output / "final_shared_state.npz", **result.final_shared_state)
+        np.savez(output / "best_shared_state.npz", **result.best_shared_state)
+        for checkpoint_name, states in (
+            ("final_personalized_heads", result.final_personalized_states),
+            ("best_personalized_heads", result.best_personalized_states),
+        ):
+            checkpoint_dir = output / checkpoint_name
+            checkpoint_dir.mkdir()
+            for client_id, state in states.items():
+                filename = f"{quote(client_id, safe='')}.npz"
+                np.savez(checkpoint_dir / filename, **state)
+        selection_checkpoint = {
+            "shared": "best_shared_state.npz",
+            "personalized_heads": "best_personalized_heads/",
+        }
+    else:
+        np.savez(output / "final_state.npz", **result.final_state)
+        np.savez(output / "best_state.npz", **result.best_state)
+        selection_checkpoint = "best_state.npz"
     _write_json(output / "rounds.json", records)
     metadata = dict(task.metadata())
     summary = {
         "kind": "validation_only_ablation",
         "strategy": args.strategy,
         "aggregation": args.aggregation,
+        "personalization": args.personalization,
+        "personalized_parameter_prefixes": ["head."]
+        if args.personalization == "fedper_head"
+        else [],
         "local_state_diagnostics": args.local_state_diagnostics,
         "rounds": rounds,
         "best_round": best["round"],
-        "selection_checkpoint": "best_state.npz",
+        "selection_checkpoint": selection_checkpoint,
         "best_validation_metrics": best["validation_metrics"],
         "test_evaluations": 0,
         "config_digest": config.digest,
@@ -209,6 +259,7 @@ def main() -> int:
                 "config_digest": config.digest,
                 "strategy": args.strategy,
                 "aggregation": args.aggregation,
+                "personalization": args.personalization,
                 "rounds": rounds,
                 "local_state_diagnostics": args.local_state_diagnostics,
                 "participants": participants,
@@ -218,11 +269,10 @@ def main() -> int:
         ).encode("utf-8")
     ).hexdigest()
     _write_json(output / "summary.json", summary)
-    files = (
-        "best_state.npz",
-        "final_state.npz",
-        "rounds.json",
-        "summary.json",
+    files = sorted(
+        path.relative_to(output).as_posix()
+        for path in output.rglob("*")
+        if path.is_file() and path.name != "evidence_manifest.json"
     )
     _write_json(
         output / "evidence_manifest.json",

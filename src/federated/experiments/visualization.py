@@ -166,7 +166,7 @@ def _validate_comparability(runs: Sequence[VisualizedRun]) -> None:
 
 def _csv_text(fields: Sequence[str], rows: Iterable[Mapping[str, Any]]) -> str:
     buffer = io.StringIO(newline="")
-    writer = csv.DictWriter(buffer, fieldnames=fields)
+    writer = csv.DictWriter(buffer, fieldnames=fields, lineterminator="\n")
     writer.writeheader()
     writer.writerows({field: row.get(field, "") for field in fields} for row in rows)
     return buffer.getvalue()
@@ -620,6 +620,161 @@ def visualize_class_aware_summary(
         "seeds": list(seeds),
         "figures": figure_names,
         "tables": ["class_aware_seed_metrics.csv"],
+        "test_evaluation_reused": True,
+    }
+    manifest_path = destination / "visualization_manifest.json"
+    atomic_json(manifest_path, manifest)
+    return manifest_path
+
+
+def visualize_personalized_summary(
+    summary_path: str | Path, output: str | Path
+) -> Path:
+    """Render locked FedPer multi-seed evidence without evaluating data."""
+    source = Path(summary_path)
+    summary = json.loads(source.read_text(encoding="utf-8"))
+    validation = summary["validation"]
+    sample = validation["sample_fedavg"]
+    class_aware = validation["class_aware"]
+    fedper = validation["fedper"]
+    test = summary["test"]["fedper"]
+    seeds = tuple(
+        sorted(
+            (key for key in fedper if str(key).isdigit()),
+            key=lambda value: int(value),
+        )
+    )
+    if not seeds or any(
+        seed not in sample or seed not in class_aware or seed not in test
+        for seed in seeds
+    ):
+        raise ValueError("Personalized summary has incomplete seed evidence.")
+    destination = Path(output)
+    if destination.exists() and any(destination.iterdir()):
+        raise FileExistsError(f"Visualization output is not empty: {destination}")
+    destination.mkdir(parents=True, exist_ok=True)
+    plt = _plot_runtime()
+    figure_names: list[str] = []
+
+    x = np.arange(len(seeds))
+    width = 0.25
+    figure, axis = plt.subplots(figsize=(10, 5))
+    sample_values = [
+        _number(sample[seed], where=f"validation.sample_fedavg.{seed}")
+        for seed in seeds
+    ]
+    class_aware_values = [
+        _number(class_aware[seed], where=f"validation.class_aware.{seed}")
+        for seed in seeds
+    ]
+    fedper_values = [
+        _number(
+            fedper[seed]["macro_f1"],
+            where=f"validation.fedper.{seed}.macro_f1",
+        )
+        for seed in seeds
+    ]
+    axis.bar(x - width, sample_values, width, label="Sample FedAvg")
+    axis.bar(x, class_aware_values, width, label="Class-aware global")
+    axis.bar(x + width, fedper_values, width, label="FedPer")
+    axis.set_xticks(x, [f"Seed {seed}" for seed in seeds])
+    axis.set_ylim(0, 1)
+    axis.set_ylabel("Validation macro-F1")
+    axis.set_title("Natural non-IID validation treatments")
+    axis.grid(axis="y", alpha=0.2)
+    axis.legend()
+    figure_names.extend(
+        _save_figure(figure, destination, "fedper_validation_by_seed")
+    )
+    plt.close(figure)
+
+    figure, axis = plt.subplots(figsize=(10, 5))
+    for seed in seeds:
+        values = fedper[seed]["round_macro_f1"]
+        if not values:
+            raise ValueError(f"FedPer seed {seed} has no validation rounds.")
+        axis.plot(
+            np.arange(1, len(values) + 1),
+            [_number(value, where=f"validation.fedper.{seed}.round") for value in values],
+            label=f"Seed {seed}",
+        )
+    axis.set(xlabel="Round", ylabel="Validation macro-F1", ylim=(0, 1))
+    axis.set_title("FedPer validation learning curves")
+    axis.grid(alpha=0.2)
+    axis.legend()
+    figure_names.extend(
+        _save_figure(figure, destination, "fedper_learning_curves")
+    )
+    plt.close(figure)
+
+    metrics = ("accuracy", "weighted_f1", "macro_f1")
+    metric_x = np.arange(len(metrics))
+    metric_width = 0.8 / len(seeds)
+    figure, axis = plt.subplots(figsize=(10, 5))
+    for seed_index, seed in enumerate(seeds):
+        values = [
+            _number(test[seed][metric], where=f"test.fedper.{seed}.{metric}")
+            for metric in metrics
+        ]
+        offset = (seed_index - (len(seeds) - 1) / 2) * metric_width
+        axis.bar(metric_x + offset, values, metric_width, label=f"Seed {seed}")
+    axis.set_xticks(metric_x, ("Accuracy", "Weighted-F1", "Macro-F1"))
+    axis.set_ylim(0, 1)
+    axis.set_ylabel("Test score")
+    axis.set_title("Validation-selected FedPer test metrics")
+    axis.grid(axis="y", alpha=0.2)
+    axis.legend()
+    figure_names.extend(_save_figure(figure, destination, "fedper_test_metrics"))
+    plt.close(figure)
+
+    class_names = tuple(test[seeds[0]]["per_class_f1"])
+    class_x = np.arange(len(class_names))
+    class_width = 0.8 / len(seeds)
+    figure, axis = plt.subplots(figsize=(max(11, len(class_names) * 1.3), 5))
+    for seed_index, seed in enumerate(seeds):
+        per_class = test[seed]["per_class_f1"]
+        if tuple(per_class) != class_names:
+            raise ValueError("Per-class metric order differs between seeds.")
+        values = [
+            _number(per_class[name], where=f"test.fedper.{seed}.{name}")
+            for name in class_names
+        ]
+        offset = (seed_index - (len(seeds) - 1) / 2) * class_width
+        axis.bar(class_x + offset, values, class_width, label=f"Seed {seed}")
+    axis.set_xticks(class_x, class_names, rotation=45, ha="right")
+    axis.set_ylim(0, 1)
+    axis.set_ylabel("Test F1")
+    axis.set_title("Personalized-head per-class F1")
+    axis.grid(axis="y", alpha=0.2)
+    axis.legend()
+    figure_names.extend(
+        _save_figure(figure, destination, "fedper_per_class_f1")
+    )
+    plt.close(figure)
+
+    seed_rows = [
+        {
+            "seed": seed,
+            "sample_validation_macro_f1": sample_values[index],
+            "class_aware_validation_macro_f1": class_aware_values[index],
+            "fedper_validation_macro_f1": fedper_values[index],
+            "fedper_test_accuracy": test[seed]["accuracy"],
+            "fedper_test_weighted_f1": test[seed]["weighted_f1"],
+            "fedper_test_macro_f1": test[seed]["macro_f1"],
+        }
+        for index, seed in enumerate(seeds)
+    ]
+    atomic_text(
+        destination / "fedper_seed_metrics.csv",
+        _csv_text(tuple(seed_rows[0]), seed_rows),
+    )
+    manifest = {
+        "visualization_version": 1,
+        "source_summary": str(source),
+        "source_summary_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+        "seeds": list(seeds),
+        "figures": figure_names,
+        "tables": ["fedper_seed_metrics.csv"],
         "test_evaluation_reused": True,
     }
     manifest_path = destination / "visualization_manifest.json"

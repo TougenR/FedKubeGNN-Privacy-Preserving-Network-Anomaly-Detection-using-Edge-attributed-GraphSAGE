@@ -5,7 +5,13 @@ import unittest
 
 from src.federated.adapters.toy import ToyFederatedTask
 from src.federated.contracts.task import FederatedTask, LocalTrainConfig
-from src.federated.core.simulation import run_federated_simulation
+import numpy as np
+
+from src.federated.core.simulation import (
+    merge_personalized_state,
+    run_federated_simulation,
+    run_fedper_simulation,
+)
 
 
 class ToyFederationTests(unittest.TestCase):
@@ -61,6 +67,45 @@ class ToyFederationTests(unittest.TestCase):
         diagnostics = result.rounds[-1].client_diagnostics
         self.assertIn("local_state_own_client_metrics", next(iter(diagnostics.values())))
         self.assertIn("local_state_global_metrics", next(iter(diagnostics.values())))
+
+    def test_fedper_aggregates_shared_weight_and_retains_client_bias(self) -> None:
+        task = ToyFederatedTask(seed=42)
+        result = run_fedper_simulation(
+            task,
+            num_rounds=4,
+            train_config=LocalTrainConfig(
+                local_epochs=1,
+                learning_rate=0.15,
+                optimizer="sgd",
+                seed=42,
+            ),
+            personalized_prefixes=("classifier.bias",),
+            evaluate_split="val",
+        )
+
+        self.assertEqual(set(result.best_shared_state), {"classifier.weight"})
+        self.assertEqual(
+            set(result.best_personalized_states), set(task.client_ids)
+        )
+        first, second = task.client_ids
+        self.assertFalse(
+            np.array_equal(
+                result.final_personalized_states[first]["classifier.bias"],
+                result.final_personalized_states[second]["classifier.bias"],
+            )
+        )
+        for client_id in task.client_ids:
+            full_state = merge_personalized_state(
+                result.best_shared_state,
+                result.best_personalized_states[client_id],
+            )
+            task.model_spec.validate_state(full_state)
+        self.assertGreater(result.best_round, 0)
+        self.assertGreater(result.rounds[-1].upload_bytes, 0)
+        self.assertIn(
+            "personalized_update_l2",
+            result.rounds[-1].client_diagnostics[first],
+        )
 
 
 if __name__ == "__main__":

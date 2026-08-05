@@ -44,6 +44,69 @@ class FederatedRunResult:
     rounds: list[FederatedRoundResult] = field(default_factory=list)
 
 
+@dataclass
+class PersonalizedFederatedRunResult:
+    """FedPer result with one shared state and private state per client."""
+
+    final_shared_state: ArrayState
+    final_personalized_states: dict[str, ArrayState]
+    best_shared_state: ArrayState
+    best_personalized_states: dict[str, ArrayState]
+    best_round: int
+    rounds: list[FederatedRoundResult] = field(default_factory=list)
+
+
+def split_personalized_state(
+    state: Mapping[str, np.ndarray],
+    *,
+    personalized_prefixes: Sequence[str],
+) -> tuple[ArrayState, ArrayState]:
+    """Split a model state into server-shared and client-private parameters."""
+    prefixes = tuple(prefix for prefix in personalized_prefixes if prefix)
+    if not prefixes:
+        raise ValueError("At least one non-empty personalized prefix is required.")
+    personalized = {
+        name: np.asarray(value).copy()
+        for name, value in state.items()
+        if name.startswith(prefixes)
+    }
+    shared = {
+        name: np.asarray(value).copy()
+        for name, value in state.items()
+        if name not in personalized
+    }
+    if not personalized:
+        raise ValueError(
+            f"No model parameters match personalized prefixes {prefixes}."
+        )
+    if not shared:
+        raise ValueError("FedPer requires at least one shared model parameter.")
+    return shared, personalized
+
+
+def merge_personalized_state(
+    shared: Mapping[str, np.ndarray],
+    personalized: Mapping[str, np.ndarray],
+) -> ArrayState:
+    """Build one complete client model without aliasing input arrays."""
+    overlap = set(shared) & set(personalized)
+    if overlap:
+        raise ValueError(f"Shared and personalized states overlap: {sorted(overlap)}")
+    return {
+        **copy_array_state(shared),
+        **copy_array_state(personalized),
+    }
+
+
+def _copy_personalized_states(
+    states: Mapping[str, Mapping[str, np.ndarray]],
+) -> dict[str, ArrayState]:
+    return {
+        client_id: copy_array_state(state)
+        for client_id, state in states.items()
+    }
+
+
 def _weighted_scalar_metrics(results: Sequence[LocalTrainResult]) -> dict[str, float]:
     keys = sorted(set.intersection(*(set(result.metrics) for result in results)))
     total = float(sum(result.num_examples for result in results))
@@ -65,6 +128,43 @@ def _evaluate_clients(
 ) -> tuple[list[EvaluationResult], np.ndarray, dict[str, object]]:
     results = [
         task.evaluate_local(client_id, state, split=split)
+        for client_id in client_ids
+    ]
+    matrix = aggregate_confusion_matrices(
+        (result.confusion_matrix for result in results),
+        num_classes=task.label_schema.num_classes,
+    )
+    metrics = classification_metrics(
+        matrix, class_names=task.label_schema.classes
+    )
+    total_examples = sum(result.num_examples for result in results)
+    metrics["loss"] = (
+        float(
+            sum(result.loss * result.num_examples for result in results)
+            / total_examples
+        )
+        if total_examples
+        else 0.0
+    )
+    return results, matrix, metrics
+
+
+def _evaluate_personalized_clients(
+    task: FederatedTask,
+    client_ids: Sequence[str],
+    shared_state: Mapping[str, np.ndarray],
+    personalized_states: Mapping[str, Mapping[str, np.ndarray]],
+    *,
+    split: str,
+) -> tuple[list[EvaluationResult], np.ndarray, dict[str, object]]:
+    results = [
+        task.evaluate_local(
+            client_id,
+            merge_personalized_state(
+                shared_state, personalized_states[client_id]
+            ),
+            split=split,
+        )
         for client_id in client_ids
     ]
     matrix = aggregate_confusion_matrices(
@@ -270,6 +370,146 @@ def run_federated_simulation(
     return FederatedRunResult(
         final_state=copy_array_state(state),
         best_state=best_state,
+        best_round=best_round,
+        rounds=round_results,
+    )
+
+
+def run_fedper_simulation(
+    task: FederatedTask,
+    *,
+    num_rounds: int,
+    train_config: LocalTrainConfig,
+    personalized_prefixes: Sequence[str],
+    client_ids: Sequence[str] | None = None,
+    evaluate_split: str = "test",
+) -> PersonalizedFederatedRunResult:
+    """Run FedPer: aggregate shared parameters and retain private client heads."""
+    if num_rounds < 1:
+        raise ValueError("num_rounds must be >= 1.")
+    participants = tuple(client_ids or task.client_ids)
+    if not participants:
+        raise ValueError("At least one client is required.")
+    unknown = sorted(set(participants) - set(task.client_ids))
+    if unknown:
+        raise KeyError(f"Unknown client ids: {unknown}.")
+
+    initial_state = task.initial_state()
+    task.model_spec.validate_state(initial_state)
+    shared_state, initial_personalized = split_personalized_state(
+        initial_state, personalized_prefixes=personalized_prefixes
+    )
+    personalized_states = {
+        client_id: copy_array_state(initial_personalized)
+        for client_id in participants
+    }
+    payload_bytes = state_nbytes(shared_state)
+    best_shared_state = copy_array_state(shared_state)
+    best_personalized_states = _copy_personalized_states(personalized_states)
+    best_round = 0
+    best_macro_f1 = -1.0
+    round_results: list[FederatedRoundResult] = []
+
+    for round_number in range(1, num_rounds + 1):
+        client_inputs = {
+            client_id: merge_personalized_state(
+                shared_state, personalized_states[client_id]
+            )
+            for client_id in participants
+        }
+        local_results = [
+            task.train_local(
+                client_id,
+                copy_array_state(client_inputs[client_id]),
+                train_config,
+            )
+            for client_id in participants
+        ]
+        local_shared_results: list[LocalTrainResult] = []
+        updated_personalized: dict[str, ArrayState] = {}
+        for client_id, local_result in zip(
+            participants, local_results, strict=True
+        ):
+            task.model_spec.validate_state(local_result.state)
+            local_shared, local_private = split_personalized_state(
+                local_result.state,
+                personalized_prefixes=personalized_prefixes,
+            )
+            local_shared_results.append(
+                LocalTrainResult(
+                    state=local_shared,
+                    num_examples=local_result.num_examples,
+                    metrics=local_result.metrics,
+                )
+            )
+            updated_personalized[client_id] = local_private
+
+        before_shared = shared_state
+        shared_state = weighted_fedavg(local_shared_results)
+        if set(shared_state) != set(before_shared):
+            raise ValueError("Aggregated shared state changed parameter names.")
+        personalized_states = updated_personalized
+
+        client_diagnostics = _client_update_diagnostics(
+            participants,
+            local_shared_results,
+            before_shared,
+            shared_state,
+            num_classes=task.label_schema.num_classes,
+        )
+        for client_id in participants:
+            private_squared, _, _ = _state_delta_products(
+                personalized_states[client_id],
+                split_personalized_state(
+                    client_inputs[client_id],
+                    personalized_prefixes=personalized_prefixes,
+                )[1],
+            )
+            client_diagnostics[client_id]["personalized_update_l2"] = float(
+                np.sqrt(private_squared)
+            )
+
+        evaluations, matrix, metrics = _evaluate_personalized_clients(
+            task,
+            participants,
+            shared_state,
+            personalized_states,
+            split=evaluate_split,
+        )
+        round_results.append(
+            FederatedRoundResult(
+                round_number=round_number,
+                participating_clients=participants,
+                train_examples=sum(
+                    result.num_examples for result in local_results
+                ),
+                evaluation_examples=sum(
+                    result.num_examples for result in evaluations
+                ),
+                train_metrics=_weighted_scalar_metrics(local_results),
+                global_metrics=metrics,
+                confusion_matrix=matrix,
+                upload_bytes=payload_bytes * len(participants),
+                download_bytes=payload_bytes * len(participants),
+                client_diagnostics=client_diagnostics,
+            )
+        )
+        macro_f1 = float(metrics["macro_f1"])
+        if macro_f1 > best_macro_f1:
+            best_macro_f1 = macro_f1
+            best_round = round_number
+            best_shared_state = copy_array_state(shared_state)
+            best_personalized_states = _copy_personalized_states(
+                personalized_states
+            )
+
+    return PersonalizedFederatedRunResult(
+        final_shared_state=copy_array_state(shared_state),
+        final_personalized_states=_copy_personalized_states(
+            personalized_states
+        ),
+        best_shared_state=best_shared_state,
+        best_personalized_states=best_personalized_states,
         best_round=best_round,
         rounds=round_results,
     )

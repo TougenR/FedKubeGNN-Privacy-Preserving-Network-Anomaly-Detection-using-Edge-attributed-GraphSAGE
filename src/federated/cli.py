@@ -18,6 +18,7 @@ from src.federated.experiments.comparison import compare_runs
 from src.federated.experiments.factory import task_from_name
 from src.federated.experiments.visualization import (
     visualize_class_aware_summary,
+    visualize_personalized_summary,
     visualize_runs,
 )
 from src.federated.observability import (
@@ -100,6 +101,19 @@ def _parser() -> argparse.ArgumentParser:
     evaluate.add_argument("--checkpoint", required=True)
     evaluate.add_argument("--split", choices=("validation", "test"), default="test")
     evaluate.add_argument("--output")
+    evaluate_personalized = commands.add_parser(
+        "evaluate-personalized",
+        help="evaluate a shared encoder with one private head per client",
+    )
+    evaluate_personalized.add_argument("--dataset", required=True)
+    evaluate_personalized.add_argument("--shared-checkpoint", required=True)
+    evaluate_personalized.add_argument(
+        "--personalized-checkpoints", required=True
+    )
+    evaluate_personalized.add_argument(
+        "--split", choices=("validation", "test"), default="test"
+    )
+    evaluate_personalized.add_argument("--output")
     compare = commands.add_parser(
         "compare", help="write one CSV from completed run summaries"
     )
@@ -117,6 +131,12 @@ def _parser() -> argparse.ArgumentParser:
     )
     visualize_class_aware.add_argument("--summary", required=True)
     visualize_class_aware.add_argument("--output", required=True)
+    visualize_personalized = commands.add_parser(
+        "visualize-personalized",
+        help="render locked multi-seed FedPer evidence",
+    )
+    visualize_personalized.add_argument("--summary", required=True)
+    visualize_personalized.add_argument("--output", required=True)
     return parser
 
 
@@ -221,6 +241,22 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         print(json.dumps(result, indent=2, sort_keys=True))
         return 0
+    if args.command == "evaluate-personalized":
+        from src.federated.experiments.evaluation import (
+            evaluate_personalized_checkpoint,
+        )
+
+        result = evaluate_personalized_checkpoint(
+            config,
+            args.dataset,
+            args.shared_checkpoint,
+            args.personalized_checkpoints,
+            split=args.split,
+            output=args.output,
+            observer=observer,
+        )
+        print(json.dumps(result, indent=2, sort_keys=True))
+        return 0
     if args.command == "compare":
         print(compare_runs(args.runs, args.output))
         return 0
@@ -229,6 +265,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     if args.command == "visualize-class-aware":
         print(visualize_class_aware_summary(args.summary, args.output))
+        return 0
+    if args.command == "visualize-personalized":
+        print(visualize_personalized_summary(args.summary, args.output))
         return 0
     raise AssertionError(args.command)
 

@@ -77,6 +77,12 @@ test data for model or hyperparameter selection.
 8. Promote a configuration only from validation metrics. Evaluate the fixed
    final test split exactly once per seed, then compare seeds 42, 1337, and
    2026 against the frozen Phase 1 clean and Phase 3 baselines.
+9. Run FedPer as the next controlled natural-non-IID treatment: aggregate only
+   the GraphSAGE encoder (`layers.*`) and retain the complete classifier
+   (`head.*`) at each client. Start with sample-weighted encoder aggregation so
+   personalization is the only changed family. Select checkpoints from the
+   aggregate of per-client validation confusion matrices; do not evaluate test
+   until the same treatment is stable over seeds 42, 1337, and 2026.
 
 ## Cost and safety controls
 
@@ -118,3 +124,27 @@ test data for model or hyperparameter selection.
 - [x] Validate combined class-balanced-client/support-only-head aggregation
   across seeds 42, 1337, and 2026; mean validation macro-F1 `0.736309`, selected
   test macro-F1 `0.738097 ± 0.060893`.
+- [x] Implement and locally prove FedPer shared-encoder/personalized-head state
+  handling and checkpoint isolation.
+- [x] Select FedPer on natural-7 validation across seeds 42, 1337, and 2026:
+  macro-F1 `0.994171`, `0.994016`, and `0.917721` (mean `0.968636 ±
+  0.036002`).
+- [x] Evaluate FedPer test exactly once per seed after validation selection:
+  macro-F1 `0.994073`, `0.994143`, and `0.923161` (mean `0.970459 ±
+  0.033444`).
+
+## Current decision (2026-08-05)
+
+- The class-aware global model still has zero F1 for `C&C-HeartBeat`, while the
+  local state for client `36-1` can learn that class. This is sufficient
+  authority for the personalized-head experiment.
+- FedPer is diagnostic first, not yet a Flower/GKE production strategy. No
+  infrastructure or Argo CD change is authorized until local evidence supports
+  it.
+- Local evidence now supports FedPer as the leading natural-non-IID candidate.
+  `C&C-HeartBeat` test F1 is `1.0`, `1.0`, and `0.685076`, compared with zero
+  for all class-aware global checkpoints. Compact evidence and figures are in
+  `artifacts/phase3_analysis/fedper/`; full checkpoints remain Git-ignored in
+  `artifacts/phase2/runs/phase3d/`.
+- Production integration must preserve client-head ownership and define a
+  cold-start policy for a new Edge before changing the Flower/GKE protocol.
