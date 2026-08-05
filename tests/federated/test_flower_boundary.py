@@ -43,6 +43,26 @@ class FlowerConfigTests(unittest.TestCase):
         self.assertEqual(resolved["final-split"], "test")
         self.assertEqual(len(resolved["benchmark-config-digest"]), 64)
 
+    def test_iot23_preserves_explicit_durable_output_root(self) -> None:
+        from src.federated.flower.config import resolve_run_config
+
+        resolved = resolve_run_config(
+            {
+                "task": "iot23_manifest",
+                "phase2-config": str(
+                    ROOT / "configs/phase2/iot23-federated.yaml"
+                ),
+                "strategy": "fedavg",
+                "flower-output-root": "/artifacts/fedavg/runs",
+            }
+        )
+
+        self.assertEqual(
+            resolved["flower-output-root"], "/artifacts/fedavg/runs"
+        )
+        self.assertEqual(resolved["num-server-rounds"], 30)
+        self.assertEqual(resolved["local-epochs"], 5)
+
     def test_iot23_client_builds_local_train_config_from_phase2_yaml(self) -> None:
         from src.federated.flower.client_app import _train_config
 

@@ -61,4 +61,9 @@ def resolve_run_config(
             "benchmark-config-digest": phase2.digest,
         }
     )
+    # Storage placement is an environment concern, not a benchmark
+    # hyperparameter.  Keep the Phase 2 default for local runs, while allowing
+    # Kubernetes to direct durable run evidence to its mounted artifact PVC.
+    if "flower-output-root" in run_config:
+        resolved["flower-output-root"] = str(run_config["flower-output-root"])
     return resolved

@@ -21,7 +21,10 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "2"
 spec:
-  backoffLimit: 1
+  # A retry repeats every FL round. Require a new immutable release instead of
+  # automatically duplicating a costly completed training sequence when a
+  # post-processing step fails.
+  backoffLimit: 0
   template:
     metadata:
       labels:
@@ -45,12 +48,19 @@ spec:
                    events-output='/artifacts/${strategy}/events' \
                    flower-output-root='/artifacts/${strategy}/runs'"
               done
+              fedavg_manifest="$(find /artifacts/fedavg/runs -mindepth 2 -maxdepth 2 \
+                -type f -name run.json -exec grep -l '\"status\": \"completed\"' {} + \
+                | sort | tail -n 1)"
+              fedprox_manifest="$(find /artifacts/fedprox/runs -mindepth 2 -maxdepth 2 \
+                -type f -name run.json -exec grep -l '\"status\": \"completed\"' {} + \
+                | sort | tail -n 1)"
+              test -n "${fedavg_manifest}" -a -n "${fedprox_manifest}"
               python -m src.federated.cli \
                 --repository-root /app \
                 --config configs/phase2/iot23-federated.yaml \
                 visualize \
-                --runs /artifacts/fedavg/runs/fedavg-* \
-                       /artifacts/fedprox/runs/fedprox-* \
+                --runs "${fedavg_manifest%/run.json}" \
+                       "${fedprox_manifest%/run.json}" \
                 --output "/artifacts/visualizations/{{ .Values.releaseId }}"
           env:
             - {name: FLWR_HOME, value: /flwr}
