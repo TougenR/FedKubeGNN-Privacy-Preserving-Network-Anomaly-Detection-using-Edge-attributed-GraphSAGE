@@ -161,3 +161,12 @@ generalization. Loss/aggregation corrections are evaluated first.
   federated suite passes 52 tests with five expected optional-Flower skips;
   Ruff, compilation, CLI discovery, all 12 generated artifact hashes, and
   whitespace validation pass.
+- The Phase 1 `preprocessor.pkl` was loaded without compatibility monkeypatches
+  in an ephemeral NumPy 2.4.6/scikit-learn 1.9 container. Phase 1 and Phase 2
+  have identical ordered features, categorical vocabularies, numeric columns,
+  history flags, and missing flags. Their learned scalers are not identical:
+  Phase 1 fitted 85,029 train rows while Phase 2 fitted 85,028 due to the split
+  algorithm difference. Across the eight numeric columns, maximum absolute
+  mean/scale differences are `0.012625`/`0.012627`; the largest relative scale
+  difference is `6.27%` (`missed_bytes`). This is measurable preprocessing
+  drift, but not yet evidence that it explains the `~0.44` macro-F1 gap.
