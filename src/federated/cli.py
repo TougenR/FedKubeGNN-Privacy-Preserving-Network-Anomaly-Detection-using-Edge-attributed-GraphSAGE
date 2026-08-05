@@ -16,7 +16,10 @@ from src.federated.data.preparation import doctor, prepare_iot23
 from src.federated.data.repartition import derive_seven_class_datasets
 from src.federated.experiments.comparison import compare_runs
 from src.federated.experiments.factory import task_from_name
-from src.federated.experiments.visualization import visualize_runs
+from src.federated.experiments.visualization import (
+    visualize_class_aware_summary,
+    visualize_runs,
+)
 from src.federated.observability import (
     CompositeObserver,
     ConsoleObserver,
@@ -108,6 +111,12 @@ def _parser() -> argparse.ArgumentParser:
     )
     visualize.add_argument("--runs", nargs="+", required=True)
     visualize.add_argument("--output", required=True)
+    visualize_class_aware = commands.add_parser(
+        "visualize-class-aware",
+        help="render locked multi-seed class-aware aggregation evidence",
+    )
+    visualize_class_aware.add_argument("--summary", required=True)
+    visualize_class_aware.add_argument("--output", required=True)
     return parser
 
 
@@ -217,6 +226,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     if args.command == "visualize":
         print(visualize_runs(args.runs, args.output))
+        return 0
+    if args.command == "visualize-class-aware":
+        print(visualize_class_aware_summary(args.summary, args.output))
         return 0
     raise AssertionError(args.command)
 

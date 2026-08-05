@@ -12,7 +12,15 @@ import numpy as np
 
 from src.federated.config import load_phase2_config
 from src.federated.contracts.task import LocalTrainConfig
+from src.federated.core.aggregation import (
+    class_balanced_client_fedavg,
+    class_balanced_client_head_fedavg,
+    class_balanced_client_weights,
+    class_support_head_fedavg,
+)
 from src.federated.core.simulation import run_federated_simulation
+from src.federated.data.manifest import PreparedDatasetManifest
+from src.federated.data.storage import load_graph_arrays
 from src.federated.experiments.factory import manifest_task
 
 
@@ -38,6 +46,18 @@ def main() -> int:
     parser.add_argument("--output", required=True)
     parser.add_argument("--rounds", type=int)
     parser.add_argument("--device", default="cpu")
+    parser.add_argument(
+        "--aggregation",
+        choices=(
+            "sample_fedavg",
+            "class_support_head",
+            "class_balanced_clients",
+            "class_balanced_clients_and_head",
+        ),
+        default="sample_fedavg",
+    )
+    parser.add_argument("--local-state-diagnostics", action="store_true")
+    parser.add_argument("--clients", nargs="+")
     args = parser.parse_args()
 
     output = Path(args.output)
@@ -47,6 +67,54 @@ def main() -> int:
 
     config = load_phase2_config(args.config)
     task = manifest_task(config, args.dataset, device=args.device)
+    participants = tuple(args.clients or task.client_ids)
+    unknown_clients = sorted(set(participants) - set(task.client_ids))
+    if unknown_clients:
+        raise ValueError(f"Unknown clients: {unknown_clients}")
+    manifest = PreparedDatasetManifest.load(args.dataset, verify=True)
+    train_class_support = {}
+    for client_id in manifest.client_ids:
+        graph = load_graph_arrays(manifest.client_path(client_id), verify=True)
+        train_class_support[client_id] = np.bincount(
+            graph.edge_label[graph.train_mask],
+            minlength=task.label_schema.num_classes,
+        ).astype(int).tolist()
+    support_matrix = np.asarray(
+        [train_class_support[client_id] for client_id in participants],
+        dtype=np.float64,
+    )
+    if args.aggregation == "sample_fedavg":
+        aggregate_fn = None
+        aggregation_weights = support_matrix.sum(axis=1)
+        aggregation_weights /= aggregation_weights.sum()
+    elif args.aggregation == "class_support_head":
+        def aggregate_fn(results):
+            return class_support_head_fedavg(
+                results,
+                class_support=support_matrix,
+                model_spec=task.model_spec,
+            )
+
+        aggregation_weights = support_matrix.sum(axis=1)
+        aggregation_weights /= aggregation_weights.sum()
+    elif args.aggregation == "class_balanced_clients":
+        def aggregate_fn(results):
+            return class_balanced_client_fedavg(
+                results,
+                class_support=support_matrix,
+                model_spec=task.model_spec,
+            )
+
+        aggregation_weights = class_balanced_client_weights(support_matrix)
+    else:
+        def aggregate_fn(results):
+            return class_balanced_client_head_fedavg(
+                results,
+                class_support=support_matrix,
+                model_spec=task.model_spec,
+            )
+
+        aggregation_weights = class_balanced_client_weights(support_matrix)
     rounds = args.rounds or config.training.rounds
     proximal_mu = config.federation.proximal_mu if args.strategy == "fedprox" else 0.0
     result = run_federated_simulation(
@@ -62,9 +130,27 @@ def main() -> int:
             seed=config.training.seed,
         ),
         evaluate_split="val",
+        aggregate_fn=aggregate_fn,
+        diagnose_local_states=args.local_state_diagnostics,
+        client_ids=participants,
     )
-    records = [
-        {
+    records = []
+    for item in result.rounds:
+        client_diagnostics = {}
+        for client_id, values in item.client_diagnostics.items():
+            row_updates = list(values.get("output_row_update_l2", []))
+            sample_weight = float(values["sample_aggregation_weight"])
+            client_diagnostics[client_id] = {
+                **values,
+                "effective_aggregation_weight": float(
+                    aggregation_weights[list(participants).index(client_id)]
+                ),
+                "train_class_support": train_class_support[client_id],
+                "sample_weighted_output_row_contribution_l2": [
+                    sample_weight * float(value) for value in row_updates
+                ],
+            }
+        records.append({
             "round": item.round_number,
             "train_examples": item.train_examples,
             "validation_examples": item.evaluation_examples,
@@ -73,18 +159,23 @@ def main() -> int:
             "confusion_matrix": item.confusion_matrix.tolist(),
             "upload_bytes": item.upload_bytes,
             "download_bytes": item.download_bytes,
-        }
-        for item in result.rounds
-    ]
+            "client_diagnostics": client_diagnostics,
+        })
     best = max(records, key=lambda item: item["validation_metrics"]["macro_f1"])
+    if result.best_round != best["round"]:
+        raise RuntimeError("Runner best-state round differs from recorded validation.")
     np.savez(output / "final_state.npz", **result.final_state)
+    np.savez(output / "best_state.npz", **result.best_state)
     _write_json(output / "rounds.json", records)
     metadata = dict(task.metadata())
     summary = {
         "kind": "validation_only_ablation",
         "strategy": args.strategy,
+        "aggregation": args.aggregation,
+        "local_state_diagnostics": args.local_state_diagnostics,
         "rounds": rounds,
         "best_round": best["round"],
+        "selection_checkpoint": "best_state.npz",
         "best_validation_metrics": best["validation_metrics"],
         "test_evaluations": 0,
         "config_digest": config.digest,
@@ -92,10 +183,47 @@ def main() -> int:
         "model_digest": task.model_spec.digest,
         "class_weight_scope": metadata["class_weight_scope"],
         "global_class_weights": metadata["global_class_weights"],
+        "train_class_support": train_class_support,
+        "aggregation_weights": {
+            client_id: float(aggregation_weights[index])
+            for index, client_id in enumerate(participants)
+        },
+        "participants": list(participants),
+        "diagnostics": {
+            "fields": [
+                "update_l2",
+                "relative_update_l2",
+                "distance_to_aggregate_l2",
+                "cosine_to_aggregate_update",
+                "output_row_update_l2",
+                "sample_weighted_output_row_contribution_l2",
+            ],
+            "first_round": records[0]["client_diagnostics"],
+            "final_round": records[-1]["client_diagnostics"],
+        },
         "config": config.to_dict(),
     }
+    summary["experiment_digest"] = hashlib.sha256(
+        json.dumps(
+            {
+                "config_digest": config.digest,
+                "strategy": args.strategy,
+                "aggregation": args.aggregation,
+                "rounds": rounds,
+                "local_state_diagnostics": args.local_state_diagnostics,
+                "participants": participants,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
     _write_json(output / "summary.json", summary)
-    files = ("final_state.npz", "rounds.json", "summary.json")
+    files = (
+        "best_state.npz",
+        "final_state.npz",
+        "rounds.json",
+        "summary.json",
+    )
     _write_json(
         output / "evidence_manifest.json",
         {

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import io
 import json
 import os
@@ -489,6 +490,136 @@ def visualize_runs(
         ],
         "tables": ["round_metrics.csv", "final_metrics.csv"],
         "figures": figures,
+        "test_evaluation_reused": True,
+    }
+    manifest_path = destination / "visualization_manifest.json"
+    atomic_json(manifest_path, manifest)
+    return manifest_path
+
+
+def visualize_class_aware_summary(
+    summary_path: str | Path, output: str | Path
+) -> Path:
+    """Render a locked multi-seed class-aware summary without re-evaluation."""
+    source = Path(summary_path)
+    summary = json.loads(source.read_text(encoding="utf-8"))
+    validation = summary["validation"]
+    baseline = validation["baseline"]
+    selected = validation["selected"]
+    test = summary["test"]
+    seeds = tuple(
+        sorted(
+            (key for key in selected if str(key).isdigit()),
+            key=lambda value: int(value),
+        )
+    )
+    if not seeds or any(seed not in baseline or seed not in test for seed in seeds):
+        raise ValueError("Class-aware summary has incomplete seed evidence.")
+    destination = Path(output)
+    if destination.exists() and any(destination.iterdir()):
+        raise FileExistsError(f"Visualization output is not empty: {destination}")
+    destination.mkdir(parents=True, exist_ok=True)
+    plt = _plot_runtime()
+    figure_names: list[str] = []
+
+    x = np.arange(len(seeds))
+    width = 0.36
+    figure, axis = plt.subplots(figsize=(9, 5))
+    baseline_values = [
+        _number(baseline[seed], where=f"validation.baseline.{seed}")
+        for seed in seeds
+    ]
+    selected_values = [
+        _number(
+            selected[seed]["macro_f1"],
+            where=f"validation.selected.{seed}.macro_f1",
+        )
+        for seed in seeds
+    ]
+    axis.bar(x - width / 2, baseline_values, width, label="Sample FedAvg")
+    axis.bar(x + width / 2, selected_values, width, label="Class-aware selected")
+    axis.set_xticks(x, [f"Seed {seed}" for seed in seeds])
+    axis.set_ylim(0, 1)
+    axis.set_ylabel("Validation macro-F1")
+    axis.set_title("Natural non-IID validation improvement")
+    axis.grid(axis="y", alpha=0.2)
+    axis.legend()
+    figure_names.extend(
+        _save_figure(figure, destination, "class_aware_validation_by_seed")
+    )
+    plt.close(figure)
+
+    metrics = ("accuracy", "weighted_f1", "macro_f1")
+    figure, axis = plt.subplots(figsize=(10, 5))
+    metric_x = np.arange(len(metrics))
+    metric_width = 0.8 / len(seeds)
+    for seed_index, seed in enumerate(seeds):
+        values = [
+            _number(test[seed][metric], where=f"test.{seed}.{metric}")
+            for metric in metrics
+        ]
+        offset = (seed_index - (len(seeds) - 1) / 2) * metric_width
+        axis.bar(metric_x + offset, values, metric_width, label=f"Seed {seed}")
+    axis.set_xticks(metric_x, ("Accuracy", "Weighted-F1", "Macro-F1"))
+    axis.set_ylim(0, 1)
+    axis.set_ylabel("Test score")
+    axis.set_title("Validation-selected class-aware test metrics")
+    axis.grid(axis="y", alpha=0.2)
+    axis.legend()
+    figure_names.extend(
+        _save_figure(figure, destination, "class_aware_test_metrics")
+    )
+    plt.close(figure)
+
+    class_names = tuple(test[seeds[0]]["per_class_f1"])
+    if not class_names:
+        raise ValueError("Class-aware summary has no per-class test metrics.")
+    class_x = np.arange(len(class_names))
+    class_width = 0.8 / len(seeds)
+    figure, axis = plt.subplots(figsize=(max(11, len(class_names) * 1.3), 5))
+    for seed_index, seed in enumerate(seeds):
+        per_class = test[seed]["per_class_f1"]
+        if tuple(per_class) != class_names:
+            raise ValueError("Per-class metric order differs between seeds.")
+        values = [
+            _number(per_class[name], where=f"test.{seed}.per_class_f1.{name}")
+            for name in class_names
+        ]
+        offset = (seed_index - (len(seeds) - 1) / 2) * class_width
+        axis.bar(class_x + offset, values, class_width, label=f"Seed {seed}")
+    axis.set_xticks(class_x, class_names, rotation=45, ha="right")
+    axis.set_ylim(0, 1)
+    axis.set_ylabel("Test F1")
+    axis.set_title("Selected class-aware per-class F1")
+    axis.grid(axis="y", alpha=0.2)
+    axis.legend()
+    figure_names.extend(
+        _save_figure(figure, destination, "class_aware_per_class_f1")
+    )
+    plt.close(figure)
+
+    seed_rows = [
+        {
+            "seed": seed,
+            "baseline_validation_macro_f1": baseline_values[index],
+            "selected_validation_macro_f1": selected_values[index],
+            "test_accuracy": test[seed]["accuracy"],
+            "test_weighted_f1": test[seed]["weighted_f1"],
+            "test_macro_f1": test[seed]["macro_f1"],
+        }
+        for index, seed in enumerate(seeds)
+    ]
+    atomic_text(
+        destination / "class_aware_seed_metrics.csv",
+        _csv_text(tuple(seed_rows[0]), seed_rows),
+    )
+    manifest = {
+        "visualization_version": 1,
+        "source_summary": str(source),
+        "source_summary_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+        "seeds": list(seeds),
+        "figures": figure_names,
+        "tables": ["class_aware_seed_metrics.csv"],
         "test_evaluation_reused": True,
     }
     manifest_path = destination / "visualization_manifest.json"

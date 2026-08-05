@@ -108,10 +108,13 @@ test data for model or hyperparameter selection.
 - [x] Freeze the completed Phase 3 baseline.
 - [x] Run exact-data centralized reference (`0.869830` test macro-F1).
 - [ ] Complete preprocessing/feature/topology audit.
-- [ ] Add client-drift observability.
-- [ ] Run controlled validation-only ablations.
+- [x] Add client-drift/update-norm, classifier-row, and local-state
+  observability.
+- [x] Run controlled validation-only aggregation ablations on natural-7.
 - [x] Reject global class weights on validation (`0.380236`, delta `-0.075489`).
 - [x] Reject equal-compute one-local-epoch FedAvg (`0.315973`, delta `-0.139753`).
 - [x] Complete the seven-class IID versus natural non-IID diagnostic: IID
   `0.988879` versus natural `0.507170` test macro-F1.
-- [ ] Validate the selected configuration across three seeds.
+- [x] Validate combined class-balanced-client/support-only-head aggregation
+  across seeds 42, 1337, and 2026; mean validation macro-F1 `0.736309`, selected
+  test macro-F1 `0.738097 ± 0.060893`.

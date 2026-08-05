@@ -29,6 +29,16 @@ class ToyFederationTests(unittest.TestCase):
         self.assertGreater(result.rounds[-1].global_metrics["macro_f1"], 0.90)
         self.assertEqual(result.rounds[-1].evaluation_examples, 120)
         self.assertGreater(result.rounds[-1].upload_bytes, 0)
+        self.assertGreaterEqual(result.best_round, 1)
+        task.model_spec.validate_state(result.best_state)
+        self.assertEqual(
+            set(result.rounds[0].client_diagnostics), set(task.client_ids)
+        )
+        for diagnostics in result.rounds[0].client_diagnostics.values():
+            self.assertGreaterEqual(diagnostics["update_l2"], 0.0)
+            self.assertGreaterEqual(
+                diagnostics["distance_to_aggregate_l2"], 0.0
+            )
         modules_loaded_by_toy = set(sys.modules) - modules_before
         self.assertNotIn("src.model", modules_loaded_by_toy)
         self.assertNotIn("torch_geometric", modules_loaded_by_toy)
@@ -45,8 +55,12 @@ class ToyFederationTests(unittest.TestCase):
                 proximal_mu=0.01,
                 seed=7,
             ),
+            diagnose_local_states=True,
         )
         self.assertEqual(result.rounds[-1].train_examples, 180)
+        diagnostics = result.rounds[-1].client_diagnostics
+        self.assertIn("local_state_own_client_metrics", next(iter(diagnostics.values())))
+        self.assertIn("local_state_global_metrics", next(iter(diagnostics.values())))
 
 
 if __name__ == "__main__":

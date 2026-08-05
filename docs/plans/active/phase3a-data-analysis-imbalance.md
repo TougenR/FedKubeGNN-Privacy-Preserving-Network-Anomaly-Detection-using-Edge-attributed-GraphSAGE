@@ -130,8 +130,9 @@ generalization. Loss/aggregation corrections are evaluated first.
 - [x] Generate the prepared-artifact balance, feature, and topology report.
 - [ ] Complete preprocessing learned-state comparison.
 - [x] Run exact-data centralized reference.
-- [ ] Implement and validate isolated imbalance treatments.
-- [ ] Hand selected treatments to Phase 3 metric-improvement experiments.
+- [x] Implement and validate isolated imbalance treatments.
+- [x] Hand the selected class-aware aggregation treatment to Phase 3 metric
+  improvement; personalized-head work remains separate.
 
 The controlled seven-class IID versus natural non-IID diagnostic is tracked in
 `phase3b-iid-noniid-diagnostic.md` and precedes further aggregation treatments.
@@ -209,3 +210,11 @@ The controlled seven-class IID versus natural non-IID diagnostic is tracked in
   and training budget. Centralized-7 reached `0.986555`. This rules out a
   fundamental FedAvg/runtime failure under favorable distributions and makes
   class-support-aware aggregation on natural non-IID the next treatment.
+- Update diagnostics showed that zero-support clients still change private
+  classifier rows with magnitude comparable to the supporting client. The
+  selected combined class-balanced-client/support-only-head aggregation raised
+  mean three-seed validation macro-F1 from `0.521786` to `0.736309` and improved
+  all three seeds. Validation-selected test macro-F1 was
+  `0.738097 ± 0.060893`. Client `36-1` alone learns HeartBeat and Okiru with F1
+  `1.0`, while every global seed retains HeartBeat F1 `0`; this remaining gap
+  motivates personalized heads rather than more global class weighting.

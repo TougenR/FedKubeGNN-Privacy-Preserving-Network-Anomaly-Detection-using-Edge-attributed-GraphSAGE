@@ -6,7 +6,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from src.federated.experiments.visualization import visualize_runs
+from src.federated.experiments.visualization import (
+    visualize_class_aware_summary,
+    visualize_runs,
+)
 
 
 def _completed_run(
@@ -99,6 +102,46 @@ def _completed_run(
 
 
 class VisualizationTests(unittest.TestCase):
+    def test_class_aware_summary_renders_without_test_evaluation(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            summary = root / "summary.json"
+            summary.write_text(
+                json.dumps(
+                    {
+                        "validation": {
+                            "baseline": {"42": 0.5, "1337": 0.55},
+                            "selected": {
+                                "42": {"macro_f1": 0.7},
+                                "1337": {"macro_f1": 0.75},
+                            },
+                        },
+                        "test": {
+                            "42": {
+                                "accuracy": 0.8,
+                                "weighted_f1": 0.78,
+                                "macro_f1": 0.7,
+                                "per_class_f1": {"Benign": 0.9, "Attack": 0.5},
+                            },
+                            "1337": {
+                                "accuracy": 0.82,
+                                "weighted_f1": 0.79,
+                                "macro_f1": 0.72,
+                                "per_class_f1": {"Benign": 0.91, "Attack": 0.53},
+                            },
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            output = root / "visualizations"
+            manifest_path = visualize_class_aware_summary(summary, output)
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            self.assertTrue(manifest["test_evaluation_reused"])
+            self.assertEqual(len(manifest["figures"]), 6)
+            for name in manifest["figures"]:
+                self.assertGreater((output / name).stat().st_size, 0)
+
     def test_completed_strategies_render_phase1_style_diagnostics(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

@@ -1,0 +1,17 @@
+{
+  "dataset_digest": "c5ab9c02896c08c9f60e8efb9672a2090cbe595e4c344308f5e4dc2b0e51319a",
+  "files": {
+    "finding.md": "01b748e02ce3430d06240772e338b4582699bcb1818dd830125ca34e0029bd93",
+    "figures/class_aware_per_class_f1.pdf": "46c92b59b68a8b35d06c5ecf192a47ae65406a4a226e2547144d1e547577443d",
+    "figures/class_aware_per_class_f1.png": "0ebdbf79029e3cf666c64d57f2b6a052ed0fed92c45183085936605dcad48ce6",
+    "figures/class_aware_seed_metrics.csv": "8c05dc885f63514ac3577b08b4cd90cc0b0e7957c4183f3eb139ba6ecc40a265",
+    "figures/class_aware_test_metrics.pdf": "470c7bfb1caddc4318bbf24199d6e5e20caba9e131c51f482a101ea370d1f404",
+    "figures/class_aware_test_metrics.png": "5c5b0b208749317cc272938192b1e72be552a2bd24f494b5715458bdbeb188ae",
+    "figures/class_aware_validation_by_seed.pdf": "d2c3415796161e0618785d985219a64f41963ceae89b672fec28b523b2fc9326",
+    "figures/class_aware_validation_by_seed.png": "8b558fde1649000a60b0a9910815cc60268b9c99cbafe5d14afc9f47c3963d49",
+    "figures/visualization_manifest.json": "6f2f3b711bcdc66bd02fe392e43d2e04b65a6639e475669e3d8a347d3524a254",
+    "summary.json": "752587a097d432bf1ff3ec42362be25441b541a6ff42eceec03574d9e3f15318"
+  },
+  "selected_test_evaluations_per_seed": 1,
+  "selection_test_evaluations": 0
+}
