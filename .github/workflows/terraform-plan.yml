@@ -25,7 +25,7 @@ jobs:
         with:
           workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
           service_account: ${{ vars.GCP_TERRAFORM_SERVICE_ACCOUNT }}
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with: {terraform_version: 1.13.4}
       - name: Create review plan only
         run: scripts/terraform_review_plan.sh "${{ vars.ADMIN_CIDR }}"
