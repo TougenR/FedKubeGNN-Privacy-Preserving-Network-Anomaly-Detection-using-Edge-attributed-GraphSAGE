@@ -9,8 +9,8 @@ IoT-23 → dựng đồ thị hành vi → huấn luyện **E-GraphSAGE** + 4 ba
 (`gat`, `sage_edge_concat`, `graphsage`, `gcn`) tập trung trên 1 máy.
 
 Pipeline **Giai đoạn 2** nằm trong `src/federated/`: chuẩn bị sáu client IoT-23
-với shared train-only preprocessing, chạy FedAvg/FedProx, chọn checkpoint theo
-validation, ghi structured JSONL/run artifacts và vẽ learning curve/final
+với shared train-only preprocessing, chạy FedAvg/FedProx và FedPer, chọn
+checkpoint theo validation, ghi structured JSONL/run artifacts và vẽ learning curve/final
 metrics/confusion matrix mà không đánh giá test lần hai. Core FedAvg/metrics và
 Flower runtime không phụ thuộc PyG hay implementation Phase 1. Xem
 [kiến trúc Phase 2](docs/PHASE2_ARCHITECTURE.md) trước khi chạy dữ liệu thật.
@@ -21,6 +21,12 @@ Actions + Jenkins, GitOps bằng Argo CD, ba GCS bucket và log tập trung qua
 Elasticsearch/Kibana. Xem [kiến trúc Phase 3](docs/PHASE3_ARCHITECTURE.md) và
 [runbook có cổng duyệt Terraform](docs/PHASE3_RUNBOOK.md). Không chạy
 `terraform apply` trước khi plan được duyệt rõ ràng.
+
+Natural non-IID hiện dùng FedPer làm ứng viên chính: Central chỉ tổng hợp
+GraphSAGE `layers.*`, còn mỗi Flower client giữ `head.*` trên PVC riêng và chỉ
+ready sau ít nhất một local round. Xem
+[quyết định FedPer](docs/decisions/0003-fedper-edge-personalization.md) và
+[evidence ba seed](artifacts/phase3_analysis/fedper/finding.md).
 
 Preflight và smoke Phase 2:
 

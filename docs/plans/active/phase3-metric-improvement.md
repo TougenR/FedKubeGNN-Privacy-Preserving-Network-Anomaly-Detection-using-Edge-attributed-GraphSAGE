@@ -83,6 +83,11 @@ test data for model or hyperparameter selection.
    personalization is the only changed family. Select checkpoints from the
    aggregate of per-client validation confusion matrices; do not evaluate test
    until the same treatment is stable over seeds 42, 1337, and 2026.
+10. Integrate the validation-selected FedPer treatment into Flower without
+    centralizing private heads. A new Edge cold-starts from the immutable
+    initial `head.*`, persists versioned head checkpoints locally, and is not
+    inference-ready until one successful local-training round. Prove recovery
+    and partial-state transport locally before changing Helm/GKE.
 
 ## Cost and safety controls
 
@@ -148,3 +153,10 @@ test data for model or hyperparameter selection.
   `artifacts/phase2/runs/phase3d/`.
 - Production integration must preserve client-head ownership and define a
   cold-start policy for a new Edge before changing the Flower/GKE protocol.
+- [x] Prove Flower FedPer partial-state transport and Edge-local durable head
+  recovery with the approved cold-start policy.
+- [x] Add one PVC per Flower client and render/dry-run the bounded FedPer Helm
+  workflow without enabling training or changing a live cluster.
+- [ ] Build/push the FedPer image, update immutable environment digests, then
+  enable one bounded FedPer GKE run through Argo CD after explicit deployment
+  approval.

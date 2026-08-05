@@ -244,8 +244,12 @@ def _build_config(raw: Mapping[str, Any]) -> Phase2Config:
     federation_raw = _mapping(raw["federation"], "federation")
     _strict(federation_raw, set(FederationConfig.__dataclass_fields__), "federation")
     strategies = tuple(str(item).lower() for item in federation_raw["strategies"])
-    if not strategies or any(item not in {"fedavg", "fedprox"} for item in strategies):
-        raise Phase2ConfigError("federation.strategies must contain fedavg/fedprox.")
+    if not strategies or any(
+        item not in {"fedavg", "fedprox", "fedper"} for item in strategies
+    ):
+        raise Phase2ConfigError(
+            "federation.strategies must contain fedavg/fedprox/fedper."
+        )
     federation = FederationConfig(
         strategies=strategies,
         proximal_mu=float(federation_raw["proximal_mu"]),

@@ -1,7 +1,7 @@
 # Phase 2: IoT-23 Federation
 
 Phase 2 biến đầu ra logic của Phase 1 thành sáu client non-IID theo scenario,
-huấn luyện cùng E-GraphSAGE bằng FedAvg/FedProx, và lưu đủ bằng chứng để tái
+huấn luyện cùng E-GraphSAGE bằng FedAvg/FedProx/FedPer, và lưu đủ bằng chứng để tái
 lập hoặc chẩn đoán một run. Historical macro-F1 `0.8773` chỉ là số tham khảo;
 benchmark mới fit preprocessing trên train và phải tự tạo centralized result.
 
@@ -30,7 +30,8 @@ ManifestIoT23Task (server loads contract/state only)
 30 rounds, 6 clients, full participation, 5 local epochs
         │
         ├── FedAvg: weighted average by train-edge count
-        └── FedProx: FedAvg + local proximal loss, mu=0.01
+        ├── FedProx: FedAvg + local proximal loss, mu=0.01
+        └── FedPer: aggregate layers.*, retain head.* per client
         │
         ▼
 validation each round ──► best checkpoint ──► test exactly once
@@ -156,9 +157,13 @@ IoT-23 Flower run cần override `task=iot23_manifest`, `dataset-root` và bật
 `save-model`; các hyperparameter benchmark (30 round, 5 local epoch, optimizer,
 learning rate và FedProx mu) được lấy trực tiếp từ `phase2-config`, không dùng
 toy defaults trong `pyproject.toml`. Mỗi process ghi JSONL riêng dưới
-`events-output`. FedAvg và FedProx đều dùng full participation, chọn checkpoint
+`events-output`. FedAvg, FedProx và FedPer đều dùng full participation, chọn checkpoint
 tốt nhất theo validation macro-F1 rồi mới đánh giá test đúng một lần. Global
 metric được tính từ tổng fixed-K confusion matrix, không average client macro-F1.
+Với FedPer, Flower chỉ vận chuyển `layers.*`; `head.*` được version hóa dưới
+`personalized-state-root/<client>/<run>/<model-digest>/` và evaluation fail
+closed trước local round đầu tiên. Central best checkpoint vì vậy chỉ là shared
+encoder, không phải một global model hoàn chỉnh.
 Lệnh `visualize` kiểm tra provenance và trạng thái completed trước khi vẽ. Learning
 curve chỉ dùng validation metric theo round; bar chart, per-class F1 và confusion
 matrix dùng đúng final-test metric đã lưu, không chạy test lần hai và không tác
@@ -176,7 +181,8 @@ git diff --check
 
 Proof bao gồm strict config/registry, integrity/tamper, deterministic sampling
 và split, server init không load graph, one-client FedAvg equivalence, sáu-client
-FedAvg/FedProx observed runs, communication bytes và best/test artifacts.
+FedAvg/FedProx observed runs, FedPer private-state recovery/transport,
+communication bytes và best/test artifacts.
 
 Máy hiện tại chưa có raw IoT-23, `torch_geometric` hoặc `flwr`; `doctor` vì vậy
 fail rõ ràng trước preparation. Full six-scenario E-GraphSAGE/Flower result và

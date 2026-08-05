@@ -18,7 +18,9 @@ class ConfigTests(unittest.TestCase):
     def test_repository_config_is_strict_and_stable(self):
         config = load_phase2_config(ROOT / "configs/phase2/iot23-federated.yaml")
         self.assertEqual(len(config.data.scenarios), 6)
-        self.assertEqual(config.federation.strategies, ("fedavg", "fedprox"))
+        self.assertEqual(
+            config.federation.strategies, ("fedavg", "fedprox", "fedper")
+        )
         self.assertEqual(config.training.class_weight_scope, "local")
         self.assertEqual(len(config.digest), 64)
 

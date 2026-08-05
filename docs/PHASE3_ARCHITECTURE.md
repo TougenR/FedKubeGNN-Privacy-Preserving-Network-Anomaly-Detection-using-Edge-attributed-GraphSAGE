@@ -40,11 +40,12 @@ cluster; adding Edge clusters changes placement values, not the Flower app.
  |                                        | 9-1  Linux.Hajime
  |                                        | 36-1 Okiru
  |                                        ` 39-1 IRCBot
+ |                                          each client --> private head PVC
  |
  |  ServerApp: 30 rounds x 5 local epochs, full participation
- |             FedAvg, then FedProx(mu=0.01)
+ |             FedPer: aggregate layers.* only
  |      |
- |      `--> Global checkpoint/model --> GCS Model Artifacts
+ |      `--> Shared encoder checkpoint --> GCS Model Artifacts
  |
  |  Central + Edge container logs --> Filebeat --> 10.10.0.11:9200
  |                                              --> Elasticsearch (30 GiB, 7d)
@@ -94,3 +95,13 @@ remain forbidden by the Phase 2 observability contract.
 The one-time Argo bootstrap installs Argo CD, registers Edge-01, and submits the
 operator/ApplicationSet definitions. No ongoing Jenkins stage contains `helm`,
 `kubectl`, or `terraform apply`.
+
+## FedPer state ownership
+
+The completed FedAvg/FedProx runs remain frozen baselines. The selected
+natural-non-IID treatment is now FedPer: Central sends and aggregates only
+`layers.*`; every client keeps `head.*` on a dedicated 1 GiB PVC. A new client
+starts from the immutable initial head and cannot evaluate or serve inference
+until one local round commits a versioned head checkpoint. The Central GCS
+artifact is explicitly a shared encoder bundle; it cannot be used alone as a
+portable global classifier.

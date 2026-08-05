@@ -20,6 +20,35 @@ def state_nbytes(state: Mapping[str, np.ndarray]) -> int:
     return sum(int(np.asarray(value).nbytes) for value in state.values())
 
 
+def validate_array_state_like(
+    state: Mapping[str, np.ndarray],
+    template: Mapping[str, np.ndarray],
+    *,
+    label: str = "state",
+) -> None:
+    """Validate exact named-array schema when a full ModelSpec is unavailable."""
+    actual_names = tuple(state)
+    expected_names = tuple(template)
+    if actual_names != expected_names:
+        raise ValueError(
+            f"{label} parameter names/order differ: expected {expected_names}, "
+            f"got {actual_names}."
+        )
+    for name, expected_value in template.items():
+        actual = np.asarray(state[name])
+        expected = np.asarray(expected_value)
+        if actual.shape != expected.shape:
+            raise ValueError(
+                f"{label} parameter '{name}' shape differs: expected "
+                f"{expected.shape}, got {actual.shape}."
+            )
+        if actual.dtype != expected.dtype:
+            raise ValueError(
+                f"{label} parameter '{name}' dtype differs: expected "
+                f"{expected.dtype}, got {actual.dtype}."
+            )
+
+
 def torch_state_to_arrays(state: Mapping[str, Any]) -> ArrayState:
     """Convert a PyTorch-compatible state dict without importing Phase 1."""
     arrays: ArrayState = {}

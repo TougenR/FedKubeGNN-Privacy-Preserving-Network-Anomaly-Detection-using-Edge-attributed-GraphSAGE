@@ -16,3 +16,6 @@ documents here as real choices are accepted, then index them in this file.
   observability contract.
 - [`0002-phase3-gke-gitops.md`](0002-phase3-gke-gitops.md): GKE topology,
   six-client placement, GitOps authority, GCS ownership, and Kibana logging.
+- [`0003-fedper-edge-personalization.md`](0003-fedper-edge-personalization.md):
+  shared GraphSAGE encoder, Edge-owned classifier heads, cold-start readiness,
+  and durable private-state ownership.

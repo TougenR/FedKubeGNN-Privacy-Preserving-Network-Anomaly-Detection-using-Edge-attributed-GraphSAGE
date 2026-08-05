@@ -37,6 +37,7 @@ flower:
   caSecretName: flower-superlink-ca
   stateSize: 10Gi
   artifactsSize: 30Gi
+  personalizedStateSize: 1Gi
   clients:
     - {id: "34-1", partitionId: 0, malware: Mirai}
     - {id: "1-1", partitionId: 1, malware: Hide-and-Seek}
@@ -47,7 +48,7 @@ flower:
 
 training:
   enabled: true
-  strategies: [fedavg, fedprox]
+  strategies: [fedper]
   rounds: 30
   localEpochs: 5
 

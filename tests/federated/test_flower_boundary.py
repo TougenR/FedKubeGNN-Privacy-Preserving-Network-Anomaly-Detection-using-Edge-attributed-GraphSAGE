@@ -43,6 +43,23 @@ class FlowerConfigTests(unittest.TestCase):
         self.assertEqual(resolved["final-split"], "test")
         self.assertEqual(len(resolved["benchmark-config-digest"]), 64)
 
+    def test_iot23_allows_fedper_with_private_state_defaults(self) -> None:
+        from src.federated.flower.config import resolve_run_config
+
+        resolved = resolve_run_config(
+            {
+                "task": "iot23_manifest",
+                "phase2-config": str(
+                    ROOT / "configs/phase2/iot23-federated.yaml"
+                ),
+                "strategy": "fedper",
+            }
+        )
+        self.assertEqual(resolved["strategy"], "fedper")
+        self.assertEqual(resolved["proximal-mu"], 0.0)
+        self.assertEqual(resolved["personalized-prefixes"], "head.")
+        self.assertIn("personalized-state-root", resolved)
+
     def test_iot23_preserves_explicit_durable_output_root(self) -> None:
         from src.federated.flower.config import resolve_run_config
 

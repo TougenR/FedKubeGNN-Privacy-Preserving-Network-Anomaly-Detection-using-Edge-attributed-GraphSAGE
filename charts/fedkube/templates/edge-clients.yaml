@@ -1,6 +1,22 @@
 {{- if eq .Values.mode "edge" }}
 {{- $root := . }}
 {{- range .Values.flower.clients }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "fedkube.fullname" $root }}-head-{{ .id | lower }}
+  labels:
+    {{- include "fedkube.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: personalized-head
+    fedkube.io/client-id: {{ .id | quote }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: {{ $root.Values.flower.personalizedStateSize }}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -55,6 +71,7 @@ spec:
           volumeMounts:
             - {name: dataset, mountPath: /dataset, readOnly: true}
             - {name: client-events, mountPath: /artifacts}
+            - {name: personalized-head, mountPath: /personalized-head}
           resources: {{- toYaml $root.Values.resources.clientApp | nindent 12 }}
       volumes:
         - name: tls
@@ -63,6 +80,9 @@ spec:
           persistentVolumeClaim: {claimName: {{ include "fedkube.fullname" $root }}-dataset}
         - name: client-events
           emptyDir: {}
+        - name: personalized-head
+          persistentVolumeClaim:
+            claimName: {{ include "fedkube.fullname" $root }}-head-{{ .id | lower }}
 ---
 {{- end }}
 {{- end }}

@@ -8,6 +8,7 @@ import numpy as np
 
 from src.federated.contracts.schema import ModelSpec
 from src.federated.contracts.task import ArrayState
+from src.federated.core.state import validate_array_state_like
 from src.federated.observability.events import Observer
 from src.federated.observability.run_store import RunStore, atomic_json
 
@@ -19,12 +20,25 @@ class FlowerBestTracker:
         self,
         *,
         store: RunStore,
-        model_spec: ModelSpec,
         observer: Observer,
         flower_run_id: str,
+        model_spec: ModelSpec | None = None,
+        state_template: Mapping[str, np.ndarray] | None = None,
     ) -> None:
+        if (model_spec is None) == (state_template is None):
+            raise ValueError(
+                "Exactly one of model_spec or state_template is required."
+            )
         self.store = store
         self.model_spec = model_spec
+        self.state_template = (
+            {
+                name: np.asarray(value).copy()
+                for name, value in state_template.items()
+            }
+            if state_template is not None
+            else None
+        )
         self.observer = observer
         self.flower_run_id = flower_run_id
         self._pending_states: dict[int, ArrayState] = {}
@@ -35,7 +49,13 @@ class FlowerBestTracker:
     def record_train_state(
         self, server_round: int, state: Mapping[str, np.ndarray]
     ) -> None:
-        self.model_spec.validate_state(state)
+        if self.model_spec is not None:
+            self.model_spec.validate_state(state)
+        else:
+            assert self.state_template is not None
+            validate_array_state_like(
+                state, self.state_template, label="aggregated shared state"
+            )
         self._pending_states[server_round] = {
             name: np.asarray(value).copy() for name, value in state.items()
         }

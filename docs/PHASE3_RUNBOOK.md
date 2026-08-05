@@ -67,10 +67,12 @@ Capture evidence under ignored `artifacts/phase3/evidence/<timestamp>/`:
    `Synced/Healthy`.
 5. Dataset Sync Job completion and PVC manifest checksum.
 6. Six connected SuperNodes and at least one completed FL round.
-7. FedAvg followed by FedProx summaries for all six scenarios.
+7. A FedPer summary for all six scenarios, plus proof that Flower payloads and
+   the Central checkpoint contain only `layers.*`.
 8. Generated learning curves, final metric comparison, per-class F1, and
    confusion matrices in the GCS model-artifact bucket.
-9. GCS global model/checkpoint object metadata.
+9. GCS shared-encoder object metadata and each Edge client head-PVC metadata
+   (`ready=true`, completed round, model digest) without copying head tensors.
 10. A Kibana Discover view of Central and Edge structured logs.
 
 Destroy or scale down immediately after capturing the evidence. Protected GCS

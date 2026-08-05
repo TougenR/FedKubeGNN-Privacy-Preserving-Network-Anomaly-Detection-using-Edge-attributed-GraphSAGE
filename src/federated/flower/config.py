@@ -21,6 +21,8 @@ DEFAULT_RUN_CONFIG: Final[dict[str, int | float | str | bool]] = {
     "evaluate-split": "val",
     "events-output": "artifacts/phase2/flower-events",
     "flower-output-root": "artifacts/phase2/flower-runs",
+    "personalized-state-root": "artifacts/phase2/personalized-heads",
+    "personalized-prefixes": "head.",
 }
 
 

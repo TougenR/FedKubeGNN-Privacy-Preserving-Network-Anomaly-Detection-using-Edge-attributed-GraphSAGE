@@ -10,6 +10,7 @@ from typing import Any, Callable
 import torch
 
 from src.federated.contracts.task import FederatedTask
+from src.federated.core.simulation import split_personalized_state
 from src.federated.core.state import arrays_to_torch_state, torch_state_to_arrays
 from src.federated.flower.config import resolve_run_config
 from src.federated.flower.metrics import aggregate_evaluation_records
@@ -93,11 +94,26 @@ def build_server_app(
         run = resolve_run_config(context.run_config)
         initial_state = task.initial_state()
         task.model_spec.validate_state(initial_state)
+        strategy_name = str(run["strategy"])
+        personalized = strategy_name == "fedper"
+        if personalized:
+            prefixes = tuple(
+                value.strip()
+                for value in str(
+                    run.get("personalized-prefixes", "head.")
+                ).split(",")
+                if value.strip()
+            )
+            initial_transport_state, _ = split_personalized_state(
+                initial_state, personalized_prefixes=prefixes
+            )
+        else:
+            prefixes = ()
+            initial_transport_state = initial_state
         initial_arrays = ArrayRecord(
-            torch_state_dict=arrays_to_torch_state(initial_state)
+            torch_state_dict=arrays_to_torch_state(initial_transport_state)
         )
 
-        strategy_name = str(run["strategy"])
         metadata = dict(task.metadata())
         dataset_digest = str(
             metadata.get("dataset_digest", metadata.get("dataset_id", task.task_id))
@@ -112,9 +128,10 @@ def build_server_app(
         )
         tracker = FlowerBestTracker(
             store=store,
-            model_spec=task.model_spec,
             observer=observer,
             flower_run_id=str(context.run_id),
+            model_spec=None if personalized else task.model_spec,
+            state_template=initial_transport_state if personalized else None,
         )
         try:
             observer.emit(
@@ -127,6 +144,7 @@ def build_server_app(
                 model_digest=task.model_spec.digest,
                 config_digest=_resolved_config_digest(run),
                 dataset_digest=dataset_digest,
+                personalization="fedper_head" if personalized else "none",
             )
             common = {
                 "fraction_train": 1.0,
@@ -144,8 +162,12 @@ def build_server_app(
                     proximal_mu=float(run["proximal-mu"]),
                     tracker=tracker,
                 )
+            elif strategy_name == "fedper":
+                strategy = TrackingFedAvg(**common, tracker=tracker)
             else:
-                raise ValueError("strategy must be 'fedavg' or 'fedprox'.")
+                raise ValueError(
+                    "strategy must be 'fedavg', 'fedprox', or 'fedper'."
+                )
 
             result = strategy.start(
                 grid=grid,
@@ -180,6 +202,17 @@ def build_server_app(
                 "validation_macro_f1": tracker.best_macro_f1,
                 "test_metrics": test_metrics,
                 "result_has_final_arrays": result.arrays is not None,
+                "personalization": "fedper_head" if personalized else "none",
+                "shared_parameter_names": list(best_state)
+                if personalized
+                else [],
+                "personalized_parameter_prefixes": list(prefixes),
+                "client_head_ownership": "edge-local" if personalized else None,
+                "cold_start_policy": (
+                    "initial head; inference blocked until one local round"
+                    if personalized
+                    else None
+                ),
             }
             atomic_json(store.root / "metrics" / "summary.json", summary)
             store.complete(
@@ -199,14 +232,22 @@ def build_server_app(
             if bool(run["save-model"]):
                 output = Path(str(run["model-output"]))
                 output.parent.mkdir(parents=True, exist_ok=True)
+                state_key = "shared_state_dict" if personalized else "state_dict"
                 torch.save(
                     {
-                        "state_dict": arrays_to_torch_state(best_state),
+                        state_key: arrays_to_torch_state(best_state),
                         "model_spec": task.model_spec.to_dict(),
                         "task_metadata": metadata,
                         "best_round": tracker.best_round,
                         "validation_macro_f1": tracker.best_macro_f1,
                         "test_metrics": test_metrics,
+                        "personalization": "fedper_head"
+                        if personalized
+                        else "none",
+                        "personalized_parameter_prefixes": list(prefixes),
+                        "client_head_ownership": "edge-local"
+                        if personalized
+                        else None,
                     },
                     output,
                 )

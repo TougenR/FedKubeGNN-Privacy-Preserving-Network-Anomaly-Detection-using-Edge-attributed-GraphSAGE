@@ -7,8 +7,17 @@ from typing import Any, Callable, Mapping
 import numpy as np
 
 from src.federated.contracts.task import FederatedTask, LocalTrainConfig
-from src.federated.core.state import arrays_to_torch_state, torch_state_to_arrays
+from src.federated.core.simulation import (
+    merge_personalized_state,
+    split_personalized_state,
+)
+from src.federated.core.state import (
+    arrays_to_torch_state,
+    torch_state_to_arrays,
+    validate_array_state_like,
+)
 from src.federated.flower.config import resolve_run_config
+from src.federated.flower.personalized_state import PersonalizedStateStore
 from src.federated.observability.events import NoopObserver, Observer
 
 
@@ -52,6 +61,38 @@ def _train_config(msg: Any, context: Any) -> LocalTrainConfig:
     )
 
 
+def _personalized_prefixes(run: Mapping[str, Any]) -> tuple[str, ...]:
+    prefixes = tuple(
+        value.strip()
+        for value in str(run.get("personalized-prefixes", "head.")).split(",")
+        if value.strip()
+    )
+    if not prefixes:
+        raise ValueError("personalized-prefixes must contain at least one prefix.")
+    return prefixes
+
+
+def _personalized_store(
+    task: FederatedTask,
+    client_id: str,
+    context: Any,
+    run: Mapping[str, Any],
+) -> tuple[PersonalizedStateStore, dict[str, np.ndarray], dict[str, np.ndarray]]:
+    prefixes = _personalized_prefixes(run)
+    shared, private = split_personalized_state(
+        task.initial_state(), personalized_prefixes=prefixes
+    )
+    store = PersonalizedStateStore(
+        str(run["personalized-state-root"]),
+        client_id=client_id,
+        run_id=str(context.run_id),
+        model_digest=task.model_spec.digest,
+        personalized_prefixes=prefixes,
+        initial_state=private,
+    )
+    return store, shared, private
+
+
 def build_client_app(
     task_factory: TaskFactory,
     *,
@@ -78,22 +119,61 @@ def build_client_app(
         )
         task = task_factory(context)
         client_id = _client_id(task, context)
+        run = resolve_run_config(context.run_config)
         state = torch_state_to_arrays(msg.content["arrays"].to_torch_state_dict())
-        task.model_spec.validate_state(state)
+        personalized = str(run["strategy"]) == "fedper"
+        store = None
+        private_metadata: Mapping[str, Any] = {}
+        if personalized:
+            store, shared_template, _ = _personalized_store(
+                task, client_id, context, run
+            )
+            validate_array_state_like(
+                state, shared_template, label="shared encoder state"
+            )
+            private_state, private_metadata = store.load(require_ready=False)
+            train_state = merge_personalized_state(state, private_state)
+            task.model_spec.validate_state(train_state)
+        else:
+            task.model_spec.validate_state(state)
+            train_state = state
         observer.emit(
             "flower.client_train_received",
             component="flower",
             run_id=str(context.run_id),
             client_id=client_id,
             download_bytes=sum(value.nbytes for value in state.values()),
+            personalization="fedper_head" if personalized else "none",
+            cold_start=bool(private_metadata.get("cold_start", False)),
         )
-        result = task.train_local(client_id, state, _train_config(msg, context))
+        result = task.train_local(
+            client_id, train_state, _train_config(msg, context)
+        )
         task.model_spec.validate_state(result.state)
-        arrays = ArrayRecord(torch_state_dict=arrays_to_torch_state(result.state))
+        if personalized:
+            assert store is not None
+            shared_result, private_result = split_personalized_state(
+                result.state,
+                personalized_prefixes=_personalized_prefixes(run),
+            )
+            private_metadata = store.save(private_result)
+            upload_state = shared_result
+        else:
+            upload_state = result.state
+        arrays = ArrayRecord(torch_state_dict=arrays_to_torch_state(upload_state))
         metrics: dict[str, int | float] = {
             "num-examples": int(result.num_examples),
             **{key: float(value) for key, value in result.metrics.items()},
         }
+        if personalized:
+            metrics.update(
+                {
+                    "personalized-ready": 1,
+                    "personalized-rounds": int(
+                        private_metadata["completed_rounds"]
+                    ),
+                }
+            )
         content = RecordDict({"arrays": arrays, "metrics": MetricRecord(metrics)})
         observer.emit(
             "flower.client_train_completed",
@@ -101,8 +181,12 @@ def build_client_app(
             run_id=str(context.run_id),
             client_id=client_id,
             examples=result.num_examples,
-            upload_bytes=sum(value.nbytes for value in result.state.values()),
+            upload_bytes=sum(value.nbytes for value in upload_state.values()),
             train_loss=result.metrics.get("train_loss"),
+            personalization="fedper_head" if personalized else "none",
+            personalized_rounds=int(
+                private_metadata.get("completed_rounds", 0)
+            ),
         )
         return Message(content=content, reply_to=msg)
 
@@ -113,14 +197,28 @@ def build_client_app(
         )
         task = task_factory(context)
         client_id = _client_id(task, context)
-        state = torch_state_to_arrays(msg.content["arrays"].to_torch_state_dict())
-        task.model_spec.validate_state(state)
         run = resolve_run_config(context.run_config)
+        state = torch_state_to_arrays(msg.content["arrays"].to_torch_state_dict())
+        personalized = str(run["strategy"]) == "fedper"
+        if personalized:
+            store, shared_template, _ = _personalized_store(
+                task, client_id, context, run
+            )
+            validate_array_state_like(
+                state, shared_template, label="shared encoder state"
+            )
+            private_state, private_metadata = store.load(require_ready=True)
+            evaluate_state = merge_personalized_state(state, private_state)
+            task.model_spec.validate_state(evaluate_state)
+        else:
+            task.model_spec.validate_state(state)
+            evaluate_state = state
+            private_metadata = {}
         message_config = msg.content["config"] if "config" in msg.content else {}
         split = str(message_config.get("split", run.get("evaluate-split", "val")))
         if split == "validation":
             split = "val"
-        result = task.evaluate_local(client_id, state, split=split)
+        result = task.evaluate_local(client_id, evaluate_state, split=split)
         observer.emit(
             "flower.client_evaluate_completed",
             component="flower",
@@ -129,6 +227,10 @@ def build_client_app(
             split=split,
             examples=result.num_examples,
             loss=result.loss,
+            personalization="fedper_head" if personalized else "none",
+            personalized_rounds=int(
+                private_metadata.get("completed_rounds", 0)
+            ),
         )
         matrix = np.asarray(result.confusion_matrix, dtype=np.int64)
         metrics: dict[str, int | float | list[int]] = {

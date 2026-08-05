@@ -40,27 +40,27 @@ spec:
           command: [bash, -euc]
           args:
             - |
+              run_roots=()
               for strategy in {{ join " " .Values.training.strategies }}; do
                 flwr run /app central --stream --run-config \
                   "task='iot23_manifest' strategy='${strategy}' dataset-root='/dataset' \
                    phase2-config='/app/configs/phase2/iot23-federated.yaml' save-model=true \
                    model-output='/artifacts/${strategy}/best-model.pt' \
                    events-output='/artifacts/${strategy}/events' \
-                   flower-output-root='/artifacts/${strategy}/runs'"
+                   flower-output-root='/artifacts/${strategy}/runs' \
+                   personalized-state-root='/personalized-head' \
+                   personalized-prefixes='head.'"
+                run_manifest="$(find "/artifacts/${strategy}/runs" -mindepth 2 -maxdepth 2 \
+                  -type f -name run.json -exec grep -l '\"status\": \"completed\"' {} + \
+                  | sort | tail -n 1)"
+                test -n "${run_manifest}"
+                run_roots+=("${run_manifest%/run.json}")
               done
-              fedavg_manifest="$(find /artifacts/fedavg/runs -mindepth 2 -maxdepth 2 \
-                -type f -name run.json -exec grep -l '\"status\": \"completed\"' {} + \
-                | sort | tail -n 1)"
-              fedprox_manifest="$(find /artifacts/fedprox/runs -mindepth 2 -maxdepth 2 \
-                -type f -name run.json -exec grep -l '\"status\": \"completed\"' {} + \
-                | sort | tail -n 1)"
-              test -n "${fedavg_manifest}" -a -n "${fedprox_manifest}"
               python -m src.federated.cli \
                 --repository-root /app \
                 --config configs/phase2/iot23-federated.yaml \
                 visualize \
-                --runs "${fedavg_manifest%/run.json}" \
-                       "${fedprox_manifest%/run.json}" \
+                --runs "${run_roots[@]}" \
                 --output "/artifacts/visualizations/{{ .Values.releaseId }}"
           env:
             - {name: FLWR_HOME, value: /flwr}

@@ -47,7 +47,7 @@ training:
   seed: 42
 
 federation:
-  strategies: [fedavg, fedprox]
+  strategies: [fedavg, fedprox, fedper]
   proximal_mu: 0.01
   participation: full
   evaluate_split: validation

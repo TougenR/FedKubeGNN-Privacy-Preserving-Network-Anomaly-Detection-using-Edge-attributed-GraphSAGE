@@ -30,6 +30,6 @@ externalSecrets:
 
 training:
   enabled: false
-  strategies: [fedavg, fedprox]
+  strategies: [fedper]
   rounds: 30
   localEpochs: 5

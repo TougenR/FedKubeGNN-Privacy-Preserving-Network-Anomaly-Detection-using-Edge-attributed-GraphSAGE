@@ -14,6 +14,112 @@ FLOWER_AVAILABLE = importlib.util.find_spec("flwr") is not None
 
 @unittest.skipUnless(FLOWER_AVAILABLE, "Flower is an optional Phase 2 dependency")
 class FlowerServerProtocolTests(unittest.TestCase):
+    def test_fedper_server_transports_only_shared_state(self) -> None:
+        from flwr.app import Context, RecordDict
+
+        from src.federated.adapters.toy import ToyFederatedTask
+        from src.federated.core.state import torch_state_to_arrays
+        from src.federated.flower.client_app import build_client_app
+        from src.federated.flower.server_app import build_server_app
+
+        task = ToyFederatedTask(seed=42)
+        client_app = build_client_app(lambda _: task, log_message_sizes=False)
+
+        class LocalGrid:
+            def __init__(self, run_config):
+                self.node_ids = (101, 102)
+                self.contexts = {
+                    node_id: Context(
+                        run_id=8,
+                        node_id=node_id,
+                        node_config={"client-id": client_id},
+                        state=RecordDict(),
+                        run_config=run_config,
+                    )
+                    for node_id, client_id in zip(
+                        self.node_ids, task.client_ids, strict=True
+                    )
+                }
+                self.transported_parameter_names: list[tuple[str, ...]] = []
+
+            def get_node_ids(self):
+                return self.node_ids
+
+            def send_and_receive(self, messages, timeout=None):
+                del timeout
+                replies = []
+                for message in messages:
+                    if "arrays" in message.content:
+                        state = torch_state_to_arrays(
+                            message.content["arrays"].to_torch_state_dict()
+                        )
+                        self.transported_parameter_names.append(tuple(state))
+                    message_type = message.metadata.message_type
+                    handler = client_app._registered_funcs[
+                        f"{message_type}.default"
+                    ]
+                    reply = handler(
+                        message,
+                        self.contexts[message.metadata.dst_node_id],
+                    )
+                    if "arrays" in reply.content:
+                        state = torch_state_to_arrays(
+                            reply.content["arrays"].to_torch_state_dict()
+                        )
+                        self.transported_parameter_names.append(tuple(state))
+                    replies.append(reply)
+                return replies
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            output_root = root / "runs"
+            run_config = {
+                "task": "toy",
+                "strategy": "fedper",
+                "personalized-prefixes": "classifier.bias",
+                "personalized-state-root": str(root / "private"),
+                "num-server-rounds": 2,
+                "local-epochs": 1,
+                "learning-rate": 0.15,
+                "optimizer": "sgd",
+                "fraction-evaluate": 1.0,
+                "flower-output-root": str(output_root),
+                "save-model": False,
+                "seed": 42,
+            }
+            app = build_server_app(lambda _: task)
+            server_context = Context(
+                run_id=8,
+                node_id=0,
+                node_config={},
+                state=RecordDict(),
+                run_config=run_config,
+            )
+            grid = LocalGrid(run_config)
+            app._main(grid, server_context)
+
+            run_root = next(path for path in output_root.iterdir() if path.is_dir())
+            summary = json.loads((run_root / "metrics/summary.json").read_text())
+            self.assertEqual(summary["personalization"], "fedper_head")
+            self.assertEqual(summary["shared_parameter_names"], ["classifier.weight"])
+            self.assertEqual(summary["client_head_ownership"], "edge-local")
+            self.assertEqual(summary["personalized_parameter_prefixes"], ["classifier.bias"])
+            self.assertTrue(grid.transported_parameter_names)
+            self.assertEqual(
+                set(grid.transported_parameter_names), {("classifier.weight",)}
+            )
+            with np.load(
+                run_root / "checkpoints/best_model.npz", allow_pickle=False
+            ) as archive:
+                self.assertEqual(archive.files, ["classifier.weight"])
+            for client_id in task.client_ids:
+                metadata_paths = list(
+                    (root / "private" / client_id / "8").glob("*/metadata.json")
+                )
+                self.assertEqual(len(metadata_paths), 1)
+                metadata = json.loads(metadata_paths[0].read_text())
+                self.assertEqual(metadata["completed_rounds"], 2)
+
     def test_server_selects_validation_best_then_tests_once(self) -> None:
         from flwr.app import (
             ArrayRecord,
