@@ -356,12 +356,12 @@ Observed 2026-08-05:
   Jobs. Before starting training, make the single-node Elasticsearch health
   policy explicit, remove that drift through GitOps, and require both apps to
   report `Synced/Healthy`.
-- The operator IPv4 changed to `118.68.151.7/32`, so the existing GKE master
+- The operator IPv4 changed to `118.68.151.78/32`, so the existing GKE master
   allowlist correctly denies local Kubernetes API access. A reviewed binary
   Terraform plan contains only three in-place updates: Jenkins SSH firewall,
   Central GKE authorized networks, and Edge GKE authorized networks. It has
   `0 add, 3 change, 0 destroy` and SHA-256
-  `760eb41da3a424e18c3e0ccfe88db66bdc73b3da8f08896d65f0ff4ff20f8c8b`;
+  `d83c20babc176522a4076947d47cb8202bd14a3fcf9ca56233e80c74f3fa1632`;
   apply remains blocked on explicit approval.
 - The pending GitOps fix declares External Secrets v0.20.4 admission defaults
   explicitly, makes the one-node logging index replica count zero, and adds an
