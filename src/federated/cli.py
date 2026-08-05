@@ -13,6 +13,7 @@ from src.federated.analysis import analyze_prepared_dataset
 from src.federated.contracts.task import LocalTrainConfig
 from src.federated.data.manifest import PreparedDatasetManifest
 from src.federated.data.preparation import doctor, prepare_iot23
+from src.federated.data.repartition import derive_seven_class_datasets
 from src.federated.experiments.comparison import compare_runs
 from src.federated.experiments.factory import task_from_name
 from src.federated.experiments.visualization import visualize_runs
@@ -61,6 +62,13 @@ def _parser() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("doctor", help="read-only dependency/data/disk preflight")
     commands.add_parser("prepare", help="prepare immutable six-client artifacts")
+    repartition = commands.add_parser(
+        "repartition-seven",
+        help="derive natural and stratified-IID seven-class datasets",
+    )
+    repartition.add_argument("--dataset", required=True)
+    repartition.add_argument("--output-root", required=True)
+    repartition.add_argument("--seed", type=int, default=42)
     validate = commands.add_parser("validate", help="verify manifest and all checksums")
     validate.add_argument("--dataset", required=True)
     analyze_data = commands.add_parser(
@@ -119,6 +127,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "prepare":
         path = prepare_iot23(config, repository_root=repository_root, observer=observer)
         print(path)
+        return 0
+    if args.command == "repartition-seven":
+        paths = derive_seven_class_datasets(
+            args.dataset, args.output_root, seed=args.seed
+        )
+        print(
+            json.dumps(
+                {kind: str(path) for kind, path in paths.items()},
+                indent=2,
+                sort_keys=True,
+            )
+        )
         return 0
     if args.command == "validate":
         manifest = PreparedDatasetManifest.load(args.dataset, verify=True)

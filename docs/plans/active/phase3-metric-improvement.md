@@ -70,7 +70,11 @@ test data for model or hyperparameter selection.
    - FedProx `mu` tuning and, only if supported by the pinned Flower version,
      server-optimizer strategies such as FedAdam;
    - loss alternatives for extreme rarity only after the weighting baseline.
-7. Promote a configuration only from validation metrics. Evaluate the fixed
+7. Run the seven-class centralized/IID/natural non-IID diagnostic defined in
+   `phase3b-iid-noniid-diagnostic.md` before selecting the next aggregation
+   treatment. Treat IID redistribution as causal diagnosis only, never as the
+   production data policy.
+8. Promote a configuration only from validation metrics. Evaluate the fixed
    final test split exactly once per seed, then compare seeds 42, 1337, and
    2026 against the frozen Phase 1 clean and Phase 3 baselines.
 
@@ -108,4 +112,6 @@ test data for model or hyperparameter selection.
 - [ ] Run controlled validation-only ablations.
 - [x] Reject global class weights on validation (`0.380236`, delta `-0.075489`).
 - [x] Reject equal-compute one-local-epoch FedAvg (`0.315973`, delta `-0.139753`).
+- [x] Complete the seven-class IID versus natural non-IID diagnostic: IID
+  `0.988879` versus natural `0.507170` test macro-F1.
 - [ ] Validate the selected configuration across three seeds.

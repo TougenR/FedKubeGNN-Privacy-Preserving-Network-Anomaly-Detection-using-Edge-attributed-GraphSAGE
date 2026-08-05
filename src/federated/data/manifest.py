@@ -144,6 +144,20 @@ class PreparedDatasetManifest:
         expected = str(self.document["initial_state_sha256"])
         if sha256_file(initial_path) != expected:
             raise ContractError("Initial state checksum mismatch.")
+        report_path_value = self.document.get("derivation_report_path")
+        report_sha256 = self.document.get("derivation_report_sha256")
+        if (report_path_value is None) != (report_sha256 is None):
+            raise ContractError(
+                "Derived manifest requires both derivation report path and checksum."
+            )
+        if report_path_value is not None:
+            report_path = (self.root / str(report_path_value)).resolve()
+            if self.root.resolve() not in report_path.parents:
+                raise ContractError("Derivation report path escapes dataset root.")
+            if not report_path.is_file():
+                raise ContractError("Derived manifest is missing its derivation report.")
+            if sha256_file(report_path) != str(report_sha256):
+                raise ContractError("Derivation report checksum mismatch.")
         if bundle.model_spec is None:
             raise ContractError("Prepared contract must include a model spec.")
         with np.load(initial_path, allow_pickle=False) as archive:

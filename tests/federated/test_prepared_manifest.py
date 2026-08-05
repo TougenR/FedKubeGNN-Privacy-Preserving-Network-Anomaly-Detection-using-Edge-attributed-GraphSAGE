@@ -98,6 +98,22 @@ def _prepared_fixture(root: Path, *, client_feature_dim: int = 2) -> Path:
 
 
 class PreparedManifestTests(unittest.TestCase):
+    def test_optional_derivation_report_is_integrity_bound(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = _prepared_fixture(Path(temporary))
+            report = root / "derivation_report.json"
+            report.write_text('{"retained_flows": 4}\n', encoding="utf-8")
+            manifest_path = root / "manifest.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["derivation_report_path"] = report.name
+            manifest["derivation_report_sha256"] = sha256_file(report)
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            PreparedDatasetManifest.load(root, verify=True)
+
+            report.write_text('{"retained_flows": 3}\n', encoding="utf-8")
+            with self.assertRaisesRegex(ContractError, "report checksum mismatch"):
+                PreparedDatasetManifest.load(root, verify=True)
+
     def test_parent_digest_rejects_locally_rechecksummed_client_replacement(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = _prepared_fixture(Path(temporary))

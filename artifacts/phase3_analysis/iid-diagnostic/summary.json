@@ -1,0 +1,107 @@
+{
+  "protocol": {
+    "classes": [
+      "Benign",
+      "Attack",
+      "C&C",
+      "C&C-HeartBeat",
+      "DDoS",
+      "Okiru",
+      "PartOfAHorizontalPortScan"
+    ],
+    "initial_state_sha256": "090486e2b9a17bf2e74f4f56327c0a8be46a5105e9a0b872d5d72bea0c2a755b",
+    "model_digest": "42642e4cc839c09dfe8519511aa7cf7cdf5ca7350a8dd376e118ee31a6a74bbf",
+    "config_digest": "bcc9f979e0a42a6ac4077015915d1b01d493e7df6acb4598f60b96eb41ebc7fa",
+    "federated_budget": "30 rounds x 5 local Adam epochs",
+    "seed": 42,
+    "test_policy": "one evaluation of each frozen round-30 federated state"
+  },
+  "datasets": {
+    "source": {
+      "dataset_id": "iot23-0d9bbeb9f9ed0a3f",
+      "manifest_digest": "68fc6fc0cb8974aba1d431113b39dbf82f98457159c04d6a14b22feaa4b0cb89",
+      "flows": 121475
+    },
+    "iid": {
+      "dataset_id": "iot23-seven-iid-5183e5734796e4cf",
+      "manifest_digest": "7c08f2e53191229b6b2c780c63b36fb440a125bf014b23718d2299d8e6804ecd",
+      "contract_digest": "2b99f6931a0877f34cff7431203d67cbc59d9d6b06e3091850f9c2c560e33de7"
+    },
+    "natural": {
+      "dataset_id": "iot23-seven-natural-3be7796b1ee27bc3",
+      "manifest_digest": "c5ab9c02896c08c9f60e8efb9672a2090cbe595e4c344308f5e4dc2b0e51319a",
+      "contract_digest": "2b99f6931a0877f34cff7431203d67cbc59d9d6b06e3091850f9c2c560e33de7"
+    },
+    "retained_flows": 121472,
+    "train_class_support": [25520, 4646, 5775, 7000, 7000, 7000, 28085],
+    "checks": {
+      "dropped_only_okiru_attack": true,
+      "no_duplicate_or_missing_retained_flow": true,
+      "global_split_class_support_preserved": true,
+      "iid_train_max_min_per_class_lte_one": true,
+      "validation_test_not_repartitioned": true,
+      "node_namespace": "scenario_id::source_node_id"
+    }
+  },
+  "benchmarks": {
+    "centralized": {
+      "run_id": "centralized-20260805T140716810963Z-05ef236324",
+      "epochs": 150,
+      "validation_macro_f1": 0.9855504243642174,
+      "test_accuracy": 0.9853098510410666,
+      "test_weighted_f1": 0.9853279928056011,
+      "test_macro_f1": 0.9865554143257584
+    },
+    "iid_fedavg": {
+      "best_validation_round": 30,
+      "best_validation_macro_f1": 0.9876639733703005,
+      "test_round": 30,
+      "test_accuracy": 0.9861739774504156,
+      "test_weighted_f1": 0.9861737511537919,
+      "test_macro_f1": 0.9888786700761877,
+      "test_per_class_f1": [
+        0.9811373286002644,
+        0.9757531227038941,
+        0.9880167765128821,
+        0.9987515605493134,
+        0.9954796584630838,
+        0.9997499374843711,
+        0.9832623062195046
+      ]
+    },
+    "natural_fedavg": {
+      "best_validation_round": 24,
+      "best_validation_macro_f1": 0.5218283020471323,
+      "test_round": 30,
+      "test_accuracy": 0.7274709900419718,
+      "test_weighted_f1": 0.6402366121305428,
+      "test_macro_f1": 0.5071700023306324,
+      "test_per_class_f1": [
+        0.9792421287266647,
+        0.9641288433382137,
+        0.9040570175438597,
+        0.0,
+        0.0,
+        0.0,
+        0.7027620267056888
+      ]
+    }
+  },
+  "deltas": {
+    "iid_minus_natural_validation_macro_f1": 0.4658356713231682,
+    "iid_minus_natural_test_macro_f1": 0.4817086677455553,
+    "iid_minus_centralized_test_macro_f1": 0.0023232557504293
+  },
+  "evidence_sha256": {
+    "centralized_summary": "0fddd2d710df5dc7b548d3d4bf933c79f54f64e379cff352c2b161fa3ffa168e",
+    "iid_validation_summary": "f60ba0e40652fc6fd76da3ff3099895d51efc07d45f79caf51e8749d47aa2311",
+    "iid_rounds": "bae39859d8329d9da2295fce69151aed4c1e9c4acecdfe1c330f044b41d00435",
+    "iid_final_state": "b7bbcc30edc96965169cc968c8d3b585628d26f438e0e170363b13a5ef0e22b3",
+    "iid_test_evaluation": "10e24292192b5c2c5f795a5fb704ddb58954dbb2b8d23cf8b6c90147ba89d616",
+    "natural_validation_summary": "a1011c2b3d4c202657d49249387aea9019a0916222dc68861b8ce384bae408bd",
+    "natural_rounds": "3676bc529e8b112a4e75a409db188ce90052ff9050578bf3b745ce2d0e161b17",
+    "natural_final_state": "d4dbf303fef51c6ea43111796883eaca27a4fd803c263446092b5f8853009b6e",
+    "natural_test_evaluation": "72fb0b96db694905481ede141ff9cdf8b7e131a7d346feff9dd6eedebd3a5bdf"
+  },
+  "conclusion": "FedAvg/runtime is healthy under IID; natural scenario non-IID causes the dominant metric loss. Continue with class-support-aware aggregation and retain natural non-IID as the production benchmark."
+}

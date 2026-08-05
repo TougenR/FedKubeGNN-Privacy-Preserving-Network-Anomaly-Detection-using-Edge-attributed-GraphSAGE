@@ -133,6 +133,9 @@ generalization. Loss/aggregation corrections are evaluated first.
 - [ ] Implement and validate isolated imbalance treatments.
 - [ ] Hand selected treatments to Phase 3 metric-improvement experiments.
 
+The controlled seven-class IID versus natural non-IID diagnostic is tracked in
+`phase3b-iid-noniid-diagnostic.md` and precedes further aggregation treatments.
+
 ## Observed evidence (2026-08-05)
 
 - `analyze-data` verified the immutable manifest, contract, initial state, every
@@ -200,3 +203,9 @@ generalization. Loss/aggregation corrections are evaluated first.
   Adam every client/round, `150 × 1` also resets optimizer moments five times
   more often; follow-up LR/optimizer experiments must separate that effect
   before attributing the drop purely to client drift.
+- The completed seven-class controlled diagnostic reached test macro-F1
+  `0.988879` for stratified-IID FedAvg versus `0.507170` for natural scenario
+  FedAvg, using the same contract, projected initial state, optimizer, seed,
+  and training budget. Centralized-7 reached `0.986555`. This rules out a
+  fundamental FedAvg/runtime failure under favorable distributions and makes
+  class-support-aware aggregation on natural non-IID the next treatment.
