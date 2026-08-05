@@ -1,0 +1,121 @@
+{
+  "duration_seconds": 92.44484905799982,
+  "epochs": 150,
+  "kind": "centralized_reference",
+  "note": "Fresh benchmark reference; historical Phase 1 score is not reused.",
+  "run_id": "centralized-20260805T132411540234Z-ccb597b7e8",
+  "test_metrics": {
+    "accuracy": 0.9821009751882483,
+    "loss": 0.08298595619805972,
+    "macro_f1": 0.8698299868925814,
+    "num_examples": 24303,
+    "per_class": {
+      "Attack": {
+        "f1": 0.9481216457960644,
+        "precision": 0.9044368600682594,
+        "recall": 0.9962406015037594,
+        "support": 1330
+      },
+      "Benign": {
+        "f1": 0.9744883655733109,
+        "precision": 0.9969883837659544,
+        "recall": 0.9529814941740918,
+        "support": 7295
+      },
+      "C&C": {
+        "f1": 0.9792161520190024,
+        "precision": 0.960955710955711,
+        "recall": 0.9981840193704601,
+        "support": 1652
+      },
+      "C&C-HeartBeat": {
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 2000
+      },
+      "DDoS": {
+        "f1": 0.9954796584630838,
+        "precision": 1.0,
+        "recall": 0.991,
+        "support": 2000
+      },
+      "Okiru": {
+        "f1": 0.9997499374843711,
+        "precision": 1.0,
+        "recall": 0.9995,
+        "support": 2000
+      },
+      "Okiru-Attack": {
+        "f1": 0.07692307692307693,
+        "precision": 0.04,
+        "recall": 1.0,
+        "support": 1
+      },
+      "PartOfAHorizontalPortScan": {
+        "f1": 0.9846610588817417,
+        "precision": 0.9775267100577183,
+        "recall": 0.9919003115264797,
+        "support": 8025
+      }
+    },
+    "weighted_f1": 0.9825947665473098
+  },
+  "validation_metrics": {
+    "accuracy": 0.980566534914361,
+    "loss": 0.08732252912559058,
+    "macro_f1": 0.8586500028956563,
+    "num_examples": 12144,
+    "per_class": {
+      "Attack": {
+        "f1": 0.9410092395167023,
+        "precision": 0.8897849462365591,
+        "recall": 0.9984917043740573,
+        "support": 663
+      },
+      "Benign": {
+        "f1": 0.9724409448818898,
+        "precision": 0.9971164936562861,
+        "recall": 0.9489571899012075,
+        "support": 3644
+      },
+      "C&C": {
+        "f1": 0.9768820391227031,
+        "precision": 0.9559164733178654,
+        "recall": 0.9987878787878788,
+        "support": 825
+      },
+      "C&C-HeartBeat": {
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 1000
+      },
+      "DDoS": {
+        "f1": 0.9944695827048768,
+        "precision": 1.0,
+        "recall": 0.989,
+        "support": 1000
+      },
+      "Okiru": {
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 1000
+      },
+      "Okiru-Attack": {
+        "f1": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "support": 0
+      },
+      "PartOfAHorizontalPortScan": {
+        "f1": 0.9843982169390788,
+        "precision": 0.9781003937007874,
+        "recall": 0.9907776669990029,
+        "support": 4012
+      }
+    },
+    "weighted_f1": 0.9813296146483754
+  }
+}

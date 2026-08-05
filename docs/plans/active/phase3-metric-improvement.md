@@ -102,7 +102,7 @@ test data for model or hyperparameter selection.
 
 - [x] Opened from observed Phase 3 E2E evidence and Phase 1 clean artifacts.
 - [x] Freeze the completed Phase 3 baseline.
-- [ ] Run exact-data centralized reference.
+- [x] Run exact-data centralized reference (`0.869830` test macro-F1).
 - [ ] Complete preprocessing/feature/topology audit.
 - [ ] Add client-drift observability.
 - [ ] Run controlled validation-only ablations.

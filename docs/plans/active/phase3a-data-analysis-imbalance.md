@@ -129,7 +129,7 @@ generalization. Loss/aggregation corrections are evaluated first.
 - [x] Structurally private and ultra-rare classes identified.
 - [x] Generate the prepared-artifact balance, feature, and topology report.
 - [ ] Complete preprocessing learned-state comparison.
-- [ ] Run exact-data centralized reference.
+- [x] Run exact-data centralized reference.
 - [ ] Implement and validate isolated imbalance treatments.
 - [ ] Hand selected treatments to Phase 3 metric-improvement experiments.
 
@@ -170,3 +170,16 @@ generalization. Loss/aggregation corrections are evaluated first.
   mean/scale differences are `0.012625`/`0.012627`; the largest relative scale
   difference is `6.27%` (`missed_bytes`). This is measurable preprocessing
   drift, but not yet evidence that it explains the `~0.44` macro-F1 gap.
+- Exact prepared-data centralized run
+  `centralized-20260805T132411540234Z-ccb597b7e8` completed 150 fixed epochs
+  from the immutable initial state in 92.445 seconds. It achieved validation
+  macro-F1 `0.858650` and test accuracy/weighted-F1/macro-F1
+  `0.982101`/`0.982595`/`0.869830`. Checkpoint, config, summary, run record, and
+  SHA-256 evidence manifest are stored under
+  `artifacts/phase3_analysis/centralized-reference/`.
+- The centralized score exceeds FedAvg by `0.413274` and FedProx by `0.413139`
+  macro-F1 on the same prepared data/model contract. This strongly isolates
+  the main loss to federated optimization/aggregation. The remaining Phase 1
+  clean seed-42 gap is `0.058862`; after excluding Okiru-Attack only for
+  diagnosis, the gap is `0.006831`. Official reporting remains fixed-eight,
+  and the one-row Okiru-Attack test result is not used for selection.
