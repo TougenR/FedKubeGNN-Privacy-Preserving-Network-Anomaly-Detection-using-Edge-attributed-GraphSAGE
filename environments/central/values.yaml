@@ -2,11 +2,11 @@ mode: central
 fullnameOverride: fedkube-central
 clusterName: fedkube-central
 clusterLocation: asia-southeast1-b
-releaseId: 4cd1b00b2ff89afa4c38d60a3b2dbf945d70996c
+releaseId: b2aea036cef8d2f4e07231332019f473486accaa
 
 image:
   repository: hieunguyen595/fedkube-gnn
-  digest: sha256:76ea9442e7f36c1c074fae249229d62290bb5d5c27d36b255876472d97e2451a
+  digest: sha256:988f737873bd127bf31a89ffcf8ed4d0b2a82f990fec97fbcab8a58abe60d2cc
 
 serviceAccount:
   name: fedkube-central-workload
