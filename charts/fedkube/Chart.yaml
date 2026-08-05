@@ -1,0 +1,6 @@
+apiVersion: v2
+name: fedkube
+description: Central and Edge Flower workloads for the FedKube IoT-23 benchmark
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

@@ -1,0 +1,122 @@
+{{- if eq .Values.mode "central" }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "fedkube.fullname" . }}-state
+  labels:
+    {{- include "fedkube.labels" . | nindent 4 }}
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: {{ .Values.dataset.storageClassName }}
+  resources:
+    requests: {storage: {{ .Values.flower.stateSize }}}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "fedkube.fullname" . }}-artifacts
+  labels:
+    {{- include "fedkube.labels" . | nindent 4 }}
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: {{ .Values.dataset.storageClassName }}
+  resources:
+    requests: {storage: {{ .Values.flower.artifactsSize }}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "fedkube.fullname" . }}-superlink
+  labels:
+    {{- include "fedkube.labels" . | nindent 4 }}
+    app.kubernetes.io/component: superlink
+spec:
+  selector:
+    app.kubernetes.io/name: {{ include "fedkube.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: superlink
+  ports:
+    - {name: serverappio, port: 9091, targetPort: 9091}
+    - {name: fleet, port: 9092, targetPort: 9092}
+    - {name: control, port: 9093, targetPort: 9093}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "fedkube.fullname" . }}-superlink
+  labels:
+    {{- include "fedkube.labels" . | nindent 4 }}
+    app.kubernetes.io/component: superlink
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "fedkube.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: superlink
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "fedkube.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: superlink
+    spec:
+      serviceAccountName: {{ include "fedkube.serviceAccountName" . }}
+      securityContext: {fsGroup: 49999}
+      containers:
+        - name: superlink
+          image: flwr/superlink:{{ .Values.flower.version }}
+          args:
+            - --isolation=process
+            - --database=/state/state.db
+            - --ssl-ca-certfile=/tls/ca.crt
+            - --ssl-certfile=/tls/tls.crt
+            - --ssl-keyfile=/tls/tls.key
+          ports:
+            - {name: serverappio, containerPort: 9091}
+            - {name: fleet, containerPort: 9092}
+            - {name: control, containerPort: 9093}
+          volumeMounts:
+            - {name: state, mountPath: /state}
+            - {name: tls, mountPath: /tls, readOnly: true}
+          resources: {{- toYaml .Values.resources.superlink | nindent 12 }}
+        - name: serverapp
+          image: {{ include "fedkube.appImage" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - --root-certificates=/tls/ca.crt
+            - --plugin-type=serverapp
+            - --appio-api-address=127.0.0.1:9091
+          env:
+            - {name: PYTHONUNBUFFERED, value: "1"}
+          volumeMounts:
+            - {name: dataset, mountPath: /dataset, readOnly: true}
+            - {name: artifacts, mountPath: /artifacts}
+            - {name: tls, mountPath: /tls, readOnly: true}
+          resources: {{- toYaml .Values.resources.serverApp | nindent 12 }}
+        - name: artifact-uploader
+          image: {{ .Values.dataset.syncImage }}
+          command: [bash, -euc]
+          args:
+            - |
+              while true; do
+                gcloud storage rsync --recursive /artifacts \
+                  "gs://{{ .Values.gcs.modelBucket }}/{{ .Values.gcs.modelPrefix }}" || true
+                sleep 60
+              done
+          volumeMounts:
+            - {name: artifacts, mountPath: /artifacts, readOnly: true}
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {cpu: 500m, memory: 512Mi}
+      volumes:
+        - name: state
+          persistentVolumeClaim: {claimName: {{ include "fedkube.fullname" . }}-state}
+        - name: artifacts
+          persistentVolumeClaim: {claimName: {{ include "fedkube.fullname" . }}-artifacts}
+        - name: dataset
+          persistentVolumeClaim: {claimName: {{ include "fedkube.fullname" . }}-dataset}
+        - name: tls
+          secret: {secretName: {{ .Values.flower.tlsSecretName }}}
+{{- end }}

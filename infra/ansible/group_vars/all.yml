@@ -1,0 +1,18 @@
+jenkins_http_port: 8080
+jenkins_admin_user: fedkube-admin
+jenkins_url: http://127.0.0.1:8080
+jenkins_repo_url: git@github.com:TougenR/FedKubeGNN-Privacy-Preserving-Network-Anomaly-Detection-using-Edge-attributed-GraphSAGE.git
+dockerhub_repository: hieunguyen595/fedkube-gnn
+jenkins_plugin_manager_version: 2.15.0
+jenkins_plugins:
+  - configuration-as-code
+  - credentials-binding
+  - docker-workflow
+  - git
+  - github
+  - job-dsl
+  - pipeline-stage-view
+  - ssh-agent
+  - timestamper
+  - workflow-aggregator
+  - ws-cleanup

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-rbac-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: argocd
+data:
+  policy.default: role:readonly
+  policy.csv: |
+    p, role:fedkube-admin, applications, *, fedkube/*, allow
+    p, role:fedkube-admin, logs, get, fedkube/*, allow
+    p, role:fedkube-admin, exec, create, fedkube/*, deny
+  scopes: "[groups, email]"

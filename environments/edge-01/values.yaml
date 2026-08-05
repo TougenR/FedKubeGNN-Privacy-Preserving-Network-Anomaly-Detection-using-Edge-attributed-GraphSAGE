@@ -1,0 +1,30 @@
+mode: edge
+fullnameOverride: fedkube-edge-01
+clusterName: fedkube-edge-01
+clusterLocation: asia-southeast1-b
+releaseId: bootstrap0
+
+image:
+  repository: hieunguyen595/fedkube-gnn
+  digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+
+serviceAccount:
+  name: fedkube-edge-01-workload
+  gcpServiceAccount: fedkube-edge-01@fedlearning-20260729-hn.iam.gserviceaccount.com
+
+dataset:
+  size: 80Gi
+
+flower:
+  superlinkAddress: 10.10.0.10:443
+
+training:
+  enabled: false
+
+elastic:
+  enabled: true
+  remoteUrl: https://10.10.0.11:9200
+  retentionDays: 7
+
+externalSecrets:
+  serviceAccountName: external-secrets-edge-01

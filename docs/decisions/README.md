@@ -14,3 +14,5 @@ documents here as real choices are accepted, then index them in this file.
 - [`0001-phase2-modularity-observability.md`](0001-phase2-modularity-observability.md):
   modular extension points, train-only benchmark preparation, and the Phase 2
   observability contract.
+- [`0002-phase3-gke-gitops.md`](0002-phase3-gke-gitops.md): GKE topology,
+  six-client placement, GitOps authority, GCS ownership, and Kibana logging.

@@ -74,6 +74,18 @@ nohup.out
 .env.*
 !.env.example
 
+# Terraform local working data and review artifacts (lock files stay tracked)
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+phase3-plan.txt
+artifacts/phase3/
+infra/terraform/terraform.tfvars
+
+# Ansible generated inventory can contain operator addresses
+infra/ansible/inventory.ini
+
 # --- Jupyter / Notebooks ---
 .ipynb_checkpoints/
 

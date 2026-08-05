@@ -1,0 +1,35 @@
+mode: central
+fullnameOverride: fedkube-central
+clusterName: fedkube-central
+clusterLocation: asia-southeast1-b
+releaseId: bootstrap0
+
+image:
+  repository: hieunguyen595/fedkube-gnn
+  digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+
+serviceAccount:
+  name: fedkube-central-workload
+  gcpServiceAccount: fedkube-central@fedlearning-20260729-hn.iam.gserviceaccount.com
+
+dataset:
+  size: 80Gi
+
+flower:
+  internalLoadBalancerIP: 10.10.0.10
+  superlinkAddress: 10.10.0.10:443
+
+elastic:
+  enabled: true
+  internalLoadBalancerIP: 10.10.0.11
+  remoteUrl: https://10.10.0.11:9200
+  retentionDays: 7
+
+externalSecrets:
+  serviceAccountName: external-secrets-central
+
+training:
+  enabled: true
+  strategies: [fedavg, fedprox]
+  rounds: 30
+  localEpochs: 5

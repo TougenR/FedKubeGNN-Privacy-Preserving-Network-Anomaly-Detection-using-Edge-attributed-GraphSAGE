@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: fedkube
+  namespace: argocd
+spec:
+  description: FedKube Central and Edge GitOps boundary
+  sourceRepos:
+    - https://github.com/TougenR/FedKubeGNN-Privacy-Preserving-Network-Anomaly-Detection-using-Edge-attributed-GraphSAGE.git
+  destinations:
+    - namespace: fedkube
+      server: "*"
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  orphanedResources: {warn: true}

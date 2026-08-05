@@ -1,0 +1,10 @@
+output "project" { value = var.project_id }
+output "region" { value = var.region }
+output "training_bucket" { value = google_storage_bucket.training.name }
+output "model_bucket" { value = google_storage_bucket.models.name }
+output "terraform_state_bucket" { value = "${var.project_id}-fedkube-tfstate" }
+output "central_cluster" { value = google_container_cluster.fedkube["central"].name }
+output "edge_cluster" { value = google_container_cluster.fedkube["edge_01"].name }
+output "flower_internal_ip" { value = google_compute_address.flower_internal.address }
+output "elastic_internal_ip" { value = google_compute_address.elastic_internal.address }
+output "jenkins_public_ip" { value = google_compute_address.jenkins.address }

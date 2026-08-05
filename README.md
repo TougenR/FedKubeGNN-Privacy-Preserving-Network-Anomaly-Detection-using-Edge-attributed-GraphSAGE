@@ -14,6 +14,13 @@ validation và ghi structured JSONL/run artifacts. Core FedAvg/metrics và Flowe
 runtime không phụ thuộc PyG hay implementation Phase 1. Xem
 [kiến trúc Phase 2](docs/PHASE2_ARCHITECTURE.md) trước khi chạy dữ liệu thật.
 
+Hạ tầng **Giai đoạn 3** nằm trong `charts/`, `environments/`, `argocd/` và
+`infra/`: GKE Central/Edge, sáu Flower client tương ứng sáu scenario, GitHub
+Actions + Jenkins, GitOps bằng Argo CD, ba GCS bucket và log tập trung qua
+Elasticsearch/Kibana. Xem [kiến trúc Phase 3](docs/PHASE3_ARCHITECTURE.md) và
+[runbook có cổng duyệt Terraform](docs/PHASE3_RUNBOOK.md). Không chạy
+`terraform apply` trước khi plan được duyệt rõ ràng.
+
 Preflight và smoke Phase 2:
 
 ```bash

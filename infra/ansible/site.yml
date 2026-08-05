@@ -1,0 +1,288 @@
+---
+- name: Configure the FedKube Jenkins host
+  hosts: jenkins
+  become: true
+  vars:
+    jenkins_keyring: /usr/share/keyrings/jenkins-keyring.asc
+    jenkins_local_secret_dir: "{{ playbook_dir }}/../../artifacts/phase3/secrets"
+    jenkins_local_password_file: "{{ jenkins_local_secret_dir }}/jenkins-admin-password"
+  pre_tasks:
+    - name: Create the local ignored secret directory
+      ansible.builtin.file:
+        path: "{{ jenkins_local_secret_dir }}"
+        state: directory
+        mode: "0700"
+      delegate_to: localhost
+      become: false
+      run_once: true
+
+    - name: Resolve the Jenkins admin password
+      ansible.builtin.set_fact:
+        jenkins_admin_password: >-
+          {{ vault_jenkins_admin_password
+             if vault_jenkins_admin_password is defined
+             else lookup('ansible.builtin.password',
+                         jenkins_local_password_file,
+                         chars=['ascii_letters', 'digits'],
+                         length=32) }}
+      no_log: true
+
+    - name: Validate the Jenkins admin password
+      ansible.builtin.assert:
+        that:
+          - jenkins_admin_password | length >= 16
+        fail_msg: Jenkins admin password must contain at least 16 characters.
+      no_log: true
+
+  tasks:
+    - name: Install base packages
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - fontconfig
+          - git
+          - gnupg
+          - nginx
+          - openjdk-21-jre
+          - python3
+          - python3-venv
+        state: present
+        update_cache: true
+
+    - name: Install Jenkins repository key
+      ansible.builtin.get_url:
+        url: https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key
+        dest: "{{ jenkins_keyring }}"
+        mode: "0644"
+
+    - name: Configure Jenkins repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by={{ jenkins_keyring }}] https://pkg.jenkins.io/debian-stable binary/"
+        filename: jenkins
+        state: present
+
+    - name: Install Jenkins and Docker
+      ansible.builtin.apt:
+        name: [docker.io, jenkins]
+        state: present
+        update_cache: true
+
+    - name: Add Jenkins to Docker group
+      ansible.builtin.user:
+        name: jenkins
+        groups: docker
+        append: true
+
+    - name: Create Jenkins configuration directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: jenkins
+        group: jenkins
+        mode: "0750"
+      loop:
+        - /var/lib/jenkins/casc
+        - /etc/jenkins
+        - /etc/systemd/system/jenkins.service.d
+
+    - name: Install Jenkins Configuration as Code
+      ansible.builtin.template:
+        src: jenkins.yaml.j2
+        dest: /var/lib/jenkins/casc/jenkins.yaml
+        owner: jenkins
+        group: jenkins
+        mode: "0640"
+      notify: Restart Jenkins
+
+    - name: Write root-only Jenkins environment
+      ansible.builtin.template:
+        src: jenkins.env.j2
+        dest: /etc/jenkins/fedkube.env
+        owner: root
+        group: jenkins
+        mode: "0640"
+      no_log: true
+      notify: Restart Jenkins
+
+    - name: Configure Jenkins systemd override
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/jenkins.service.d/override.conf
+        mode: "0644"
+        content: |
+          [Service]
+          EnvironmentFile=/etc/jenkins/fedkube.env
+          Environment="CASC_JENKINS_CONFIG=/var/lib/jenkins/casc/jenkins.yaml"
+          Environment="JENKINS_LISTEN_ADDRESS=127.0.0.1"
+          Environment="JENKINS_PORT={{ jenkins_http_port }}"
+      notify: Restart Jenkins
+
+    - name: Download Jenkins plugin installation manager
+      ansible.builtin.get_url:
+        url: "https://github.com/jenkinsci/plugin-installation-manager-tool/releases/download/{{ jenkins_plugin_manager_version }}/jenkins-plugin-manager-{{ jenkins_plugin_manager_version }}.jar"
+        dest: /opt/jenkins-plugin-manager.jar
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Install requested Jenkins plugins and dependencies
+      ansible.builtin.command:
+        cmd: >-
+          java -jar /opt/jenkins-plugin-manager.jar
+          --war /usr/share/java/jenkins.war
+          --plugin-download-directory /var/lib/jenkins/plugins
+          --plugins {{ jenkins_plugins | join(' ') }}
+      register: plugin_install
+      changed_when: "'Done' in plugin_install.stdout or 'Downloaded' in plugin_install.stdout"
+      notify: Restart Jenkins
+
+    - name: Keep installed plugins owned by Jenkins
+      ansible.builtin.file:
+        path: /var/lib/jenkins/plugins
+        state: directory
+        owner: jenkins
+        group: jenkins
+        recurse: true
+
+    - name: Configure webhook-only NGINX proxy
+      ansible.builtin.template:
+        src: nginx-jenkins.conf.j2
+        dest: /etc/nginx/sites-available/fedkube-jenkins
+        mode: "0644"
+      notify: Reload NGINX
+
+    - name: Enable webhook proxy and remove default site
+      ansible.builtin.file:
+        src: /etc/nginx/sites-available/fedkube-jenkins
+        dest: /etc/nginx/sites-enabled/fedkube-jenkins
+        state: link
+      notify: Reload NGINX
+
+    - name: Remove default NGINX site
+      ansible.builtin.file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      notify: Reload NGINX
+
+    - name: Clear a previous Jenkins start-rate failure
+      ansible.builtin.command:
+        cmd: systemctl reset-failed jenkins
+      changed_when: false
+
+    - name: Enable services
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        enabled: true
+        state: started
+        daemon_reload: true
+      loop: [docker, jenkins, nginx]
+
+    - name: Apply pending service configuration before credential bootstrap
+      ansible.builtin.meta: flush_handlers
+
+    - name: Wait for the Jenkins controller API
+      ansible.builtin.uri:
+        url: "{{ jenkins_url }}/login"
+        status_code: 200
+      register: jenkins_ready
+      retries: 30
+      delay: 5
+      until: jenkins_ready.status == 200
+
+    - name: Create the Jenkins SSH and credential bootstrap directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: jenkins
+        group: jenkins
+        mode: "0700"
+      loop:
+        - /var/lib/jenkins/.ssh
+        - /var/lib/jenkins/.fedkube-bootstrap
+
+    - name: Generate the dedicated GitHub deploy key
+      ansible.builtin.command:
+        cmd: >-
+          ssh-keygen -q -t ed25519 -N ''
+          -C fedkube-jenkins@fedlearning-20260729-hn
+          -f /var/lib/jenkins/.ssh/fedkube-github-deploy
+        creates: /var/lib/jenkins/.ssh/fedkube-github-deploy
+      become_user: jenkins
+
+    - name: Protect the GitHub deploy key files
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        owner: jenkins
+        group: jenkins
+        mode: "{{ item.mode }}"
+      loop:
+        - path: /var/lib/jenkins/.ssh/fedkube-github-deploy
+          mode: "0600"
+        - path: /var/lib/jenkins/.ssh/fedkube-github-deploy.pub
+          mode: "0644"
+
+    - name: Download the Jenkins CLI
+      ansible.builtin.get_url:
+        url: "{{ jenkins_url }}/jnlpJars/jenkins-cli.jar"
+        dest: /opt/jenkins-cli.jar
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Bootstrap Jenkins credentials without exposing secret values
+      block:
+        - name: Stage the authenticated Docker configuration
+          ansible.builtin.copy:
+            src: "{{ lookup('ansible.builtin.env', 'HOME') }}/.docker/config.json"
+            dest: /var/lib/jenkins/.fedkube-bootstrap/docker-config.json
+            owner: jenkins
+            group: jenkins
+            mode: "0600"
+          no_log: true
+
+        - name: Stage the Jenkins CLI authentication file
+          ansible.builtin.copy:
+            content: "{{ jenkins_admin_user }}:{{ jenkins_admin_password }}"
+            dest: /var/lib/jenkins/.fedkube-bootstrap/cli-auth
+            owner: jenkins
+            group: jenkins
+            mode: "0600"
+          no_log: true
+
+        - name: Upsert Docker Hub and GitHub credentials in Jenkins
+          ansible.builtin.command:
+            argv:
+              - java
+              - -jar
+              - /opt/jenkins-cli.jar
+              - -s
+              - "{{ jenkins_url }}"
+              - -auth
+              - "@/var/lib/jenkins/.fedkube-bootstrap/cli-auth"
+              - groovy
+              - "="
+            stdin: "{{ lookup('ansible.builtin.file', playbook_dir + '/files/upsert_credentials.groovy') }}"
+          register: credentials_result
+          changed_when: "'credentials are configured' in credentials_result.stdout"
+          no_log: true
+      always:
+        - name: Remove staged credential material
+          ansible.builtin.file:
+            path: "{{ item }}"
+            state: absent
+          loop:
+            - /var/lib/jenkins/.fedkube-bootstrap/docker-config.json
+            - /var/lib/jenkins/.fedkube-bootstrap/cli-auth
+          no_log: true
+
+  handlers:
+    - name: Restart Jenkins
+      ansible.builtin.systemd:
+        name: jenkins
+        state: restarted
+        daemon_reload: true
+
+    - name: Reload NGINX
+      ansible.builtin.systemd:
+        name: nginx
+        state: reloaded

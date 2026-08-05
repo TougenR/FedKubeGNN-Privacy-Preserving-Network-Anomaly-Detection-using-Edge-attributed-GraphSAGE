@@ -1,0 +1,85 @@
+mode: central
+nameOverride: ""
+fullnameOverride: ""
+
+projectId: fedlearning-20260729-hn
+region: asia-southeast1
+clusterLocation: asia-southeast1-b
+clusterName: fedkube-central
+releaseId: bootstrap0
+
+image:
+  repository: hieunguyen595/fedkube-gnn
+  digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  create: true
+  name: fedkube-workload
+  gcpServiceAccount: ""
+
+gcs:
+  trainingBucket: fedlearning-20260729-hn-fedkube-training
+  modelBucket: fedlearning-20260729-hn-fedkube-model-artifacts
+  datasetPrefix: prepared/current
+  modelPrefix: runs
+
+dataset:
+  storageClassName: standard
+  size: 80Gi
+  syncImage: google/cloud-sdk:548.0.0-slim
+
+flower:
+  version: 1.32.0
+  superlinkAddress: 10.10.0.10:443
+  internalLoadBalancerIP: 10.10.0.10
+  tlsSecretName: flower-superlink-tls
+  caSecretName: flower-superlink-ca
+  stateSize: 10Gi
+  artifactsSize: 30Gi
+  clients:
+    - {id: "34-1", partitionId: 0, malware: Mirai}
+    - {id: "1-1", partitionId: 1, malware: Hide-and-Seek}
+    - {id: "3-1", partitionId: 2, malware: Muhstik}
+    - {id: "9-1", partitionId: 3, malware: Linux.Hajime}
+    - {id: "36-1", partitionId: 4, malware: Okiru}
+    - {id: "39-1", partitionId: 5, malware: IRCBot}
+
+training:
+  enabled: true
+  strategies: [fedavg, fedprox]
+  rounds: 30
+  localEpochs: 5
+
+resources:
+  superlink:
+    requests: {cpu: 250m, memory: 512Mi}
+    limits: {cpu: "1", memory: 1Gi}
+  serverApp:
+    requests: {cpu: "1", memory: 2Gi}
+    limits: {cpu: "2", memory: 4Gi}
+  supernode:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: 500m, memory: 512Mi}
+  clientApp:
+    requests: {cpu: 800m, memory: 3Gi}
+    limits: {cpu: "2", memory: 5Gi}
+
+externalSecrets:
+  enabled: true
+  clusterSecretStore: gcp-secret-manager
+  serviceAccountName: external-secrets
+  flowerCaSecretId: fedkube-flower-ca
+  flowerCertSecretId: fedkube-flower-cert
+  flowerKeySecretId: fedkube-flower-key
+  elasticPasswordSecretId: fedkube-elastic-password
+
+elastic:
+  enabled: true
+  version: 9.2.3
+  name: fedkube-logs
+  storageSize: 30Gi
+  retentionDays: 7
+  remoteUrl: https://10.10.0.11:9200
+  internalLoadBalancerIP: 10.10.0.11
+  credentialsSecretName: elastic-filebeat-credentials

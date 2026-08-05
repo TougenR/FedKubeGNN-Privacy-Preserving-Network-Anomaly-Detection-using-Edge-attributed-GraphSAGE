@@ -1,0 +1,67 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: eck-operator
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://helm.elastic.co
+    chart: eck-operator
+    targetRevision: 3.2.0
+  destination:
+    name: in-cluster
+    namespace: elastic-system
+  syncPolicy:
+    automated: {prune: true, selfHeal: true}
+    syncOptions: [CreateNamespace=true, ServerSideApply=true]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: external-secrets-central
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://charts.external-secrets.io
+    chart: external-secrets
+    targetRevision: 0.20.4
+    helm:
+      values: |
+        installCRDs: true
+        serviceAccount:
+          name: external-secrets-central
+          annotations:
+            iam.gke.io/gcp-service-account: external-secrets-central@fedlearning-20260729-hn.iam.gserviceaccount.com
+  destination:
+    name: in-cluster
+    namespace: external-secrets
+  syncPolicy:
+    automated: {prune: true, selfHeal: true}
+    syncOptions: [CreateNamespace=true, ServerSideApply=true]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: external-secrets-edge-01
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://charts.external-secrets.io
+    chart: external-secrets
+    targetRevision: 0.20.4
+    helm:
+      values: |
+        installCRDs: true
+        serviceAccount:
+          name: external-secrets-edge-01
+          annotations:
+            iam.gke.io/gcp-service-account: external-secrets-edge-01@fedlearning-20260729-hn.iam.gserviceaccount.com
+  destination:
+    name: fedkube-edge-01
+    namespace: external-secrets
+  syncPolicy:
+    automated: {prune: true, selfHeal: true}
+    syncOptions: [CreateNamespace=true, ServerSideApply=true]

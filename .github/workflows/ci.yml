@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths-ignore: ["environments/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install test tools and project boundary
+        run: pip install -e ".[phase1,phase3]" ruff
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Compile
+        run: python -m compileall -q src scripts
+      - name: Lint
+        run: >-
+          ruff check src/federated tests/federated
+          scripts/update_image_digest.py tests/test_update_image_digest.py
+
+  infrastructure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: azure/setup-helm@v4
+        with: {version: v3.19.0}
+      - uses: hashicorp/setup-terraform@v3
+        with: {terraform_version: 1.13.4}
+      - uses: actions/setup-python@v6
+        with: {python-version: "3.11"}
+      - name: Helm lint and render
+        run: |
+          helm lint charts/fedkube -f environments/central/values.yaml
+          helm lint charts/fedkube -f environments/edge-01/values.yaml
+          helm template fedkube-central charts/fedkube -n fedkube -f environments/central/values.yaml > /tmp/central.yaml
+          helm template fedkube-edge-01 charts/fedkube -n fedkube -f environments/edge-01/values.yaml > /tmp/edge.yaml
+      - name: Terraform format and validate
+        run: |
+          terraform -chdir=infra/terraform/bootstrap fmt -check -recursive
+          terraform -chdir=infra/terraform/bootstrap init -backend=false
+          terraform -chdir=infra/terraform/bootstrap validate
+          terraform -chdir=infra/terraform fmt -check -recursive
+          terraform -chdir=infra/terraform init -backend=false
+          terraform -chdir=infra/terraform validate
+      - name: Ansible syntax
+        run: |
+          pip install ansible-core==2.19.3
+          cp infra/ansible/inventory.ini.example infra/ansible/inventory.ini
+          ansible-playbook -i infra/ansible/inventory.ini infra/ansible/site.yml --syntax-check
+
+  security:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: sarif
+          output: trivy-results.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+      - uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with: {sarif_file: trivy-results.sarif}

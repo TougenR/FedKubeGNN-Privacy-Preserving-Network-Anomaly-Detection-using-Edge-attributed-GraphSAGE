@@ -13,6 +13,7 @@ class ToyFederationTests(unittest.TestCase):
         self.assertIsInstance(ToyFederatedTask(), FederatedTask)
 
     def test_toy_federation_runs_without_phase1_or_pyg(self) -> None:
+        modules_before = set(sys.modules)
         task = ToyFederatedTask(seed=42)
         result = run_federated_simulation(
             task,
@@ -28,8 +29,9 @@ class ToyFederationTests(unittest.TestCase):
         self.assertGreater(result.rounds[-1].global_metrics["macro_f1"], 0.90)
         self.assertEqual(result.rounds[-1].evaluation_examples, 120)
         self.assertGreater(result.rounds[-1].upload_bytes, 0)
-        self.assertNotIn("src.model", sys.modules)
-        self.assertNotIn("torch_geometric", sys.modules)
+        modules_loaded_by_toy = set(sys.modules) - modules_before
+        self.assertNotIn("src.model", modules_loaded_by_toy)
+        self.assertNotIn("torch_geometric", modules_loaded_by_toy)
 
     def test_fedprox_path_runs(self) -> None:
         task = ToyFederatedTask(seed=7)

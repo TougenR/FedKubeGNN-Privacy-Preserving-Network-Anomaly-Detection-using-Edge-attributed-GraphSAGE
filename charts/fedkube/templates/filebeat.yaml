@@ -1,0 +1,125 @@
+{{- if .Values.elastic.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "fedkube.fullname" . }}-filebeat
+  labels:
+    {{- include "fedkube.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "fedkube.fullname" . }}-filebeat
+  labels:
+    {{- include "fedkube.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: [nodes, namespaces, pods]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "fedkube.fullname" . }}-filebeat
+  labels:
+    {{- include "fedkube.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "fedkube.fullname" . }}-filebeat
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "fedkube.fullname" . }}-filebeat
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "fedkube.fullname" . }}-filebeat
+  labels:
+    {{- include "fedkube.labels" . | nindent 4 }}
+data:
+  filebeat.yml: |
+    filebeat.inputs:
+      - type: filestream
+        id: kubernetes-container-logs
+        prospector.scanner.symlinks: true
+        paths: [/var/log/containers/*.log]
+        parsers:
+          - container: {stream: all, format: auto}
+        processors:
+          - add_kubernetes_metadata:
+              host: ${NODE_NAME}
+              matchers:
+                - logs_path: {logs_path: /var/log/containers/}
+    processors:
+      - add_fields:
+          target: fedkube
+          fields:
+            cluster: {{ .Release.Name | quote }}
+            topology: {{ .Values.mode | quote }}
+    output.elasticsearch:
+      hosts: ["{{ .Values.elastic.remoteUrl }}"]
+      username: ${ELASTIC_USERNAME}
+      password: ${ELASTIC_PASSWORD}
+      ssl.certificate_authorities: [/tls/ca.crt]
+      index: "fedkube-%{[fedkube.cluster]}-%{+yyyy.MM.dd}"
+    setup.ilm:
+      enabled: false
+    setup.template:
+      enabled: false
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "fedkube.fullname" . }}-filebeat
+  labels:
+    {{- include "fedkube.labels" . | nindent 4 }}
+    app.kubernetes.io/component: filebeat
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "fedkube.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: filebeat
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "fedkube.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: filebeat
+    spec:
+      serviceAccountName: {{ include "fedkube.fullname" . }}-filebeat
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: filebeat
+          image: docker.elastic.co/beats/filebeat:{{ .Values.elastic.version }}
+          args: [-e, -c, /etc/filebeat.yml]
+          securityContext: {runAsUser: 0}
+          env:
+            - name: NODE_NAME
+              valueFrom: {fieldRef: {fieldPath: spec.nodeName}}
+            - name: ELASTIC_USERNAME
+              valueFrom:
+                secretKeyRef: {name: {{ .Values.elastic.credentialsSecretName }}, key: username}
+            - name: ELASTIC_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: {{ .Values.elastic.credentialsSecretName }}, key: password}
+          volumeMounts:
+            - {name: config, mountPath: /etc/filebeat.yml, subPath: filebeat.yml, readOnly: true}
+            - {name: varlogcontainers, mountPath: /var/log/containers, readOnly: true}
+            - {name: varlogpods, mountPath: /var/log/pods, readOnly: true}
+            - {name: tls, mountPath: /tls, readOnly: true}
+          resources:
+            requests: {cpu: 100m, memory: 200Mi}
+            limits: {cpu: 500m, memory: 500Mi}
+      volumes:
+        - name: config
+          configMap: {name: {{ include "fedkube.fullname" . }}-filebeat}
+        - name: varlogcontainers
+          hostPath: {path: /var/log/containers}
+        - name: varlogpods
+          hostPath: {path: /var/log/pods}
+        - name: tls
+          secret: {secretName: {{ .Values.flower.caSecretName }}}
+{{- end }}

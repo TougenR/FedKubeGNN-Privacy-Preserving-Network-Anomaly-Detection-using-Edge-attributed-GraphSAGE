@@ -1,0 +1,41 @@
+jenkins:
+  systemMessage: "FedKube Phase 3 - managed by Ansible/JCasC"
+  numExecutors: 1
+  mode: NORMAL
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "{{ jenkins_admin_user }}"
+          password: "${JENKINS_ADMIN_PASSWORD}"
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+  crumbIssuer:
+    standard: {}
+  remotingSecurity:
+    enabled: true
+unclassified:
+  location:
+    url: "{{ jenkins_url }}"
+jobs:
+  - script: >
+      pipelineJob('fedkube-main') {
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('{{ jenkins_repo_url }}')
+                  credentials('github-push-key')
+                }
+                branch('*/main')
+              }
+            }
+            scriptPath('Jenkinsfile')
+            lightweight(true)
+          }
+        }
+        triggers { githubPush() }
+        logRotator { numToKeep(20) }
+      }

@@ -1,0 +1,9 @@
+{{- if not (has .Values.mode (list "central" "edge")) }}
+{{- fail "mode must be central or edge" }}
+{{- end }}
+{{- if ne (len .Values.flower.clients) 6 }}
+{{- fail "Phase 3 requires exactly six scenario clients" }}
+{{- end }}
+{{- if not (regexMatch "^sha256:[0-9a-f]{64}$" .Values.image.digest) }}
+{{- fail "image.digest must be an immutable sha256 digest" }}
+{{- end }}

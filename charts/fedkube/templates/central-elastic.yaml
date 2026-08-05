@@ -1,0 +1,126 @@
+{{- if and (eq .Values.mode "central") .Values.elastic.enabled }}
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: {{ .Values.elastic.name }}
+  labels:
+    {{- include "fedkube.labels" . | nindent 4 }}
+spec:
+  version: {{ .Values.elastic.version | quote }}
+  http:
+    tls:
+      certificate:
+        secretName: {{ .Values.flower.tlsSecretName }}
+  nodeSets:
+    - name: default
+      count: 1
+      config:
+        node.store.allow_mmap: false
+        xpack.security.enabled: true
+      podTemplate:
+        spec:
+          containers:
+            - name: elasticsearch
+              env:
+                - {name: ES_JAVA_OPTS, value: "-Xms2g -Xmx2g"}
+              resources:
+                requests: {cpu: 750m, memory: 3Gi}
+                limits: {cpu: "2", memory: 4Gi}
+      volumeClaimTemplates:
+        - metadata: {name: elasticsearch-data}
+          spec:
+            accessModes: [ReadWriteOnce]
+            storageClassName: {{ .Values.dataset.storageClassName }}
+            resources:
+              requests: {storage: {{ .Values.elastic.storageSize }}}
+---
+apiVersion: kibana.k8s.elastic.co/v1
+kind: Kibana
+metadata:
+  name: {{ .Values.elastic.name }}
+  labels:
+    {{- include "fedkube.labels" . | nindent 4 }}
+spec:
+  version: {{ .Values.elastic.version | quote }}
+  count: 1
+  elasticsearchRef: {name: {{ .Values.elastic.name }}}
+  podTemplate:
+    spec:
+      containers:
+        - name: kibana
+          resources:
+            requests: {cpu: 500m, memory: 1Gi}
+            limits: {cpu: "1", memory: 2Gi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.elastic.name }}-external
+  labels:
+    {{- include "fedkube.labels" . | nindent 4 }}
+  annotations:
+    networking.gke.io/load-balancer-type: Internal
+    networking.gke.io/internal-load-balancer-allow-global-access: "true"
+spec:
+  type: LoadBalancer
+  loadBalancerIP: {{ .Values.elastic.internalLoadBalancerIP }}
+  selector:
+    elasticsearch.k8s.elastic.co/cluster-name: {{ .Values.elastic.name }}
+    elasticsearch.k8s.elastic.co/statefulset-name: {{ .Values.elastic.name }}-es-default
+  ports:
+    - {name: https, port: 9200, targetPort: 9200, protocol: TCP}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "fedkube.fullname" . }}-elastic-init-{{ .Values.releaseId | lower | trunc 24 }}
+  labels:
+    {{- include "fedkube.labels" . | nindent 4 }}
+    app.kubernetes.io/component: elastic-init
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  backoffLimit: 10
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: configure
+          image: curlimages/curl:8.17.0
+          command: [sh, -euc]
+          args:
+            - |
+              endpoint="https://{{ .Values.elastic.name }}-es-http:9200"
+              until curl --fail --silent --cacert /tls/ca.crt \
+                -u "elastic:${ELASTIC_ADMIN_PASSWORD}" "${endpoint}/_cluster/health" >/dev/null; do
+                sleep 10
+              done
+              curl --fail --silent --cacert /tls/ca.crt -u "elastic:${ELASTIC_ADMIN_PASSWORD}" \
+                -X PUT "${endpoint}/_security/role/fedkube_filebeat" \
+                -H 'content-type: application/json' \
+                -d '{"cluster":["monitor","manage_ilm"],"indices":[{"names":["fedkube-*"],"privileges":["auto_configure","create_index","write","manage"]}]}'
+              curl --fail --silent --cacert /tls/ca.crt -u "elastic:${ELASTIC_ADMIN_PASSWORD}" \
+                -X POST "${endpoint}/_security/user/filebeat_writer" \
+                -H 'content-type: application/json' \
+                -d "{\"password\":\"${FILEBEAT_PASSWORD}\",\"roles\":[\"fedkube_filebeat\"]}"
+              curl --fail --silent --cacert /tls/ca.crt -u "elastic:${ELASTIC_ADMIN_PASSWORD}" \
+                -X PUT "${endpoint}/_ilm/policy/fedkube-7d" \
+                -H 'content-type: application/json' \
+                -d '{"policy":{"phases":{"hot":{"actions":{}},"delete":{"min_age":"{{ .Values.elastic.retentionDays }}d","actions":{"delete":{}}}}}}'
+              curl --fail --silent --cacert /tls/ca.crt -u "elastic:${ELASTIC_ADMIN_PASSWORD}" \
+                -X PUT "${endpoint}/_index_template/fedkube" \
+                -H 'content-type: application/json' \
+                -d '{"index_patterns":["fedkube-*"],"template":{"settings":{"index.lifecycle.name":"fedkube-7d"}}}'
+          env:
+            - name: ELASTIC_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: {{ .Values.elastic.name }}-es-elastic-user, key: elastic}
+            - name: FILEBEAT_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: {{ .Values.elastic.credentialsSecretName }}, key: password}
+          volumeMounts:
+            - {name: tls, mountPath: /tls, readOnly: true}
+      volumes:
+        - name: tls
+          secret: {secretName: {{ .Values.flower.caSecretName }}}
+{{- end }}
