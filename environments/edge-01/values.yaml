@@ -2,11 +2,11 @@ mode: edge
 fullnameOverride: fedkube-edge-01
 clusterName: fedkube-edge-01
 clusterLocation: asia-southeast1-b
-releaseId: 7ebc5a0a8c7d7cd15912ae035566efbfaa4fcd9a
+releaseId: 4cd1b00b2ff89afa4c38d60a3b2dbf945d70996c
 
 image:
   repository: hieunguyen595/fedkube-gnn
-  digest: sha256:3816bd60acb88fffaeacd18c31f1daacebc50b51c4b9f57fdf4e35e7c7da5101
+  digest: sha256:76ea9442e7f36c1c074fae249229d62290bb5d5c27d36b255876472d97e2451a
 
 serviceAccount:
   name: fedkube-edge-01-workload
