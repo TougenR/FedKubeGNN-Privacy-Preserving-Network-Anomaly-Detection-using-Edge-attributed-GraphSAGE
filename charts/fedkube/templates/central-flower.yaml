@@ -85,7 +85,7 @@ spec:
           image: {{ include "fedkube.appImage" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
-            - --root-certificates=/tls/ca.crt
+            - --insecure
             - --plugin-type=serverapp
             - --appio-api-address=127.0.0.1:9091
           env:

@@ -322,6 +322,20 @@ Observed 2026-08-05:
   the dataset Job at wave `-1` could not create a pod because its workload KSA
   and PVC were still at default wave `0`. Both prerequisites now use wave `-2`
   so Argo can preserve dataset-before-workload ordering without live patches.
+- Both corrected Dataset Sync Jobs completed from GCS and the obsolete
+  deadlocked Jobs were terminated/deleted through Argo CD before they could
+  perform material work. The Edge node exposes 5,915m CPU and 20,821Mi memory;
+  six original client requests exceeded both. Edge-only requests are now
+  650m/2800Mi per ClientApp with unchanged 2 CPU/5Gi limits. The existing
+  `Recreate` strategy rolled all six clients, and all six became Ready.
+- Training was disabled by an environment-only safety gate before the final
+  Central sync wave. Runtime inspection found two independent startup defects:
+  ServerApp incorrectly requested TLS on the localhost plaintext AppIO port,
+  while the Filebeat password Secret Manager value contained a trailing
+  newline and produced invalid JSON in the Elasticsearch user API request.
+  ServerApp now uses `--insecure` only on localhost (external Fleet TLS remains
+  enabled), Secret Manager version 2 removes only CR/LF, and the ExternalSecret
+  release annotation forces a refresh without storing secret material in Git.
 
 ## Result
 
