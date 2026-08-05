@@ -25,7 +25,13 @@ pipeline {
             script: "git diff-tree --no-commit-id --name-only -r HEAD",
             returnStdout: true
           ).trim().split('\\n').findAll { it }
-          env.SHOULD_BUILD = changed && changed.every { it.startsWith('environments/') } ? 'false' : 'true'
+          def imageInputs = changed.findAll {
+            it == 'Dockerfile' ||
+            it == 'pyproject.toml' ||
+            it.startsWith('src/') ||
+            it.startsWith('configs/')
+          }
+          env.SHOULD_BUILD = imageInputs ? 'true' : 'false'
           echo "Changed files: ${changed.join(', ')}; build=${env.SHOULD_BUILD}"
         }
       }

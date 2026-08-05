@@ -10,7 +10,10 @@ metadata:
     app.kubernetes.io/component: personalized-head
     fedkube.io/client-id: {{ .id | quote }}
   annotations:
-    argocd.argoproj.io/sync-wave: "-1"
+    # standard-rwo uses WaitForFirstConsumer on GKE. Keep the claim in the
+    # same wave as its Deployment so Argo CD can create the consumer which
+    # allows dynamic provisioning to bind the volume.
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   accessModes: [ReadWriteOnce]
   resources:
