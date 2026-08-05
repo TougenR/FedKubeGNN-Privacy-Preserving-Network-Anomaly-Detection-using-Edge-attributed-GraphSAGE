@@ -21,6 +21,10 @@ flower:
 training:
   enabled: false
 
+resources:
+  clientApp:
+    requests: {cpu: 650m, memory: 2800Mi}
+
 elastic:
   enabled: true
   remoteUrl: https://10.10.0.11:9200
