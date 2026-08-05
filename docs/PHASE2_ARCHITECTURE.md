@@ -101,6 +101,18 @@ artifacts/phase2/runs/<run-id>/
 └── checkpoints/round-NNNN.npz, best_model.npz
 ```
 
+Post-training diagnostics reuse those completed artifacts and never evaluate
+test data again:
+
+```text
+artifacts/phase2/visualizations/<release-id>/
+├── round_metrics.csv, final_metrics.csv, visualization_manifest.json
+├── federated_learning_curves.{png,pdf}
+├── federated_final_metrics.{png,pdf}
+├── federated_per_class_f1.{png,pdf}
+└── federated_confusion_matrices.{png,pdf}
+```
+
 File `metrics/rounds/round-NNNN.json` là commit marker bền vững; JSONL, CSV,
 `run.json` và best checkpoint được reconcile từ marker này khi resume sau crash.
 
@@ -124,6 +136,7 @@ python -m src.federated.cli run --dataset artifacts/phase2/prepared/<dataset-id>
 python -m src.federated.cli centralized --dataset artifacts/phase2/prepared/<dataset-id>
 python -m src.federated.cli evaluate --dataset artifacts/phase2/prepared/<dataset-id> --checkpoint <best_model.npz> --split test --output artifacts/phase2/test.json
 python -m src.federated.cli compare --runs <central-run> <fedavg-run> <fedprox-run> --output artifacts/phase2/comparison.csv
+python -m src.federated.cli visualize --runs <fedavg-run> <fedprox-run> --output artifacts/phase2/visualizations/manual
 ```
 
 Để smoke không cần PyG/data thật:
@@ -146,6 +159,10 @@ toy defaults trong `pyproject.toml`. Mỗi process ghi JSONL riêng dưới
 `events-output`. FedAvg và FedProx đều dùng full participation, chọn checkpoint
 tốt nhất theo validation macro-F1 rồi mới đánh giá test đúng một lần. Global
 metric được tính từ tổng fixed-K confusion matrix, không average client macro-F1.
+Lệnh `visualize` kiểm tra provenance và trạng thái completed trước khi vẽ. Learning
+curve chỉ dùng validation metric theo round; bar chart, per-class F1 và confusion
+matrix dùng đúng final-test metric đã lưu, không chạy test lần hai và không tác
+động checkpoint selection.
 
 ## Validation và giới hạn hiện tại
 

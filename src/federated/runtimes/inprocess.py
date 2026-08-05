@@ -308,6 +308,7 @@ def run_observed_inprocess(
         summary = {
             "run_id": store.run_id,
             "strategy": policy.name,
+            "class_names": list(task.label_schema.classes),
             "best_round": best_round,
             "validation_macro_f1": best_f1,
             "test_metrics": test_metrics,

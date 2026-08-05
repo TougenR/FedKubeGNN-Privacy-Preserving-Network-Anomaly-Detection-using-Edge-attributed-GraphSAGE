@@ -14,6 +14,7 @@ from src.federated.data.manifest import PreparedDatasetManifest
 from src.federated.data.preparation import doctor, prepare_iot23
 from src.federated.experiments.comparison import compare_runs
 from src.federated.experiments.factory import task_from_name
+from src.federated.experiments.visualization import visualize_runs
 from src.federated.observability import (
     CompositeObserver,
     ConsoleObserver,
@@ -85,6 +86,12 @@ def _parser() -> argparse.ArgumentParser:
     )
     compare.add_argument("--runs", nargs="+", required=True)
     compare.add_argument("--output", required=True)
+    visualize = commands.add_parser(
+        "visualize",
+        help="render completed federated run metrics without re-evaluating data",
+    )
+    visualize.add_argument("--runs", nargs="+", required=True)
+    visualize.add_argument("--output", required=True)
     return parser
 
 
@@ -171,6 +178,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     if args.command == "compare":
         print(compare_runs(args.runs, args.output))
+        return 0
+    if args.command == "visualize":
+        print(visualize_runs(args.runs, args.output))
         return 0
     raise AssertionError(args.command)
 

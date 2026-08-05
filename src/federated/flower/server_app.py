@@ -175,6 +175,7 @@ def build_server_app(
             summary = {
                 "flower_run_id": str(context.run_id),
                 "strategy": strategy_name,
+                "class_names": list(task.label_schema.classes),
                 "best_round": tracker.best_round,
                 "validation_macro_f1": tracker.best_macro_f1,
                 "test_metrics": test_metrics,

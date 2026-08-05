@@ -23,6 +23,7 @@ RUN python -m pip install --no-cache-dir \
       "flwr==1.32.1" \
       "numpy>=1.26,<2.0" \
       "pandas>=2.0" \
+      "matplotlib>=3.7" \
       "scikit-learn>=1.3" \
       "pyyaml>=6.0" \
       "torch-geometric>=2.5" \

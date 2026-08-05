@@ -68,8 +68,10 @@ Capture evidence under ignored `artifacts/phase3/evidence/<timestamp>/`:
 5. Dataset Sync Job completion and PVC manifest checksum.
 6. Six connected SuperNodes and at least one completed FL round.
 7. FedAvg followed by FedProx summaries for all six scenarios.
-8. GCS global model/checkpoint object metadata.
-9. A Kibana Discover view of Central and Edge structured logs.
+8. Generated learning curves, final metric comparison, per-class F1, and
+   confusion matrices in the GCS model-artifact bucket.
+9. GCS global model/checkpoint object metadata.
+10. A Kibana Discover view of Central and Edge structured logs.
 
 Destroy or scale down immediately after capturing the evidence. Protected GCS
 buckets are not force-destroyed; intentionally empty or retain them before the

@@ -10,8 +10,9 @@ IoT-23 → dựng đồ thị hành vi → huấn luyện **E-GraphSAGE** + 4 ba
 
 Pipeline **Giai đoạn 2** nằm trong `src/federated/`: chuẩn bị sáu client IoT-23
 với shared train-only preprocessing, chạy FedAvg/FedProx, chọn checkpoint theo
-validation và ghi structured JSONL/run artifacts. Core FedAvg/metrics và Flower
-runtime không phụ thuộc PyG hay implementation Phase 1. Xem
+validation, ghi structured JSONL/run artifacts và vẽ learning curve/final
+metrics/confusion matrix mà không đánh giá test lần hai. Core FedAvg/metrics và
+Flower runtime không phụ thuộc PyG hay implementation Phase 1. Xem
 [kiến trúc Phase 2](docs/PHASE2_ARCHITECTURE.md) trước khi chạy dữ liệu thật.
 
 Hạ tầng **Giai đoạn 3** nằm trong `charts/`, `environments/`, `argocd/` và

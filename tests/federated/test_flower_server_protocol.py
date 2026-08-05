@@ -146,6 +146,7 @@ class FlowerServerProtocolTests(unittest.TestCase):
             summary = json.loads((run_root / "metrics/summary.json").read_text())
             self.assertEqual(status["status"], "completed")
             self.assertEqual(summary["best_round"], 1)
+            self.assertEqual(summary["class_names"], list(task.label_schema.classes))
             self.assertIn("test_metrics", summary)
             self.assertEqual(grid.evaluate_splits.count("val"), 4)
             self.assertEqual(grid.evaluate_splits.count("test"), 2)

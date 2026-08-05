@@ -6,13 +6,12 @@ Date: 2026-07-29
 
 The explicitly approved platform resume plan has been applied and the Central
 GKE, Edge GKE, and Jenkins VM are running. Terraform reports no drift. GitHub
-Actions is green, Jenkins builds and scans the application successfully, and
-Argo CD plus the Central/Edge operators are bootstrapped. Docker Hub currently
-rejects the Jenkins push because its access token lacks repository write scope;
-the immutable digest commit, FedKube ApplicationSet, and acceptance demo remain
-gated on replacing that credential. The six public IoT-23 sources are being
-staged and prepared on the Jenkins VM rather than the space-constrained local
-workstation.
+Actions is green, Jenkins has built, scanned, and published the immutable
+application image, and Argo CD plus the Central/Edge operators are bootstrapped.
+The GitOps digest commit and environment-only loop guard are proven. All six
+public IoT-23 sources have finished downloading and are being prepared on the
+Jenkins VM rather than the space-constrained local workstation. Dataset upload,
+the FedKube ApplicationSet, and the acceptance demo remain.
 
 ## Outcome
 
@@ -46,6 +45,9 @@ In scope:
   and bootstrap definitions for Central and Edge.
 - Six simultaneous SuperNode/ClientApp pairs at Edge-01: `34-1`, `1-1`, `3-1`,
   `9-1`, `36-1`, and `39-1`.
+- Headless post-training visualization for FedAvg/FedProx round curves, final
+  metrics, per-class F1, and confusion matrices, uploaded with the run
+  artifacts.
 - TLS from Edge SuperNodes through an internal NGINX load balancer to Central
   SuperLink.
 - Single-node Elasticsearch, internal Kibana, and Filebeat collection with a
@@ -79,6 +81,9 @@ Out of scope:
    after infrastructure creation, then use ApplicationSet for Central/Edge.
 7. Present `terraform plan` for approval. Only after approval, apply, seed data,
    start both benchmark strategies, and capture acceptance evidence.
+8. Generate visual diagnostics only from validation-round metrics and the one
+   final test evaluation already recorded by each completed run; visualization
+   must not rerun test data or change model selection.
 
 ## Risks And Recovery
 
@@ -125,8 +130,11 @@ Out of scope:
   GitHub webhook.
 - [x] Push the Phase 3 commit; bootstrap Argo CD, register Edge, and reconcile
   ECK plus External Secrets on both clusters.
-- [ ] Replace the read-only/invalid Docker Hub credential, complete the
-  immutable image push/digest commit, and submit the FedKube ApplicationSet.
+- [x] Replace the read-only/invalid Docker Hub credential and complete the
+  immutable image push/digest commit.
+- [ ] Upload the validated prepared dataset and submit the FedKube
+  ApplicationSet.
+- [ ] Add and validate post-training federated metric visualization.
 - [ ] Run the acceptance demo.
 - [x] On user approval, destroy the main platform to stop ongoing compute and
   network charges while retaining the project and Terraform state bucket.
@@ -267,15 +275,38 @@ Observed 2026-08-05:
   static Cloud NAT allowlist `136.85.124.66/32`; no Terraform change was
   required. Bootstrap now renders `server.insecure` correctly and registers
   Edge declaratively without persisting bootstrap credentials locally.
-- Six official IoT-23 sources are downloading to the Jenkins VM. A durable
-  systemd preparation job is queued behind the download and will use the
-  scanned image with raw data read-only and networking disabled.
+- Six official IoT-23 sources were staged on the Jenkins VM. A durable systemd
+  preparation job uses the scanned image with raw data read-only and networking
+  disabled.
+- GitHub Actions run `30974447758` completed successfully. Jenkins build 3
+  passed tests and the Trivy CRITICAL gate, authenticated with the replacement
+  Docker Hub credential, published tag
+  `0d1789ea7d59db851d35dd1376473af11f04b0fe` at immutable digest
+  `sha256:6f2e5d7bdc86a158aa006475ac8d14518b9b69dcb2c3184f968299a16ce57a3a`,
+  and pushed GitOps commit `91f1def`. A direct registry inspection returned the
+  same digest and linux/amd64 platform.
+- The GitHub webhook delivered GitOps commit `91f1def` with HTTP 200. Jenkins
+  build 4 observed that only the two `environments/**` files changed, set
+  `build=false`, skipped every build/publish/update stage, and completed
+  successfully. No second GitHub Actions run was created.
+- All six official IoT-23 sources finished downloading. The largest source,
+  scenario `39-1`, is exactly `10,885,361,439` bytes as recorded by the Phase 1
+  manifest. The queued isolated preparation service started automatically
+  after the successful download service.
+- The new post-training visualizer passed three focused tests covering Flower,
+  in-process metrics, provenance rejection, and eight PNG/PDF outputs. The
+  federated suite passed with five expected optional-Flower skips; Ruff,
+  compilation, Helm lint/render, CLI smoke, and `git diff --check` pass. A
+  generated learning-curve figure and annotated count/row-normalized confusion
+  matrices were visually inspected. The full host suite's four unrelated
+  Phase 1/3 imports still require `torch_geometric`, so the dependency-complete
+  GitHub/Jenkins image remains the final integration gate.
 
 ## Result
 
 The approved Phase 3 platform is running without Terraform drift. GitHub CI,
-Jenkins build/scan, Argo CD, Edge registration, ECK, and External Secrets are
-verified. The immediate external blocker is a Docker Hub access token with
-repository write scope. Once replaced, Jenkins can publish and commit the
-immutable digest, the FedKube ApplicationSet can be submitted, and the prepared
+Jenkins build/scan/publish, the GitOps loop guard, Argo CD, Edge registration,
+ECK, and External Secrets are verified. The Docker Hub credential blocker is
+resolved. Once preparation and upload complete, the FedKube ApplicationSet can
+be submitted and the prepared
 six-scenario dataset can drive the end-to-end acceptance demo.

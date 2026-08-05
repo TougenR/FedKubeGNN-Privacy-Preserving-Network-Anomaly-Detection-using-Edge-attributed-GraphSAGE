@@ -45,6 +45,13 @@ spec:
                    events-output='/artifacts/${strategy}/events' \
                    flower-output-root='/artifacts/${strategy}/runs'"
               done
+              python -m src.federated.cli \
+                --repository-root /app \
+                --config configs/phase2/iot23-federated.yaml \
+                visualize \
+                --runs /artifacts/fedavg/runs/fedavg-* \
+                       /artifacts/fedprox/runs/fedprox-* \
+                --output "/artifacts/visualizations/{{ .Values.releaseId }}"
           env:
             - {name: FLWR_HOME, value: /flwr}
             - {name: PYTHONUNBUFFERED, value: "1"}
