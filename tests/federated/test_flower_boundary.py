@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import tempfile
+import tomllib
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -14,6 +15,14 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class FlowerConfigTests(unittest.TestCase):
+    def test_flower_cli_declares_every_runtime_override_key(self) -> None:
+        from src.federated.flower.config import DEFAULT_RUN_CONFIG
+
+        with (ROOT / "pyproject.toml").open("rb") as handle:
+            declared = tomllib.load(handle)["tool"]["flwr"]["app"]["config"]
+
+        self.assertEqual(set(DEFAULT_RUN_CONFIG) - set(declared), set())
+
     def test_direct_execution_has_complete_defaults(self) -> None:
         from src.federated.flower.config import resolve_run_config
 
