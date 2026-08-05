@@ -1,0 +1,35 @@
+configs:
+  params:
+    server.insecure: true
+  cm:
+    resource.customizations.health.elasticsearch.k8s.elastic.co_Elasticsearch: |
+      health = {}
+      if obj.status == nil then
+        health.status = "Progressing"
+        health.message = "Waiting for ECK status"
+        return health
+      end
+
+      if obj.status.phase == "Ready" then
+        if obj.status.health == "green" then
+          health.status = "Healthy"
+          health.message = "Elasticsearch is ready and green"
+        elseif obj.status.health == "yellow" and obj.status.availableNodes == 1 then
+          health.status = "Healthy"
+          health.message = "Single-node MVP is ready; replica health is yellow by design"
+        else
+          health.status = "Progressing"
+          health.message = "Elasticsearch is ready but cluster health is " .. (obj.status.health or "unknown")
+        end
+        return health
+      end
+
+      if obj.status.phase == "Invalid" then
+        health.status = "Degraded"
+        health.message = "ECK reports an invalid Elasticsearch resource"
+        return health
+      end
+
+      health.status = "Progressing"
+      health.message = "ECK phase is " .. (obj.status.phase or "unknown")
+      return health

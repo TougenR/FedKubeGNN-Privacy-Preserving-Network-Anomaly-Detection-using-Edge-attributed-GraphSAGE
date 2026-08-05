@@ -19,7 +19,7 @@ central_context="$(kubectl config current-context)"
 "${helm_command}" repo update argo
 "${helm_command}" upgrade --install argocd argo/argo-cd \
   --namespace argocd --create-namespace --version 9.1.3 \
-  --set-string 'configs.params.server\.insecure=true' \
+  --values "${repo_root}/argocd/values.yaml" \
   --wait
 
 gcloud container clusters get-credentials fedkube-edge-01 \

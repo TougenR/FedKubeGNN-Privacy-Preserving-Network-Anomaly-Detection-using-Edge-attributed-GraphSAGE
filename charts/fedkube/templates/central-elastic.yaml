@@ -110,7 +110,11 @@ spec:
               curl --fail --silent --cacert /tls/ca.crt -u "elastic:${ELASTIC_ADMIN_PASSWORD}" \
                 -X PUT "${endpoint}/_index_template/fedkube" \
                 -H 'content-type: application/json' \
-                -d '{"index_patterns":["fedkube-*"],"template":{"settings":{"index.lifecycle.name":"fedkube-7d"}}}'
+                -d '{"index_patterns":["fedkube-*"],"template":{"settings":{"index.lifecycle.name":"fedkube-7d","index.number_of_replicas":0}}}'
+              curl --fail --silent --cacert /tls/ca.crt -u "elastic:${ELASTIC_ADMIN_PASSWORD}" \
+                -X PUT "${endpoint}/fedkube-*/_settings?allow_no_indices=true" \
+                -H 'content-type: application/json' \
+                -d '{"index":{"number_of_replicas":0}}'
           env:
             - name: ELASTIC_ADMIN_PASSWORD
               valueFrom:
