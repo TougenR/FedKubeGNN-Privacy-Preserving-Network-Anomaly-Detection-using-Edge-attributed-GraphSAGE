@@ -29,7 +29,7 @@ externalSecrets:
   serviceAccountName: external-secrets-central
 
 training:
-  enabled: true
+  enabled: false
   strategies: [fedavg, fedprox]
   rounds: 30
   localEpochs: 5
