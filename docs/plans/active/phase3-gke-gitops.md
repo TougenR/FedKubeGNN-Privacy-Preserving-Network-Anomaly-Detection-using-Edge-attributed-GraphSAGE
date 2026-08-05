@@ -372,6 +372,26 @@ Observed 2026-08-05:
   Flower skips; Ruff, compilation, Helm lint/render, Terraform format/validate,
   Bash syntax, and whitespace validation passed. The four known host-only
   imports still lack `torch_geometric`; CI/Jenkins provides that dependency.
+- The approved operator-IP plan applied exactly `0 add, 3 change, 0 destroy`;
+  both GKE allowlists and the Jenkins SSH firewall now contain
+  `118.68.151.78/32`, the Kubernetes API readiness endpoint returns `ok`, and
+  the immediate Terraform refresh reports `No changes`.
+- Argo CD revision 5 includes the tested one-node Elasticsearch health rule.
+  Central and Edge reached `Synced/Healthy`, the release-specific elastic-init
+  Job completed, Elasticsearch is green with zero unassigned shards, and the
+  Central/Edge Filebeat indices use zero replicas with live documents.
+- GitHub Actions run `30994818907` passed. Jenkins build 13 published release
+  `4cd1b00b2ff89afa4c38d60a3b2dbf945d70996c` at digest
+  `sha256:76ea9442e7f36c1c074fae249229d62290bb5d5c27d36b255876472d97e2451a`;
+  build 14 proved the environment-only guard. The immutable rollout returned
+  both apps to `Synced/Healthy`, and all six new SuperNodes registered over TLS
+  with distinct IDs and zero restarts.
+- The first accepted training submission failed before round one because
+  Flower 1.32 FAB format v1 requires a repository license file, while this
+  repository has no declared license. No license was invented. The technical
+  compatibility fix selects supported FAB format v0 and adds `flwr build` to
+  the Jenkins image smoke gate. A read-only bind-mount build produced a FAB
+  successfully; the focused 49-test suite and Ruff passed.
 
 ## Result
 

@@ -33,7 +33,7 @@ packages = ["src"]
 
 [tool.flwr.app]
 publisher = "fedkube-m06"
-fab-format-version = 1
+fab-format-version = 0
 flwr-version-target = "1.32.1"
 
 [tool.flwr.app.components]

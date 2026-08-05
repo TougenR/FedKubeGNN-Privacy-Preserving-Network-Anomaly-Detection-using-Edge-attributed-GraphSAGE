@@ -44,6 +44,7 @@ pipeline {
       steps {
         sh 'docker build --pull --tag "$IMAGE_REPOSITORY:$GIT_COMMIT" .'
         sh 'docker run --rm --entrypoint python "$IMAGE_REPOSITORY:$GIT_COMMIT" -c "import matplotlib; import src.federated.experiments.visualization; import src.federated.flower.unified_server_app; import src.federated.flower.unified_client_app"'
+        sh 'docker run --rm --entrypoint flwr "$IMAGE_REPOSITORY:$GIT_COMMIT" build --app /app'
         sh '''docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
           aquasec/trivy:0.68.2 image --exit-code 1 --severity CRITICAL \
           --ignore-unfixed "$IMAGE_REPOSITORY:$GIT_COMMIT"'''
