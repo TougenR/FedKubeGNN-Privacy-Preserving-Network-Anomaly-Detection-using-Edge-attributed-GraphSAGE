@@ -9,8 +9,8 @@ Decision: **rejected**.
 - Selection data: validation only; `test_evaluations=0`
 
 The best validation fixed-eight macro-F1 is `0.380236` at round 30, versus
-the frozen local-weight FedAvg baseline `0.455775`. The isolated change reduces
-validation macro-F1 by `0.075539`.
+the same-runner local-weight FedAvg control `0.455726`. The isolated change
+reduces validation macro-F1 by `0.075489`.
 
 The union class weights are
 `[0.416477, 2.287667, 1.840433, 1.518357, 1.518357, 1.518357, 5314.25,

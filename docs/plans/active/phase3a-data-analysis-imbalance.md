@@ -185,9 +185,15 @@ generalization. Loss/aggregation corrections are evaluated first.
   and the one-row Okiru-Attack test result is not used for selection.
 - The first isolated treatment, global inverse-frequency class weights with all
   other FedAvg settings unchanged, completed 30 validation-only rounds. Its
-  best validation macro-F1 was `0.380236` at round 30 versus baseline
-  `0.455775` (`-0.075539`). The private C&C-HeartBeat, DDoS, and Okiru classes
+  best validation macro-F1 was `0.380236` at round 30 versus the same-runner
+  control `0.455726` (`-0.075489`). The private C&C-HeartBeat, DDoS, and Okiru classes
   remained at zero F1, while the two-sample Okiru-Attack class received weight
   `5314.25`. The treatment is rejected, test evaluations remain zero, and the
   next experiment returns to local weights while isolating local epoch/client
   drift.
+- A validation-only in-process control reproduced local-weight FedAvg at
+  `0.455726`, within `0.000049` of the Flower baseline. The equal-compute
+  client-drift experiment (`150 rounds × 1 local epoch` versus `30 × 5`)
+  reached only `0.315973` at round 84, delta `-0.139753`, and is rejected.
+  More frequent aggregation alone does not recover private classes. Both
+  experiments recorded `test_evaluations=0`.

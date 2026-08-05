@@ -1,0 +1,54 @@
+version: 1
+
+components:
+  data_source: iot23
+  partitioner: scenario
+  graph_builder: phase1_ip_flow
+  model: egraphsage
+  task: iot23_manifest
+  runtime: inprocess
+  observer: console_jsonl
+
+data:
+  prepared_root: artifacts/phase2/prepared
+  raw_root: data
+  cap_per_class: 10000
+  chunk_size: 100000
+  target_column: detailed-label
+  split: {train: 0.70, validation: 0.10, test: 0.20}
+  preprocessing: train_only_global
+  graph_protocol: transductive_edge_mask
+  scenarios:
+    - {id: 34-1, path: CTU-IoT-Malware-Capture-34-1/conn.log.labeled, malware: Mirai}
+    - {id: 1-1, path: CTU-IoT-Malware-Capture-1-1/conn.log.labeled, malware: Hide-and-Seek}
+    - {id: 3-1, path: CTU-IoT-Malware-Capture-3-1/conn.log.labeled, malware: Muhstik}
+    - {id: 9-1, path: CTU-IoT-Malware-Capture-9-1/conn.log.labeled, malware: Linux.Hajime}
+    - {id: 36-1, path: CTU-IoT-Malware-Capture-36-1/conn.log.labeled, malware: Okiru}
+    - {id: 39-1, path: CTU-IoT-Malware-Capture-39-1/conn.log.labeled, malware: IRCBot}
+
+model: {hidden_dim: 64, num_layers: 2, dropout: 0.5}
+
+training:
+  rounds: 150
+  local_epochs: 1
+  centralized_epochs: 150
+  optimizer: adam
+  learning_rate: 0.001
+  weight_decay: 0.0
+  grad_clip: 1.0
+  imbalance: class_weight
+  class_weight_scope: local
+  seed: 42
+
+federation:
+  strategies: [fedavg, fedprox]
+  proximal_mu: 0.01
+  participation: full
+  evaluate_split: validation
+  final_split: test
+
+observability:
+  output_root: artifacts/phase2/runs
+  level: INFO
+  console: true
+  jsonl: true
