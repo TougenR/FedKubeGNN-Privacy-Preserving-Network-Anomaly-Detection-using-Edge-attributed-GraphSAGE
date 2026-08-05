@@ -106,4 +106,5 @@ test data for model or hyperparameter selection.
 - [ ] Complete preprocessing/feature/topology audit.
 - [ ] Add client-drift observability.
 - [ ] Run controlled validation-only ablations.
+- [x] Reject global class weights on validation (`0.380236`, delta `-0.075539`).
 - [ ] Validate the selected configuration across three seeds.

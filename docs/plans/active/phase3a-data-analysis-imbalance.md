@@ -183,3 +183,11 @@ generalization. Loss/aggregation corrections are evaluated first.
   clean seed-42 gap is `0.058862`; after excluding Okiru-Attack only for
   diagnosis, the gap is `0.006831`. Official reporting remains fixed-eight,
   and the one-row Okiru-Attack test result is not used for selection.
+- The first isolated treatment, global inverse-frequency class weights with all
+  other FedAvg settings unchanged, completed 30 validation-only rounds. Its
+  best validation macro-F1 was `0.380236` at round 30 versus baseline
+  `0.455775` (`-0.075539`). The private C&C-HeartBeat, DDoS, and Okiru classes
+  remained at zero F1, while the two-sample Okiru-Attack class received weight
+  `5314.25`. The treatment is rejected, test evaluations remain zero, and the
+  next experiment returns to local weights while isolating local epoch/client
+  drift.

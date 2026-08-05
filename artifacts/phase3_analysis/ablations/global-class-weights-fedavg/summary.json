@@ -1,0 +1,169 @@
+{
+  "best_round": 30,
+  "best_validation_metrics": {
+    "accuracy": 0.6931818181818182,
+    "loss": 1.231411426277814,
+    "macro_f1": 0.3802361245232213,
+    "num_examples": 12144,
+    "per_class": {
+      "Attack": {
+        "f1": 0.9418521177315147,
+        "precision": 0.8986301369863013,
+        "recall": 0.9894419306184012,
+        "support": 663
+      },
+      "Benign": {
+        "f1": 0.8580518844836025,
+        "precision": 0.7742932862190812,
+        "recall": 0.9621295279912184,
+        "support": 3644
+      },
+      "C&C": {
+        "f1": 0.4917733089579524,
+        "precision": 1.0,
+        "recall": 0.32606060606060605,
+        "support": 825
+      },
+      "C&C-HeartBeat": {
+        "f1": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "support": 1000
+      },
+      "DDoS": {
+        "f1": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "support": 1000
+      },
+      "Okiru": {
+        "f1": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "support": 1000
+      },
+      "Okiru-Attack": {
+        "f1": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "support": 0
+      },
+      "PartOfAHorizontalPortScan": {
+        "f1": 0.7502116850127011,
+        "precision": 0.6025389149161251,
+        "recall": 0.9937686939182453,
+        "support": 4012
+      }
+    },
+    "weighted_f1": 0.5901475033988396
+  },
+  "class_weight_scope": "global",
+  "config": {
+    "components": {
+      "data_source": "iot23",
+      "graph_builder": "phase1_ip_flow",
+      "model": "egraphsage",
+      "observer": "console_jsonl",
+      "partitioner": "scenario",
+      "runtime": "inprocess",
+      "task": "iot23_manifest"
+    },
+    "data": {
+      "cap_per_class": 10000,
+      "chunk_size": 100000,
+      "graph_protocol": "transductive_edge_mask",
+      "prepared_root": "artifacts/phase2/prepared",
+      "preprocessing": "train_only_global",
+      "raw_root": "data",
+      "scenarios": [
+        {
+          "id": "34-1",
+          "malware": "Mirai",
+          "path": "CTU-IoT-Malware-Capture-34-1/conn.log.labeled"
+        },
+        {
+          "id": "1-1",
+          "malware": "Hide-and-Seek",
+          "path": "CTU-IoT-Malware-Capture-1-1/conn.log.labeled"
+        },
+        {
+          "id": "3-1",
+          "malware": "Muhstik",
+          "path": "CTU-IoT-Malware-Capture-3-1/conn.log.labeled"
+        },
+        {
+          "id": "9-1",
+          "malware": "Linux.Hajime",
+          "path": "CTU-IoT-Malware-Capture-9-1/conn.log.labeled"
+        },
+        {
+          "id": "36-1",
+          "malware": "Okiru",
+          "path": "CTU-IoT-Malware-Capture-36-1/conn.log.labeled"
+        },
+        {
+          "id": "39-1",
+          "malware": "IRCBot",
+          "path": "CTU-IoT-Malware-Capture-39-1/conn.log.labeled"
+        }
+      ],
+      "split": {
+        "test": 0.2,
+        "train": 0.7,
+        "validation": 0.1
+      },
+      "target_column": "detailed-label"
+    },
+    "federation": {
+      "evaluate_split": "validation",
+      "final_split": "test",
+      "participation": "full",
+      "proximal_mu": 0.01,
+      "strategies": [
+        "fedavg",
+        "fedprox"
+      ]
+    },
+    "model": {
+      "dropout": 0.5,
+      "hidden_dim": 64,
+      "num_layers": 2
+    },
+    "observability": {
+      "console": true,
+      "jsonl": true,
+      "level": "INFO",
+      "output_root": "artifacts/phase2/runs"
+    },
+    "training": {
+      "centralized_epochs": 150,
+      "class_weight_scope": "global",
+      "grad_clip": 1.0,
+      "imbalance": "class_weight",
+      "learning_rate": 0.001,
+      "local_epochs": 5,
+      "optimizer": "adam",
+      "rounds": 30,
+      "seed": 42,
+      "weight_decay": 0.0
+    },
+    "version": 1
+  },
+  "config_digest": "daa37bee2a26d4c36ac55a1243d6c9005113d73a921b7fd79c4e9ca2b7f75aa8",
+  "dataset_digest": "68fc6fc0cb8974aba1d431113b39dbf82f98457159c04d6a14b22feaa4b0cb89",
+  "global_class_weights": [
+    0.4164772629737854,
+    2.2876667976379395,
+    1.84043288230896,
+    1.5183571577072144,
+    1.5183571577072144,
+    1.5183571577072144,
+    5314.25,
+    0.3784404397010803
+  ],
+  "kind": "validation_only_ablation",
+  "model_digest": "0c1faa97cde18b330cc5e1f565a1f80fe3fce4d326525ca1c148712808fa2004",
+  "rounds": 30,
+  "strategy": "fedavg",
+  "test_evaluations": 0
+}
