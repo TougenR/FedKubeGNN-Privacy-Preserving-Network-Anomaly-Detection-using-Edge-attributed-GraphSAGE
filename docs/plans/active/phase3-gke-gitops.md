@@ -5,10 +5,14 @@ Date: 2026-07-29
 ## Status
 
 The explicitly approved platform resume plan has been applied and the Central
-GKE, Edge GKE, and Jenkins VM are running. Terraform reports no drift. Jenkins
-is configured by Ansible with Docker Hub/GitHub credentials, and the writable
-deploy key plus push webhook are active. The next gate is the first `main` push,
-Jenkins digest commit, and Argo CD bootstrap before the acceptance demo.
+GKE, Edge GKE, and Jenkins VM are running. Terraform reports no drift. GitHub
+Actions is green, Jenkins builds and scans the application successfully, and
+Argo CD plus the Central/Edge operators are bootstrapped. Docker Hub currently
+rejects the Jenkins push because its access token lacks repository write scope;
+the immutable digest commit, FedKube ApplicationSet, and acceptance demo remain
+gated on replacing that credential. The six public IoT-23 sources are being
+staged and prepared on the Jenkins VM rather than the space-constrained local
+workstation.
 
 ## Outcome
 
@@ -119,7 +123,10 @@ Out of scope:
   idempotence.
 - [x] Add Docker Hub and GitHub push credentials to Jenkins and create the
   GitHub webhook.
-- [ ] Push the Phase 3 commit and bootstrap Argo CD.
+- [x] Push the Phase 3 commit; bootstrap Argo CD, register Edge, and reconcile
+  ECK plus External Secrets on both clusters.
+- [ ] Replace the read-only/invalid Docker Hub credential, complete the
+  immutable image push/digest commit, and submit the FedKube ApplicationSet.
 - [ ] Run the acceptance demo.
 - [x] On user approval, destroy the main platform to stop ongoing compute and
   network charges while retaining the project and Terraform state bucket.
@@ -249,10 +256,26 @@ Observed 2026-08-05:
 - The rebased Python 3.11 integration image passed all 81 tests. Ruff, Helm
   lint/render, Terraform format/validate, Ansible syntax, shell syntax, and
   `git diff --check` also pass.
+- GitHub Actions run `30972074680` completed successfully. Jenkins build 2
+  built the Python 3.11/PyTorch 2.6.0 image, passed the application import and
+  Trivy CRITICAL gate, then stopped before publication because Docker Hub
+  returned `access token has insufficient scopes`. The local Docker credential
+  also returns HTTP 401, so a new Read & Write token is required.
+- Argo CD chart 9.1.3 (Argo CD 3.2.0) is deployed on Central. ECK 3.2.0 and
+  External Secrets 0.20.4 on Central/Edge all report `Synced/Healthy`. Edge is
+  registered through its public GKE API endpoint, restricted by the existing
+  static Cloud NAT allowlist `136.85.124.66/32`; no Terraform change was
+  required. Bootstrap now renders `server.insecure` correctly and registers
+  Edge declaratively without persisting bootstrap credentials locally.
+- Six official IoT-23 sources are downloading to the Jenkins VM. A durable
+  systemd preparation job is queued behind the download and will use the
+  scanned image with raw data read-only and networking disabled.
 
 ## Result
 
-The approved Phase 3 platform is running without Terraform drift. Jenkins and
-the GitHub trigger path are ready; the remaining work is to push the validated
-Phase 3 commit, allow Jenkins to publish and commit the immutable image digest,
-bootstrap Argo CD, then run and capture the acceptance demo.
+The approved Phase 3 platform is running without Terraform drift. GitHub CI,
+Jenkins build/scan, Argo CD, Edge registration, ECK, and External Secrets are
+verified. The immediate external blocker is a Docker Hub access token with
+repository write scope. Once replaced, Jenkins can publish and commit the
+immutable digest, the FedKube ApplicationSet can be submitted, and the prepared
+six-scenario dataset can drive the end-to-end acceptance demo.
