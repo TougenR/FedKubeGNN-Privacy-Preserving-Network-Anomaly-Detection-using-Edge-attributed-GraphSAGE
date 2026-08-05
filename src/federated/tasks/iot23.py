@@ -24,7 +24,7 @@ from src.federated.contracts.task import (
     LocalTrainResult,
 )
 from src.federated.data.manifest import PreparedDatasetManifest
-from src.federated.data.storage import load_pyg_graph
+from src.federated.data.storage import load_graph_arrays, load_pyg_graph
 from src.federated.observability.events import NoopObserver, Observer
 
 
@@ -40,6 +40,7 @@ class ManifestIoT23Task:
         *,
         model_factory: Callable[[Any], Any],
         imbalance_mode: str = "class_weight",
+        class_weight_scope: str = "local",
         device: str | None = None,
         graph_loader: GraphLoader = load_pyg_graph,
         observer: Observer | None = None,
@@ -67,10 +68,36 @@ class ManifestIoT23Task:
         self._bundle.model_spec.validate_state(self._initial_state)
         self._model_factory = model_factory
         self._imbalance_mode = imbalance_mode
+        if class_weight_scope not in {"local", "global"}:
+            raise ContractError("class_weight_scope must be local or global.")
+        if imbalance_mode == "none" and class_weight_scope != "local":
+            raise ContractError(
+                "class_weight_scope=global requires imbalance_mode='class_weight'."
+            )
+        self._class_weight_scope = class_weight_scope
+        self._global_class_weights = (
+            self._compute_global_class_weights()
+            if class_weight_scope == "global"
+            else None
+        )
         self._device = device
         self._graph_loader = graph_loader
         self._observer = observer or NoopObserver()
         self._adapters: dict[str, Phase1IoT23Task] = {}
+
+    def _compute_global_class_weights(self) -> np.ndarray:
+        counts = np.zeros(self._bundle.label_schema.num_classes, dtype=np.int64)
+        for client_id in self._manifest.client_ids:
+            graph = load_graph_arrays(self._manifest.client_path(client_id), verify=True)
+            counts += np.bincount(
+                graph.edge_label[graph.train_mask], minlength=counts.size
+            )
+        present = counts > 0
+        if not np.any(present):
+            raise ContractError("Prepared dataset has no global training labels.")
+        weights = np.zeros(counts.size, dtype=np.float32)
+        weights[present] = counts.sum() / (present.sum() * counts[present])
+        return weights
 
     @property
     def task_id(self) -> str:
@@ -120,6 +147,7 @@ class ManifestIoT23Task:
             model_version=self.model_spec.model_version,
             model_hyperparameters=self.model_spec.hyperparameters,
             imbalance_mode=self._imbalance_mode,
+            fixed_class_weights=self._global_class_weights,
             device=self._device,
             source_metadata={"dataset_id": self._manifest.dataset_id},
         )
@@ -198,4 +226,10 @@ class ManifestIoT23Task:
             "dataset_digest": self._manifest.digest,
             "graph_protocol": self._manifest.document["graph_protocol"],
             "loaded_clients": sorted(self._adapters),
+            "class_weight_scope": self._class_weight_scope,
+            "global_class_weights": (
+                self._global_class_weights.tolist()
+                if self._global_class_weights is not None
+                else None
+            ),
         }

@@ -120,6 +120,18 @@ class ManifestTaskTests(unittest.TestCase):
             self.assertEqual(calls, ["a"])
             self.assertEqual(task.metadata()["loaded_clients"], ["a"])
 
+            global_task = ManifestIoT23Task(
+                root,
+                model_factory=lambda _: Linear(),
+                class_weight_scope="global",
+                device="cpu",
+                graph_loader=loader,
+            )
+            self.assertEqual(global_task.metadata()["loaded_clients"], [])
+            np.testing.assert_allclose(
+                global_task.metadata()["global_class_weights"], [1.0, 1.0]
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

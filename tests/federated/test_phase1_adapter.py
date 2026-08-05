@@ -175,6 +175,33 @@ class Phase1AdapterTests(unittest.TestCase):
         )
         self.assertEqual(bundle.metadata["audit"], "pending")
 
+    def test_fixed_global_class_weights_replace_local_weights(self) -> None:
+        graph = _FakeGraph()
+        task = Phase1IoT23Task(
+            client_graphs={"scenario-a": graph},
+            feature_columns=FEATURES,
+            class_to_idx=CLASSES,
+            model_factory=_model_factory,
+            fixed_class_weights=[0.25, 3.5],
+            device="cpu",
+        )
+        np.testing.assert_allclose(
+            task._local_class_weights((graph,)).cpu().numpy(),
+            np.array([0.25, 3.5], dtype=np.float32),
+        )
+        self.assertEqual(task.metadata()["class_weight_scope"], "global")
+
+    def test_fixed_global_class_weights_validate_schema(self) -> None:
+        with self.assertRaisesRegex(ContractError, "one value per class"):
+            Phase1IoT23Task(
+                client_graphs={"scenario-a": _FakeGraph()},
+                feature_columns=FEATURES,
+                class_to_idx=CLASSES,
+                model_factory=_model_factory,
+                fixed_class_weights=[1.0],
+                device="cpu",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

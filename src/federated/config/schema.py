@@ -87,6 +87,7 @@ class TrainingConfig:
     weight_decay: float
     grad_clip: float
     imbalance: str
+    class_weight_scope: str
     seed: int
 
 
@@ -222,6 +223,7 @@ def _build_config(raw: Mapping[str, Any]) -> Phase2Config:
             "weight_decay": float(training_raw["weight_decay"]),
             "grad_clip": float(training_raw["grad_clip"]),
             "imbalance": str(training_raw["imbalance"]),
+            "class_weight_scope": str(training_raw["class_weight_scope"]),
             "seed": int(training_raw["seed"]),
         }
     )
@@ -232,6 +234,12 @@ def _build_config(raw: Mapping[str, Any]) -> Phase2Config:
         "class_weight",
     }:
         raise Phase2ConfigError("Unsupported optimizer or imbalance mode.")
+    if training.class_weight_scope not in {"local", "global"}:
+        raise Phase2ConfigError("class_weight_scope must be local or global.")
+    if training.imbalance == "none" and training.class_weight_scope != "local":
+        raise Phase2ConfigError(
+            "class_weight_scope=global requires imbalance=class_weight."
+        )
 
     federation_raw = _mapping(raw["federation"], "federation")
     _strict(federation_raw, set(FederationConfig.__dataclass_fields__), "federation")

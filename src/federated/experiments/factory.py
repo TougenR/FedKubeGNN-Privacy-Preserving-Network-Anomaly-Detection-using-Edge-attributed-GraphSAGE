@@ -27,6 +27,7 @@ def manifest_task(
         dataset_root,
         model_factory=model_factory,
         imbalance_mode=config.training.imbalance,
+        class_weight_scope=config.training.class_weight_scope,
         device=device,
         observer=observer,
     )
@@ -55,6 +56,7 @@ def task_from_name(
             dataset_root,
             model_factory=model_factory,
             imbalance_mode=config.training.imbalance,
+            class_weight_scope=config.training.class_weight_scope,
             observer=observer,
         )
     raise AssertionError(name)

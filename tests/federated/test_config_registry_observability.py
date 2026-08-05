@@ -19,7 +19,14 @@ class ConfigTests(unittest.TestCase):
         config = load_phase2_config(ROOT / "configs/phase2/iot23-federated.yaml")
         self.assertEqual(len(config.data.scenarios), 6)
         self.assertEqual(config.federation.strategies, ("fedavg", "fedprox"))
+        self.assertEqual(config.training.class_weight_scope, "local")
         self.assertEqual(len(config.digest), 64)
+
+        global_config = load_phase2_config(
+            ROOT / "configs/phase3/ablations/global-class-weights.yaml"
+        )
+        self.assertEqual(global_config.training.class_weight_scope, "global")
+        self.assertNotEqual(config.digest, global_config.digest)
 
     def test_unknown_key_is_rejected(self):
         source = (ROOT / "configs/phase2/iot23-federated.yaml").read_text()

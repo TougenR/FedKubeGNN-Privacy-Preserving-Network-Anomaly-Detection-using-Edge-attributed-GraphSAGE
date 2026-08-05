@@ -15,10 +15,7 @@ data:
   cap_per_class: 10000
   chunk_size: 100000
   target_column: detailed-label
-  split:
-    train: 0.70
-    validation: 0.10
-    test: 0.20
+  split: {train: 0.70, validation: 0.10, test: 0.20}
   preprocessing: train_only_global
   graph_protocol: transductive_edge_mask
   scenarios:
@@ -29,10 +26,7 @@ data:
     - {id: 36-1, path: CTU-IoT-Malware-Capture-36-1/conn.log.labeled, malware: Okiru}
     - {id: 39-1, path: CTU-IoT-Malware-Capture-39-1/conn.log.labeled, malware: IRCBot}
 
-model:
-  hidden_dim: 64
-  num_layers: 2
-  dropout: 0.5
+model: {hidden_dim: 64, num_layers: 2, dropout: 0.5}
 
 training:
   rounds: 30
@@ -43,7 +37,7 @@ training:
   weight_decay: 0.0
   grad_clip: 1.0
   imbalance: class_weight
-  class_weight_scope: local
+  class_weight_scope: global
   seed: 42
 
 federation:

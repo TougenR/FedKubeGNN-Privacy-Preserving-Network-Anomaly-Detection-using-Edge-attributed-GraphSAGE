@@ -115,6 +115,7 @@ class Phase1IoT23Task:
         model_version: int = 1,
         model_hyperparameters: Mapping[str, Any] | None = None,
         imbalance_mode: str = "class_weight",
+        fixed_class_weights: Sequence[float] | np.ndarray | None = None,
         device: str | torch.device | None = None,
         source_metadata: Mapping[str, Any] | None = None,
     ) -> None:
@@ -151,6 +152,22 @@ class Phase1IoT23Task:
         )
         self._model_factory = model_factory
         self._imbalance_mode = imbalance_mode
+        self._fixed_class_weights: torch.Tensor | None = None
+        if fixed_class_weights is not None:
+            if imbalance_mode != "class_weight":
+                raise ContractError(
+                    "fixed_class_weights requires imbalance_mode='class_weight'."
+                )
+            fixed = np.asarray(fixed_class_weights, dtype=np.float32)
+            if fixed.shape != (self._label_schema.num_classes,):
+                raise ContractError(
+                    "fixed_class_weights must contain one value per class."
+                )
+            if not np.all(np.isfinite(fixed)) or np.any(fixed < 0):
+                raise ContractError(
+                    "fixed_class_weights must be finite and non-negative."
+                )
+            self._fixed_class_weights = torch.from_numpy(fixed.copy())
         self._device = torch.device(
             device
             if device is not None
@@ -297,6 +314,8 @@ class Phase1IoT23Task:
     def _local_class_weights(self, graphs: Sequence[Any]) -> torch.Tensor | None:
         if self._imbalance_mode == "none":
             return None
+        if self._fixed_class_weights is not None:
+            return self._fixed_class_weights.to(self._device)
         labels = torch.cat(
             [
                 graph.edge_label.detach().cpu()[graph.train_mask.detach().cpu()]
@@ -464,6 +483,9 @@ class Phase1IoT23Task:
         return {
             "task_id": self.task_id,
             "imbalance_mode": self._imbalance_mode,
+            "class_weight_scope": (
+                "global" if self._fixed_class_weights is not None else "local"
+            ),
             "device": str(self._device),
             "client_graph_counts": {
                 client_id: len(graphs)
