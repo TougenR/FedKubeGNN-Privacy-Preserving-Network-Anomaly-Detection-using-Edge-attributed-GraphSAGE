@@ -45,6 +45,8 @@ spec:
                 flwr run /app central --stream --run-config \
                   "task='iot23_manifest' strategy='${strategy}' dataset-root='/dataset' \
                    phase2-config='/app/configs/phase2/iot23-federated.yaml' save-model=true \
+                   num-server-rounds={{ .Values.training.rounds }} \
+                   local-epochs={{ .Values.training.localEpochs }} \
                    model-output='/artifacts/${strategy}/best-model.pt' \
                    events-output='/artifacts/${strategy}/events' \
                    flower-output-root='/artifacts/${strategy}/runs' \

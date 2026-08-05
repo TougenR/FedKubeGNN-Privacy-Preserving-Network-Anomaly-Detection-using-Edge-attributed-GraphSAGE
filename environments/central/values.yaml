@@ -2,7 +2,7 @@ mode: central
 fullnameOverride: fedkube-central
 clusterName: fedkube-central
 clusterLocation: asia-southeast1-b
-releaseId: 04ada4d3a0dc2cf69243be81d7f0105736812d15
+releaseId: fedper-gke-20260805-01
 
 image:
   repository: hieunguyen595/fedkube-gnn
@@ -29,7 +29,7 @@ externalSecrets:
   serviceAccountName: external-secrets-central
 
 training:
-  enabled: false
+  enabled: true
   strategies: [fedper]
   rounds: 30
   localEpochs: 5
