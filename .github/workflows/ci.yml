@@ -19,7 +19,7 @@ jobs:
           python-version: "3.11"
           cache: pip
       - name: Install test tools and project boundary
-        run: pip install -e ".[phase1,phase3]" ruff
+        run: pip install -e ".[phase1,phase3]" "ruff==0.15.0"
       - name: Unit tests
         run: python -m unittest discover -s tests -v
       - name: Compile
@@ -66,7 +66,7 @@ jobs:
       security-events: write
     steps:
       - uses: actions/checkout@v5
-      - uses: aquasecurity/trivy-action@0.33.1
+      - uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .

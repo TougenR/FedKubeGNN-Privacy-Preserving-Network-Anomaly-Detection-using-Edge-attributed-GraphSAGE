@@ -1,6 +1,9 @@
 # syntax=docker/dockerfile:1.7
 FROM python:3.11-slim
 
+ENV PIP_DEFAULT_TIMEOUT=120 \
+    PIP_RETRIES=10
+
 WORKDIR /app
 
 RUN apt-get update \
@@ -15,7 +18,7 @@ COPY configs ./configs
 # upstream, version-pinned Flower infrastructure images.
 RUN python -m pip install --no-cache-dir \
       --index-url https://download.pytorch.org/whl/cpu \
-      "torch==2.5.1" \
+      "torch==2.6.0" \
     && python -m pip install --no-cache-dir \
       "flwr==1.32.1" \
       "numpy>=1.26,<2.0" \
