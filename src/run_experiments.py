@@ -476,9 +476,9 @@ def run_per_scenario(
     Trả về DataFrame: 1 dòng / scenario + 1 dòng MEAN.
     """
     from src.multi_scenario import load_all_scenarios
-    from src.preprocess import clean_flows, transform
+    from src.core.preprocess import clean_flows, transform
     from src.data_io import load_scenario
-    from src.graph_build import build_graph
+    from src.core.graph import build_graph
     from src.train import train_model, split_edge_masks, get_device
     from src.evaluate import evaluate_model
 
@@ -631,13 +631,13 @@ def run_pooled(
     Eval: union test_mask của MỌI graph → metric global.
     """
     from src.multi_scenario import load_all_scenarios
-    from src.preprocess import clean_flows, transform
+    from src.core.preprocess import clean_flows, transform
     from src.data_io import load_scenario
-    from src.graph_build import build_graph
+    from src.core.graph import build_graph
     from src.train import (
         split_edge_masks, get_device, make_criterion, save_checkpoint,
     )
-    from src.model import build_model
+    from src.core.model import build_model
     from src.evaluate import plot_confusion_matrix
 
     _set_seed(seed)

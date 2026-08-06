@@ -1,0 +1,51 @@
+{{- if .Values.demoTarget.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "detection-stack.fullname" . }}-target
+  labels: {fedkube.io/release-id: {{ .Values.releaseId | quote }}}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: demo-target}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: demo-target
+        fedkube.io/release-id: {{ .Values.releaseId | quote }}
+    spec:
+      serviceAccountName: {{ include "detection-stack.serviceAccountName" . }}
+      containers:
+        - name: target
+          image: {{ include "detection-stack.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["src.application.demo_target.app:app", "--host", "0.0.0.0", "--port", "8080"]
+          {{- if .Values.demoTarget.observation.enabled }}
+          env:
+            - name: COLLECTOR_OBSERVE_URL
+              value: http://{{ include "detection-stack.fullname" . }}-collector:8082/observe
+            - name: DEMO_SENSOR_ID
+              value: {{ .Values.demoTarget.observation.sensorId | quote }}
+            - name: DEMO_TARGET_ENTITY
+              value: demo-target
+            - name: DEMO_TARGET_PORT
+              value: "8080"
+          {{- end }}
+          ports: [{name: http, containerPort: 8080}]
+          readinessProbe:
+            httpGet: {path: /health, port: http}
+          resources: {{- toYaml .Values.demoTarget.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities: {drop: [ALL]}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "detection-stack.fullname" . }}-target
+spec:
+  selector: {app.kubernetes.io/name: demo-target}
+  ports: [{name: http, port: 80, targetPort: http}]
+{{- end }}

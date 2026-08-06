@@ -125,7 +125,7 @@ def _read_chunked_with_cap(
     """
     # Local import để tránh vòng nếu multi_scenario được import sớm.
     from src.data_io import split_label_column
-    from src.preprocess import clean_flows
+    from src.core.preprocess import clean_flows
 
     # ---- Parse tên cột từ '#fields' (giống data_io.read_conn_log) ----
     canonical_map = {
@@ -237,7 +237,7 @@ def load_all_scenarios(
     """
     # Local import — tránh vòng.
     from src.data_io import load_scenario
-    from src.preprocess import clean_flows
+    from src.core.preprocess import clean_flows
 
     if not paths:
         raise ValueError("load_all_scenarios: paths rỗng.")
@@ -293,7 +293,7 @@ def fit_shared_preprocessor(
     -------
     Preprocessor (đối tượng từ ``src.preprocess``).
     """
-    from src.preprocess import fit_preprocessor
+    from src.core.preprocess import fit_preprocessor
 
     if not train_dfs:
         raise ValueError("fit_shared_preprocessor: train_dfs rỗng.")
@@ -373,8 +373,8 @@ def build_scenario_graphs(
     ``class_to_idx`` CHUNG → Data. Assert mọi graph cùng ``feature_dim``
     và ``num_classes``.
     """
-    from src.graph_build import build_graph
-    from src.preprocess import transform
+    from src.core.graph import build_graph
+    from src.core.preprocess import transform
 
     out: Dict[str, Data] = {}
     for name, df in dfs.items():
@@ -546,13 +546,13 @@ def run_loso(
         DataFrame với dòng cuối là ``MEAN``.
     """
     from src.evaluate import plot_confusion_matrix
-    from src.graph_build import build_graph
+    from src.core.graph import build_graph
     from src.imbalance import (
         compute_class_weights,
         undersample_majority,
     )
-    from src.model import build_model
-    from src.preprocess import transform
+    from src.core.model import build_model
+    from src.core.preprocess import transform
     from src.train import get_device, make_criterion, set_seed
 
     # ---- Validate ----

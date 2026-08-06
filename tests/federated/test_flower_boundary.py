@@ -38,7 +38,7 @@ class FlowerConfigTests(unittest.TestCase):
             {
                 "task": "iot23_manifest",
                 "phase2-config": str(
-                    ROOT / "configs/phase2/iot23-federated.yaml"
+                    ROOT / "configs/federated/phase2/iot23-federated.yaml"
                 ),
                 "strategy": "fedprox",
             }
@@ -59,7 +59,7 @@ class FlowerConfigTests(unittest.TestCase):
             {
                 "task": "iot23_manifest",
                 "phase2-config": str(
-                    ROOT / "configs/phase2/iot23-federated.yaml"
+                    ROOT / "configs/federated/phase2/iot23-federated.yaml"
                 ),
                 "strategy": "fedper",
             }
@@ -76,7 +76,7 @@ class FlowerConfigTests(unittest.TestCase):
             {
                 "task": "iot23_manifest",
                 "phase2-config": str(
-                    ROOT / "configs/phase2/iot23-federated.yaml"
+                    ROOT / "configs/federated/phase2/iot23-federated.yaml"
                 ),
                 "strategy": "fedavg",
                 "flower-output-root": "/artifacts/fedavg/runs",
@@ -94,7 +94,9 @@ class FlowerConfigTests(unittest.TestCase):
 
         run_config = {
             "task": "iot23_manifest",
-            "phase2-config": str(ROOT / "configs/phase2/iot23-federated.yaml"),
+            "phase2-config": str(
+                ROOT / "configs/federated/phase2/iot23-federated.yaml"
+            ),
             "strategy": "fedprox",
         }
         message = SimpleNamespace(content={"config": {"lr": 0.001}})

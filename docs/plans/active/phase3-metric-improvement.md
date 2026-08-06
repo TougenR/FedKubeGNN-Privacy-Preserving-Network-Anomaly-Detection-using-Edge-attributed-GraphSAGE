@@ -12,7 +12,7 @@ test data for model or hyperparameter selection.
   protocol and its accepted transductive limitations.
 - `artifacts/phase1_clean/report_analysis/` is the comparison evidence for
   Phase 1 clean runs over seeds 42, 1337, and 2026.
-- `configs/phase2/iot23-federated.yaml` defines the current six-scenario FL
+- `configs/federated/phase2/iot23-federated.yaml` defines the current six-scenario FL
   dataset, model, split, optimizer, imbalance, and federation settings.
 - `src/federated/data/preparation.py` and
   `src/federated/adapters/phase1_iot23.py` are the current preprocessing and

@@ -1,0 +1,12 @@
+image:
+  repository: fedkube-detection
+  tag: phase4-local
+  pullPolicy: Never
+releaseId: phase4-local
+modelBundle:
+  existingClaim: fedper-model-bundle
+ingress:
+  enabled: true
+  host: fedkube-detection.local
+elasticsearch:
+  enabled: false

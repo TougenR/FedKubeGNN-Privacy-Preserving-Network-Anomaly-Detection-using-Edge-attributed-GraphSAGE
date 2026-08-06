@@ -27,7 +27,7 @@ from typing import Any, Iterable, Iterator, Optional
 import pandas as pd
 
 from src.data_io import split_label_column
-from src.preprocess import (
+from src.core.preprocess import (
     DROP_COLUMNS,
     FLOAT_COLUMNS,
     INT_COLUMNS,

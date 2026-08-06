@@ -1,0 +1,9 @@
+schema_version: 1
+enabled: false
+automatic_blocking: false
+reason: >-
+  Detection thresholds, severity mapping, confidence buckets, and entropy
+  buckets must be selected from labeled validation and false-alert evidence.
+confidence_boundaries: null
+entropy_boundaries: null
+class_severity: null

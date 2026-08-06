@@ -15,7 +15,7 @@ cluster; adding Edge clusters changes placement values, not the Flower app.
                                                    |
                                                    +-- test/build/scan
                                                    +-- push hieunguyen595/fedkube-gnn:<git-sha>
-                                                   `-- commit image@sha256 to environments/
+                                                   `-- commit image@sha256 to deploy/federated/environments/
                                                                        |
                                                                        v
                                                         Argo CD (Central GKE)

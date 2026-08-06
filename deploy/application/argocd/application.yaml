@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: fedkube-detection
+  namespace: argocd
+  annotations:
+    fedkube.io/deployment-gate: local-acceptance-and-cost-approval-required
+spec:
+  project: fedkube
+  source:
+    repoURL: https://github.com/TougenR/FedKubeGNN-Privacy-Preserving-Network-Anomaly-Detection-using-Edge-attributed-GraphSAGE.git
+    targetRevision: main
+    path: deploy/application/helm/detection-stack
+    helm:
+      releaseName: fedkube-detection
+      valueFiles:
+        - ../../environments/gke/values.yaml
+  destination:
+    name: in-cluster
+    namespace: fedkube-detection
+  # Deliberately no automated sync. Apply/sync only after local acceptance and
+  # a separate approval for GKE cost and the model-bundle PVC.
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

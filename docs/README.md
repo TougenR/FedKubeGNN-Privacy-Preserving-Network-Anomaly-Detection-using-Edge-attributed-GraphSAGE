@@ -38,12 +38,12 @@ Application documents:
   federation, observability, artifact and run contract.
 - [`HANDOFF_TO_HIEU.md`](HANDOFF_TO_HIEU.md): current ownership, blockers and
   ordered Phase 2/Phase 3 handoff.
-- [`../phase3_monitoring/README.md`](../phase3_monitoring/README.md): Minikube
-  inference PoC, artifact contract, validation and known limits.
 - [`PHASE3_ARCHITECTURE.md`](PHASE3_ARCHITECTURE.md): GKE Central/Edge,
   GitHub/Jenkins/Argo CD authority, six-client placement, GCS, and Kibana.
 - [`PHASE3_RUNBOOK.md`](PHASE3_RUNBOOK.md): validation, approval gate,
   secret seeding, bootstrap, acceptance evidence, and cleanup.
+- [`PHASE4_ARCHITECTURE.md`](PHASE4_ARCHITECTURE.md): centralized multi-head
+  serving, Zeek flow collection, scientific protocols, and live-demo gates.
 - [`kienthuc/huong-tiep-can-va-lua-chon-model.md`](kienthuc/huong-tiep-can-va-lua-chon-model.md):
   problem framing and why E-GraphSAGE is selected over pure CNNs.
 

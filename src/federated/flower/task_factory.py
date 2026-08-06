@@ -18,7 +18,12 @@ def task_factory(context: Any):
     run = dict(context.run_config)
     name = str(run.get("task", "toy"))
     config = load_phase2_config(
-        str(run.get("phase2-config", "configs/phase2/iot23-federated.yaml"))
+        str(
+            run.get(
+                "phase2-config",
+                "configs/federated/phase2/iot23-federated.yaml",
+            )
+        )
     )
     dataset = run.get("dataset-root")
     return task_from_name(

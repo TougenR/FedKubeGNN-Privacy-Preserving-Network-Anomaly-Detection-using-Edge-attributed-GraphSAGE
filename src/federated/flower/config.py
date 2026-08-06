@@ -37,7 +37,12 @@ def resolve_run_config(
     from src.federated.config import load_phase2_config
 
     phase2 = load_phase2_config(
-        str(resolved.get("phase2-config", "configs/phase2/iot23-federated.yaml"))
+        str(
+            resolved.get(
+                "phase2-config",
+                "configs/federated/phase2/iot23-federated.yaml",
+            )
+        )
     )
     strategy = str(resolved["strategy"]).lower()
     if strategy not in phase2.federation.strategies:

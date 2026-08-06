@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "source_dataset_id": "iot23-0d9bbeb9f9ed0a3f",
+  "source_dataset_digest": "68fc6fc0cb8974aba1d431113b39dbf82f98457159c04d6a14b22feaa4b0cb89",
+  "derived_dataset_id": "iot23-seven-natural-3be7796b1ee27bc3",
+  "derived_dataset_digest": "c5ab9c02896c08c9f60e8efb9672a2090cbe595e4c344308f5e4dc2b0e51319a",
+  "seed": 42,
+  "cap_per_class": 10000,
+  "chunk_size": 100000,
+  "split": {"train": 0.7, "validation": 0.1, "test": 0.2},
+  "dropped_class": "Okiru-Attack",
+  "classes": [
+    "Benign",
+    "Attack",
+    "C&C",
+    "C&C-HeartBeat",
+    "DDoS",
+    "Okiru",
+    "PartOfAHorizontalPortScan"
+  ],
+  "expected_split_class_counts": {
+    "validation": [3644, 663, 825, 1000, 1000, 1000, 4012],
+    "test": [7295, 1330, 1652, 2000, 2000, 2000, 8025]
+  },
+  "sources": [
+    {
+      "client_id": "34-1",
+      "url": "https://mcfp.felk.cvut.cz/publicDatasets/IoT-23-Dataset/IndividualScenarios/CTU-IoT-Malware-Capture-34-1/bro/conn.log.labeled",
+      "size": 2926718,
+      "sha256": "d69e49b2aae8c1bd33286936531658202dec47d989f0439bad3f8be180467a6e"
+    },
+    {
+      "client_id": "1-1",
+      "url": "https://mcfp.felk.cvut.cz/publicDatasets/IoT-23-Dataset/IndividualScenarios/CTU-IoT-Malware-Capture-1-1/bro/conn.log.labeled",
+      "size": 148305428,
+      "sha256": "953e8c27a9b2fcfc2776aa136baf9249e6dde4cf752b9192ac7ca0e63b86e232"
+    },
+    {
+      "client_id": "3-1",
+      "url": "https://mcfp.felk.cvut.cz/publicDatasets/IoT-23-Dataset/IndividualScenarios/CTU-IoT-Malware-Capture-3-1/bro/conn.log.labeled",
+      "size": 24383537,
+      "sha256": "9851009bbca03e15089fa1a356dd4b5eee4a98161a51703626058a0b507f50d0"
+    },
+    {
+      "client_id": "9-1",
+      "url": "https://mcfp.felk.cvut.cz/publicDatasets/IoT-23-Dataset/IndividualScenarios/CTU-IoT-Malware-Capture-9-1/bro/conn.log.labeled",
+      "size": 993459767,
+      "sha256": "b2749ab394d6a8f96dab5f9aa0e848c9c5b85ad4a6fa3034040d718de56c918b"
+    },
+    {
+      "client_id": "36-1",
+      "url": "https://mcfp.felk.cvut.cz/publicDatasets/IoT-23-Dataset/IndividualScenarios/CTU-IoT-Malware-Capture-36-1/bro/conn.log.labeled",
+      "size": 1787852355,
+      "sha256": "cec2d4d3736a025694b0b272498ca9b672fd8d37d76e290b93c810e4df73dc63"
+    },
+    {
+      "client_id": "39-1",
+      "url": "https://mcfp.felk.cvut.cz/publicDatasets/IoT-23-Dataset/IndividualScenarios/CTU-IoT-Malware-Capture-39-1/bro/conn.log.labeled",
+      "size": 10885361439,
+      "sha256": "304c1667cb4ece9d1d14336fdd707962ab0ae2c98f12db7784d293ce17c6223b"
+    }
+  ]
+}

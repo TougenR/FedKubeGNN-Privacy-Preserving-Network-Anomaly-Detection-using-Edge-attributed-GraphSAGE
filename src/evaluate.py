@@ -413,10 +413,10 @@ def run_comparison(
 
     # ---- Lazy imports (tránh vòng nếu evaluate import train trước) ----
     from src.data_io import load_scenario
-    from src.graph_build import build_graph
+    from src.core.graph import build_graph
     from src.imbalance import compute_class_weights, prepare_imbalance_variants
-    from src.model import build_model  # noqa: F401 (giữ cho mở rộng)
-    from src.preprocess import clean_flows, fit_preprocessor, transform
+    from src.core.model import build_model  # noqa: F401 (giữ cho mở rộng)
+    from src.core.preprocess import clean_flows, fit_preprocessor, transform
     from src.train import (
         get_device,
         split_edge_masks,

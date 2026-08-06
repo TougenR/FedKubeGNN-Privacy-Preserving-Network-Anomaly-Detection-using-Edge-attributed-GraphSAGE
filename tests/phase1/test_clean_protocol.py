@@ -12,7 +12,7 @@ import pandas as pd
 import torch
 import yaml
 
-from phase3_monitoring.inference_service.model_loader import ModelContractError
+from src.core.legacy_bundle import ModelContractError
 from src.phase1_clean import (
     CLEAN_IMBALANCE_MODE,
     FIXED_LABELS,

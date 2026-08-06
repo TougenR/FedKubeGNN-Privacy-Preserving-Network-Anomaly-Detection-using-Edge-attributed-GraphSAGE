@@ -3,7 +3,7 @@ name: Terraform plan
 on:
   pull_request:
     paths:
-      - "infra/terraform/**"
+      - "deploy/federated/terraform/**"
       - ".github/workflows/terraform-plan.yml"
   workflow_dispatch:
 
@@ -32,5 +32,5 @@ jobs:
       - uses: actions/upload-artifact@v5
         with:
           name: phase3-terraform-plan
-          path: artifacts/phase3/terraform/phase3-plan.txt
+          path: artifacts/federated/terraform/phase3-plan.txt
           retention-days: 7

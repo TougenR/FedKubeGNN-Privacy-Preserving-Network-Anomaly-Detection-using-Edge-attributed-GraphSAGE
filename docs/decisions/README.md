@@ -19,3 +19,9 @@ documents here as real choices are accepted, then index them in this file.
 - [`0003-fedper-edge-personalization.md`](0003-fedper-edge-personalization.md):
   shared GraphSAGE encoder, Edge-owned classifier heads, cold-start readiness,
   and durable private-state ownership.
+- [`0004-repository-system-boundaries.md`](0004-repository-system-boundaries.md):
+  durable ownership for shared core, federated training, detection application,
+  and their independent deployment systems.
+- [`0005-centralized-fedper-research-serving.md`](0005-centralized-fedper-research-serving.md):
+  immutable multi-head research bundles, trusted sensor routing, and the
+  serving exception to Edge-local Phase 3 head ownership.

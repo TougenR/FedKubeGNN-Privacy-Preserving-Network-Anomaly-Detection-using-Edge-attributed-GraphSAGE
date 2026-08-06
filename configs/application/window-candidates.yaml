@@ -1,0 +1,13 @@
+schema_version: 1
+selection_split: validation
+time_window_seconds: [5, 15, 30, 60]
+flow_limits: [50, 100, 500, 1000]
+selection_metrics:
+  - macro_f1_fixed
+  - prediction_stability
+  - end_to_end_latency
+  - memory
+  - flow_drop_rate
+  - late_event_sensitivity
+  - batch_boundary_sensitivity
+selected: null

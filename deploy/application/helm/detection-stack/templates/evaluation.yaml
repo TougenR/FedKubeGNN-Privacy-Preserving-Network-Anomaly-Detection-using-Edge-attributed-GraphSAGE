@@ -1,0 +1,100 @@
+{{- if .Values.evaluation.enabled }}
+{{- $claim := .Values.evaluation.artifactsClaim.name -}}
+{{- if .Values.evaluation.artifactsClaim.create }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $claim }}
+  labels: {fedkube.io/release-id: {{ .Values.releaseId | quote }}}
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: {{ .Values.evaluation.artifactsClaim.storageClassName | quote }}
+  resources:
+    requests: {storage: {{ .Values.evaluation.artifactsClaim.size | quote }}}
+---
+{{- end }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ printf "%s-window-%s" (include "detection-stack.fullname" .) (sha256sum .Values.releaseId | trunc 8) | trunc 63 | trimSuffix "-" }}
+  labels:
+    app.kubernetes.io/name: fedper-window-evaluation
+    fedkube.io/release-id: {{ .Values.releaseId | quote }}
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: {{ .Values.evaluation.activeDeadlineSeconds }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: fedper-window-evaluation
+        fedkube.io/release-id: {{ .Values.releaseId | quote }}
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ include "detection-stack.serviceAccountName" . }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 49999
+        fsGroup: 49999
+      initContainers:
+        - name: prepare-exact-replay
+          image: {{ include "detection-stack.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: [sh, -ec]
+          args:
+            - >-
+              test -f {{ .Values.evaluation.replayPath }}/manifest.json ||
+              python -m src.application.evaluation.iot23_replay
+              --contract {{ .Values.evaluation.sourceContractPath }}
+              --output {{ .Values.evaluation.replayPath }}
+              --work /work/raw
+          resources: {{- toYaml .Values.evaluation.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: artifacts, mountPath: /artifacts}
+            - {name: raw-work, mountPath: /work}
+      containers:
+        - name: benchmark-validation
+          image: {{ include "detection-stack.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: [python, -m, src.application.evaluation.window_benchmark]
+          args:
+            - --bundle
+            - {{ .Values.modelBundle.mountPath }}
+            - --replay
+            - {{ .Values.evaluation.replayPath }}
+            - --config
+            - {{ .Values.evaluation.candidateConfigPath }}
+            - --output
+            - {{ .Values.evaluation.reportPath }}
+          resources: {{- toYaml .Values.evaluation.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: artifacts, mountPath: /artifacts}
+            - {name: model-bundle, mountPath: {{ .Values.modelBundle.mountPath }}, readOnly: true}
+      volumes:
+        - name: artifacts
+          persistentVolumeClaim: {claimName: {{ $claim }}}
+        - name: raw-work
+          emptyDir: {sizeLimit: 18Gi}
+        - name: model-bundle
+          secret:
+            secretName: {{ .Values.modelBundle.existingSecret }}
+            items:
+              - {key: manifest.json, path: manifest.json}
+              - {key: shared-encoder.npz, path: shared-encoder.npz}
+              - {key: preprocessor.pkl, path: preprocessor.pkl}
+              - {key: model-spec.json, path: model-spec.json}
+              - {key: feature-schema.json, path: feature-schema.json}
+              - {key: label-schema.json, path: label-schema.json}
+              - {key: graph-schema.json, path: graph-schema.json}
+              - {key: head-1-1.npz, path: heads/1-1.npz}
+              - {key: head-3-1.npz, path: heads/3-1.npz}
+              - {key: head-9-1.npz, path: heads/9-1.npz}
+              - {key: head-34-1.npz, path: heads/34-1.npz}
+              - {key: head-36-1.npz, path: heads/36-1.npz}
+              - {key: head-39-1.npz, path: heads/39-1.npz}
+{{- end }}

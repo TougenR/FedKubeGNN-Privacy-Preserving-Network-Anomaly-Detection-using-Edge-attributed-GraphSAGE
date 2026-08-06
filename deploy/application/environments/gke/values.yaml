@@ -1,0 +1,20 @@
+image:
+  repository: hieunguyen595/fedkube-gnn
+  tag: unset
+  digest: ""
+releaseId: phase4-unreleased
+modelBundle:
+  existingClaim: ""
+  existingSecret: fedper-model-bundle
+inference:
+  enabled: false
+demoTarget:
+  enabled: false
+alertRouter:
+  enabled: false
+evaluation:
+  enabled: true
+ingress:
+  enabled: false
+elasticsearch:
+  enabled: false

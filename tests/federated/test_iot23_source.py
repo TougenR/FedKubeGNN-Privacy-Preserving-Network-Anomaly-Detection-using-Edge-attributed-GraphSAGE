@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 
 from src.federated.data.sources.iot23 import read_clean_priority_sample
-from src.preprocess import _MOCK_CONN_LOG_CLEAN
+from src.core.preprocess import _MOCK_CONN_LOG_CLEAN
 
 
 class IoT23SourceTests(unittest.TestCase):

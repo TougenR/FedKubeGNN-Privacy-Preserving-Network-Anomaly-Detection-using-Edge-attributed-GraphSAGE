@@ -1,0 +1,87 @@
+{{- if and (eq .Values.mode "central") .Values.training.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "fedkube.fullname" . }}-flower-cli
+  labels:
+    {{- include "fedkube.labels" . | nindent 4 }}
+data:
+  config.toml: |
+    [superlink.central]
+    address = "{{ include "fedkube.fullname" . }}-superlink:9093"
+    root-certificates = "/tls/ca.crt"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "fedkube.fullname" . }}-train-{{ .Values.releaseId | lower | trunc 24 }}
+  labels:
+    {{- include "fedkube.labels" . | nindent 4 }}
+    app.kubernetes.io/component: training-launcher
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  # A retry repeats every FL round. Require a new immutable release instead of
+  # automatically duplicating a costly completed training sequence when a
+  # post-processing step fails.
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "fedkube.name" . }}
+        app.kubernetes.io/component: training-launcher
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ include "fedkube.serviceAccountName" . }}
+      containers:
+        - name: launcher
+          image: {{ include "fedkube.appImage" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: [bash, -euc]
+          args:
+            - |
+              run_roots=()
+              for strategy in {{ join " " .Values.training.strategies }}; do
+                flwr run /app central --stream --run-config \
+                  "task='iot23_manifest' strategy='${strategy}' dataset-root='/dataset' \
+                   phase2-config='/app/configs/federated/phase2/iot23-federated.yaml' save-model=true \
+                   num-server-rounds={{ .Values.training.rounds }} \
+                   local-epochs={{ .Values.training.localEpochs }} \
+                   model-output='/artifacts/${strategy}/best-model.pt' \
+                   events-output='/artifacts/${strategy}/events' \
+                   flower-output-root='/artifacts/${strategy}/runs' \
+                   personalized-state-root='/personalized-head' \
+                   personalized-prefixes='head.'"
+                run_manifest="$(find "/artifacts/${strategy}/runs" -mindepth 2 -maxdepth 2 \
+                  -type f -name run.json -exec grep -l '\"status\": \"completed\"' {} + \
+                  | sort | tail -n 1)"
+                test -n "${run_manifest}"
+                run_roots+=("${run_manifest%/run.json}")
+              done
+              python -m src.federated.cli \
+                --repository-root /app \
+                --config configs/federated/phase2/iot23-federated.yaml \
+                visualize \
+                --runs "${run_roots[@]}" \
+                --output "/artifacts/visualizations/{{ .Values.releaseId }}"
+          env:
+            - {name: FLWR_HOME, value: /flwr}
+            - {name: PYTHONUNBUFFERED, value: "1"}
+          volumeMounts:
+            - {name: config, mountPath: /flwr/config.toml, subPath: config.toml, readOnly: true}
+            - {name: tls, mountPath: /tls, readOnly: true}
+            - {name: dataset, mountPath: /dataset, readOnly: true}
+            - {name: artifacts, mountPath: /artifacts}
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {cpu: "1", memory: 1Gi}
+      volumes:
+        - name: config
+          configMap: {name: {{ include "fedkube.fullname" . }}-flower-cli}
+        - name: tls
+          secret: {secretName: {{ .Values.flower.caSecretName }}}
+        - name: dataset
+          persistentVolumeClaim: {claimName: {{ include "fedkube.fullname" . }}-dataset}
+        - name: artifacts
+          persistentVolumeClaim: {claimName: {{ include "fedkube.fullname" . }}-artifacts}
+{{- end }}

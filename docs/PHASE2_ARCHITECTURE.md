@@ -124,12 +124,12 @@ backend để Phase 3 có thể thêm OpenTelemetry/Prometheus.
 
 ## Chạy
 
-Config chuẩn: `configs/phase2/iot23-federated.yaml`. Global CLI option đứng
+Config chuẩn: `configs/federated/phase2/iot23-federated.yaml`. Global CLI option đứng
 trước subcommand:
 
 ```bash
-python -m src.federated.cli --config configs/phase2/iot23-federated.yaml doctor
-python -m src.federated.cli --config configs/phase2/iot23-federated.yaml prepare
+python -m src.federated.cli --config configs/federated/phase2/iot23-federated.yaml doctor
+python -m src.federated.cli --config configs/federated/phase2/iot23-federated.yaml prepare
 python -m src.federated.cli validate --dataset artifacts/phase2/prepared/<dataset-id>
 
 python -m src.federated.cli run --dataset artifacts/phase2/prepared/<dataset-id> --strategy fedavg

@@ -1,8 +1,0 @@
-fastapi
-uvicorn
-pydantic
-pandas
-scikit-learn
-torch==2.1.2
-torch-geometric==2.5.3
-numpy<2.0.0

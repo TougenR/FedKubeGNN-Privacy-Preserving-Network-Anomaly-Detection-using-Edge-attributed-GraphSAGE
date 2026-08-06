@@ -91,7 +91,7 @@ edge in those graphs, not `~val_mask` (`src/multi_scenario.py:647-691`,
 | Held-out label vocabulary excluded | **FAIL** under strict inductive evaluation | `build_shared_class_to_idx(all_dfs)` is called before each LOSO loop at `src/multi_scenario.py:615-619`; its implementation unions all scenarios at `283-305`. | The output label schema reveals which classes are present in held-out. No held-out label enters loss because its class weight becomes zero, but this is still label-schema exposure. | Choose and document policy: training-only labels with explicit unknown-label evaluation, or a fixed external taxonomy declared before the split. |
 | Unseen categorical values are deterministic | **PASS with caveat** | `transform` uses frozen feature columns. Unknown proto/conn-state map to all-zero known one-hots; unknown/rare service maps to `service_other` (`src/preprocess.py:617-655`). Toy probe verified this behavior. | No fit-time leakage; proto/conn-state unknowns are conflated with no known category rather than represented by a dedicated unknown bit. | No blocking fix for rerun; document this encoding choice or add explicit unknown buckets in a separately approved feature change. |
 | Pooled graph protocol is reproducible | **PASS with caveat** | Deterministic seed/mask construction is in `src/train.py:251-339`; the config fixes seed 42 (`config.yaml:93-94`). | Split is reproducible on the same stack, but only one seed was reported and PyG GPU scatter is not strict deterministic. | Run three seeds after protocol fixes; record seed and split digest per run. |
-| Checkpoint/preprocessor compatibility | **FAIL** for historical deployment bundle | Historical pooled checkpoint has `feature_dim=55` and no `feature_columns`; current `preprocessor.pkl` has 53 columns (verified artifact). Runtime rejects missing fields/mismatch at `phase3_monitoring/inference_service/model_loader.py:112-153`. | The present Phase 3 inference bundle cannot be safely loaded. | Export a single run-scoped bundle with exact preprocessor, ordered schema, label mapping and digests. |
+| Checkpoint/preprocessor compatibility | **FAIL** for historical deployment bundle | Historical pooled checkpoint has `feature_dim=55` and no `feature_columns`; current `preprocessor.pkl` has 53 columns (verified artifact). Runtime rejects missing fields/mismatch in `src/core/legacy_bundle.py`. | The historical single-head inference bundle cannot be safely loaded. | Export a single run-scoped bundle with exact preprocessor, ordered schema, label mapping and digests. |
 
 ## Pooled protocol classification
 
@@ -156,7 +156,7 @@ the file now present to the historical pooled checkpoint.
 
 The Phase 3 loader correctly fails closed: it demands ordered feature columns,
 checks their length and exact equality with the preprocessor, and refuses
-position-blind padding (`phase3_monitoring/inference_service/model_loader.py:106-179`).
+position-blind padding (`src/core/legacy_bundle.py`).
 
 ## Automated protection present today
 

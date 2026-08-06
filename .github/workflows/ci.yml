@@ -4,7 +4,9 @@ on:
   pull_request:
   push:
     branches: [main]
-    paths-ignore: ["environments/**"]
+    paths-ignore:
+      - "deploy/federated/environments/**"
+      - "deploy/application/environments/**"
 
 permissions:
   contents: read
@@ -19,14 +21,15 @@ jobs:
           python-version: "3.11"
           cache: pip
       - name: Install test tools and project boundary
-        run: pip install -e ".[phase1,phase3]" "ruff==0.15.0"
+        run: pip install -e ".[phase1,phase3,application]" "ruff==0.15.0"
       - name: Unit tests
         run: python -m unittest discover -s tests -v
       - name: Compile
         run: python -m compileall -q src scripts
       - name: Lint
         run: >-
-          ruff check src/federated tests/federated
+          ruff check src/core src/federated src/application
+          tests/core tests/federated tests/application
           scripts/update_image_digest.py tests/test_update_image_digest.py
 
   infrastructure:
@@ -41,23 +44,26 @@ jobs:
         with: {python-version: "3.11"}
       - name: Helm lint and render
         run: |
-          helm lint charts/fedkube -f environments/central/values.yaml
-          helm lint charts/fedkube -f environments/edge-01/values.yaml
-          helm template fedkube-central charts/fedkube -n fedkube -f environments/central/values.yaml > /tmp/central.yaml
-          helm template fedkube-edge-01 charts/fedkube -n fedkube -f environments/edge-01/values.yaml > /tmp/edge.yaml
+          helm lint deploy/federated/helm/fedkube -f deploy/federated/environments/central/values.yaml
+          helm lint deploy/federated/helm/fedkube -f deploy/federated/environments/edge-01/values.yaml
+          helm template fedkube-central deploy/federated/helm/fedkube -n fedkube -f deploy/federated/environments/central/values.yaml > /tmp/central.yaml
+          helm template fedkube-edge-01 deploy/federated/helm/fedkube -n fedkube -f deploy/federated/environments/edge-01/values.yaml > /tmp/edge.yaml
+          helm lint deploy/application/helm/detection-stack -f deploy/application/environments/local/values.yaml
+          helm template fedkube-detection deploy/application/helm/detection-stack -n fedkube-detection -f deploy/application/environments/local/values.yaml > /tmp/detection.yaml
+          python -m json.tool dashboards/kibana/elasticsearch-index-template.json > /dev/null
       - name: Terraform format and validate
         run: |
-          terraform -chdir=infra/terraform/bootstrap fmt -check -recursive
-          terraform -chdir=infra/terraform/bootstrap init -backend=false
-          terraform -chdir=infra/terraform/bootstrap validate
-          terraform -chdir=infra/terraform fmt -check -recursive
-          terraform -chdir=infra/terraform init -backend=false
-          terraform -chdir=infra/terraform validate
+          terraform -chdir=deploy/federated/terraform/bootstrap fmt -check -recursive
+          terraform -chdir=deploy/federated/terraform/bootstrap init -backend=false
+          terraform -chdir=deploy/federated/terraform/bootstrap validate
+          terraform -chdir=deploy/federated/terraform fmt -check -recursive
+          terraform -chdir=deploy/federated/terraform init -backend=false
+          terraform -chdir=deploy/federated/terraform validate
       - name: Ansible syntax
         run: |
           pip install ansible-core==2.19.3
-          cp infra/ansible/inventory.ini.example infra/ansible/inventory.ini
-          ansible-playbook -i infra/ansible/inventory.ini infra/ansible/site.yml --syntax-check
+          cp deploy/federated/ansible/inventory.ini.example deploy/federated/ansible/inventory.ini
+          ansible-playbook -i deploy/federated/ansible/inventory.ini deploy/federated/ansible/site.yml --syntax-check
 
   security:
     runs-on: ubuntu-latest

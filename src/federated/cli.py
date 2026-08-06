@@ -30,7 +30,7 @@ from src.federated.observability import (
 from src.federated.registry import builtin_registry
 
 
-DEFAULT_CONFIG = "configs/phase2/iot23-federated.yaml"
+DEFAULT_CONFIG = "configs/federated/phase2/iot23-federated.yaml"
 
 
 def _observer(config, *, repository_root: Path):

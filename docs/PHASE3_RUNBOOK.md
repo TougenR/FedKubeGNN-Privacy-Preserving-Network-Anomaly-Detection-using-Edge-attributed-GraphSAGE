@@ -7,11 +7,11 @@ explicitly approved.
 ## 1. Local validation and review plan
 
 ```bash
-cp infra/terraform/terraform.tfvars.example infra/terraform/terraform.tfvars
+cp deploy/federated/terraform/terraform.tfvars.example deploy/federated/terraform/terraform.tfvars
 # Replace admin_source_ranges with the operator's current public-IP /32.
 
-terraform -chdir=infra/terraform/bootstrap init
-terraform -chdir=infra/terraform/bootstrap plan -out=bootstrap.tfplan
+terraform -chdir=deploy/federated/terraform/bootstrap init
+terraform -chdir=deploy/federated/terraform/bootstrap plan -out=bootstrap.tfplan
 
 scripts/terraform_review_plan.sh <operator-public-ip>/32
 ```

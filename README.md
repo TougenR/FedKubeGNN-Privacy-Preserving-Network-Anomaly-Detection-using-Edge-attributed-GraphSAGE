@@ -15,10 +15,11 @@ metrics/confusion matrix mà không đánh giá test lần hai. Core FedAvg/metr
 Flower runtime không phụ thuộc PyG hay implementation Phase 1. Xem
 [kiến trúc Phase 2](docs/PHASE2_ARCHITECTURE.md) trước khi chạy dữ liệu thật.
 
-Hạ tầng **Giai đoạn 3** nằm trong `charts/`, `environments/`, `argocd/` và
-`infra/`: GKE Central/Edge, sáu Flower client tương ứng sáu scenario, GitHub
-Actions + Jenkins, GitOps bằng Argo CD, ba GCS bucket và log tập trung qua
-Elasticsearch/Kibana. Xem [kiến trúc Phase 3](docs/PHASE3_ARCHITECTURE.md) và
+Hạ tầng federated training nằm dưới `deploy/federated/`: GKE Central/Edge, sáu
+Flower client tương ứng sáu scenario, GitHub Actions + Jenkins, GitOps bằng Argo
+CD, ba GCS bucket và log tập trung qua Elasticsearch/Kibana. Detection
+application được triển khai độc lập dưới `deploy/application/`. Xem
+[kiến trúc Phase 3](docs/PHASE3_ARCHITECTURE.md) và
 [runbook có cổng duyệt Terraform](docs/PHASE3_RUNBOOK.md). Không chạy
 `terraform apply` trước khi plan được duyệt rõ ràng.
 
@@ -31,7 +32,7 @@ ready sau ít nhất một local round. Xem
 Preflight và smoke Phase 2:
 
 ```bash
-python -m src.federated.cli --config configs/phase2/iot23-federated.yaml doctor
+python -m src.federated.cli --config configs/federated/phase2/iot23-federated.yaml doctor
 python -m unittest discover -s tests/federated -v
 python -m src.federated.cli run --task toy --strategy fedavg --rounds 2
 ```
@@ -40,11 +41,12 @@ python -m src.federated.cli run --task toy --strategy fedavg --rounds 2
 cần raw dataset để tạo artifact mới, nhưng không cần tải checkpoint Phase 1;
 initial E-GraphSAGE state và centralized reference được tạo lại từ config/seed.
 
-PoC **Giai đoạn 3** nằm trong `phase3_monitoring/`: FastAPI inference, labeled
-IoT-23 replay, Docker và Minikube. PoC hiện fail-closed nếu checkpoint và
-preprocessor không cùng feature schema; chưa claim zero-day detection hoặc
-production cloud readiness. Xem
-[README Phase 3](phase3_monitoring/README.md) và
+Detection application tập trung nằm trong `src/application/`, dùng một shared
+FedPer encoder và sáu exact private heads qua trusted sensor routing. Scientific
+evaluation tách khỏi label-free production API; deployment độc lập nằm dưới
+`deploy/application/`. Live serving vẫn fail-closed cho tới khi rolling-window
+protocol được chọn trên validation. Xem
+[kiến trúc Phase 4](docs/PHASE4_ARCHITECTURE.md) và
 [bàn giao Bảo → Hiếu](docs/HANDOFF_TO_HIEU.md).
 
 ## Cấu trúc repo
@@ -70,16 +72,20 @@ production cloud readiness. Xem
 │   ├── test_multi_scenario.py     # smoke test LOSO harness
 │   ├── test_resume_logic.py       # smoke test resume mechanism
 │   └── test_*.py              # các smoke test cho từng module src/
-└── src/
-    ├── data_io.py             # đọc conn.log.labeled → DataFrame, tách cột 21
-    ├── preprocess.py          # làm sạch, encode, scale (hàm tái sử dụng)
-    ├── imbalance.py           # tính class weights / undersample
-    ├── graph_build.py         # DataFrame → PyG Data, lưu .pt
-    ├── model.py               # E-GraphSAGE + baselines GCN/GraphSAGE/GAT
-    ├── train.py               # vòng train device-agnostic, checkpoint
-    ├── evaluate.py            # macro-F1, per-class F1, confusion matrix
-    ├── multi_scenario.py      # tầng dữ liệu đa-scenario + LOSO inductive
-    └── run_experiments.py     # orchestrator: 2-Phase × 3 protocol × {3 mode, 5 model}
+├── src/
+│   ├── core/                  # model, preprocessing, graph và schema dùng chung
+│   ├── federated/             # Flower, FedAvg/FedProx/FedPer và exporter
+│   └── application/           # inference, collection, window và alerting
+├── deploy/
+│   ├── federated/             # Argo CD, Helm, Terraform, Ansible, Docker
+│   └── application/           # detection Helm, environments, Docker, Argo gate
+├── configs/
+│   ├── federated/
+│   └── application/
+└── tests/
+    ├── core/
+    ├── federated/
+    └── application/
 ```
 
 ## Setup môi trường
@@ -259,7 +265,7 @@ ls -la artifacts/phase1_results/
 - **[Báo cáo Giai đoạn 1](docs/PHASE1_REPORT.md)** — kết quả thực nghiệm, phân tích, phát hiện chính
 - **[Tài liệu bàn giao Giai đoạn 2](docs/HANDOFF_PHASE2.md)** — hướng dẫn cho người làm Federated Learning
 - **[Kiến trúc Phase 2](docs/PHASE2_ARCHITECTURE.md)** — contract, trust boundary, cách chạy và validation gates
-- **[Phase 3 Minikube PoC](phase3_monitoring/README.md)** — inference contract, replay evaluation và giới hạn
+- **[Phase 4 Detection](docs/PHASE4_ARCHITECTURE.md)** — multi-head inference, replay scientific và live-demo gates
 - **[Bàn giao Bảo → Hiếu](docs/HANDOFF_TO_HIEU.md)** — ownership, blocker và thứ tự việc còn lại
 - Quyết định thiết kế, quy tắc tiền xử lý, mô hình: xem `CLAUDE.md`.
 - Dataset: <https://mcfp.felk.cvut.cz/publicDatasets/IoT-23-Dataset/>

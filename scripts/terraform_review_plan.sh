@@ -2,9 +2,9 @@
 set -euo pipefail
 
 repo_root="$(git rev-parse --show-toplevel)"
-source_dir="${repo_root}/infra/terraform"
+source_dir="${repo_root}/deploy/federated/terraform"
 review_dir="$(mktemp -d)"
-output_dir="${repo_root}/artifacts/phase3/terraform"
+output_dir="${repo_root}/artifacts/federated/terraform"
 admin_cidr="${1:-}"
 
 if [[ -z "${admin_cidr}" ]]; then

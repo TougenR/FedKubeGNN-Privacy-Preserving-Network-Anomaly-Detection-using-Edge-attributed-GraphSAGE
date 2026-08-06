@@ -574,7 +574,7 @@ def train_model(
     data = data.to(device)
 
     # ---- Model ----
-    from src.model import build_model   # import trong hàm để tránh vòng lặp
+    from src.core.model import build_model  # import trong hàm để tránh vòng lặp
     model = build_model(model_name, data, cfg)
     model = model.to(device)
 
@@ -764,9 +764,9 @@ def run_scenario(
     Dùng cho CLI và các test smoke.
     """
     from src.data_io import load_scenario
-    from src.preprocess import clean_flows, fit_preprocessor, transform
+    from src.core.preprocess import clean_flows, fit_preprocessor, transform
     from src.imbalance import compute_class_weights, prepare_imbalance_variants
-    from src.graph_build import build_graph
+    from src.core.graph import build_graph
 
     with open(config_path) as f:
         cfg = yaml.safe_load(f)

@@ -52,7 +52,7 @@ def make_phase1_model_factory(
 
     def factory(graph: Any) -> nn.Module:
         try:
-            from src.model import build_model
+            from src.core.model import build_model
         except (ImportError, ModuleNotFoundError) as exc:
             raise Phase1AdapterError(
                 "The Phase 1 model adapter requires torch-geometric and the "

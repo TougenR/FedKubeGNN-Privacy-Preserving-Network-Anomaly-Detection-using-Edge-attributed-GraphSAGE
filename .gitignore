@@ -4,7 +4,6 @@
 
 # --- Dữ liệu thô & file trung gian ---
 /data/
-phase3_monitoring/flow_feeder/sample_data/
 checkpoints/
 artifacts/*          # ignore mọi thứ TRONG artifacts/
 /artifacts/data_cache/
@@ -81,10 +80,13 @@ nohup.out
 *.tfplan
 phase3-plan.txt
 artifacts/phase3/
-infra/terraform/terraform.tfvars
+artifacts/federated/exports/
+artifacts/federated/terraform/
+artifacts/application/
+deploy/federated/terraform/terraform.tfvars
 
 # Ansible generated inventory can contain operator addresses
-infra/ansible/inventory.ini
+deploy/federated/ansible/inventory.ini
 
 # --- Jupyter / Notebooks ---
 .ipynb_checkpoints/

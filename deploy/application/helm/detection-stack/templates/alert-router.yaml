@@ -1,0 +1,55 @@
+{{- if .Values.alertRouter.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "detection-stack.fullname" . }}-alert-router
+  labels: {fedkube.io/release-id: {{ .Values.releaseId | quote }}}
+spec:
+  replicas: {{ .Values.alertRouter.replicas }}
+  selector:
+    matchLabels: {app.kubernetes.io/name: alert-router}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: alert-router
+        fedkube.io/release-id: {{ .Values.releaseId | quote }}
+    spec:
+      serviceAccountName: {{ include "detection-stack.serviceAccountName" . }}
+      containers:
+        - name: alert-router
+          image: {{ include "detection-stack.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["src.application.alerting.app:app", "--host", "0.0.0.0", "--port", "8081"]
+          env:
+            - name: ALERT_SINK_MODE
+              value: {{ ternary "elasticsearch" "stdout" .Values.elasticsearch.enabled | quote }}
+            {{- if .Values.elasticsearch.enabled }}
+            - name: ELASTICSEARCH_ENDPOINT
+              value: {{ .Values.elasticsearch.endpoint | quote }}
+            - name: ELASTICSEARCH_INDEX
+              value: {{ .Values.elasticsearch.index | quote }}
+            {{- end }}
+          {{- if .Values.elasticsearch.enabled }}
+          envFrom:
+            - secretRef: {name: {{ .Values.elasticsearch.credentialsSecretName }}}
+          {{- end }}
+          ports: [{name: http, containerPort: 8081}]
+          readinessProbe:
+            httpGet: {path: /health/ready, port: http}
+          livenessProbe:
+            httpGet: {path: /health/live, port: http}
+          resources: {{- toYaml .Values.alertRouter.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities: {drop: [ALL]}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "detection-stack.fullname" . }}-alert-router
+spec:
+  selector: {app.kubernetes.io/name: alert-router}
+  ports: [{name: http, port: 8081, targetPort: http}]
+{{- end }}

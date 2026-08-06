@@ -1,0 +1,72 @@
+{{- if .Values.collector.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "detection-stack.fullname" . }}-collector
+  labels: {fedkube.io/release-id: {{ .Values.releaseId | quote }}}
+spec:
+  replicas: {{ .Values.collector.replicas }}
+  selector:
+    matchLabels: {app.kubernetes.io/name: flow-collector}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: flow-collector
+        fedkube.io/release-id: {{ .Values.releaseId | quote }}
+    spec:
+      serviceAccountName: {{ include "detection-stack.serviceAccountName" . }}
+      containers:
+        - name: collector
+          image: {{ include "detection-stack.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["src.application.collection.app:app", "--host", "0.0.0.0", "--port", "8082"]
+          env:
+            - name: WINDOW_DURATION_SECONDS
+              value: {{ .Values.collector.window.durationSeconds | quote }}
+            - name: WINDOW_MAX_FLOWS
+              value: {{ .Values.collector.window.maxFlows | quote }}
+            - name: WINDOW_EMIT_STRIDE_FLOWS
+              value: {{ .Values.collector.window.emitStrideFlows | quote }}
+            - name: WINDOW_ALLOWED_LATENESS_SECONDS
+              value: {{ .Values.collector.window.allowedLatenessSeconds | quote }}
+            - name: INFERENCE_URL
+              value: http://{{ include "detection-stack.fullname" . }}-inference:8000/predict
+            - name: ALERT_POLICY_ENABLED
+              value: {{ .Values.collector.alertPolicy.enabled | quote }}
+            {{- if .Values.collector.alertPolicy.enabled }}
+            - name: ALERT_ROUTER_URL
+              value: http://{{ include "detection-stack.fullname" . }}-alert-router:8081/events
+            - name: ALERT_CONFIDENCE_THRESHOLD
+              value: {{ .Values.collector.alertPolicy.confidenceThreshold | quote }}
+            - name: ALERT_CONFIDENCE_BOUNDARIES
+              value: {{ .Values.collector.alertPolicy.confidenceBoundaries | toJson | quote }}
+            - name: ALERT_ENTROPY_BOUNDARIES
+              value: {{ .Values.collector.alertPolicy.entropyBoundaries | toJson | quote }}
+            - name: ALERT_CLASS_SEVERITY
+              value: {{ .Values.collector.alertPolicy.classSeverity | toJson | quote }}
+            - name: ENTITY_HASH_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.collector.alertPolicy.entityHashSecretName }}
+                  key: {{ .Values.collector.alertPolicy.entityHashSecretKey }}
+            {{- end }}
+          ports: [{name: http, containerPort: 8082}]
+          readinessProbe:
+            httpGet: {path: /health/ready, port: http}
+          livenessProbe:
+            httpGet: {path: /health/live, port: http}
+          resources: {{- toYaml .Values.collector.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities: {drop: [ALL]}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "detection-stack.fullname" . }}-collector
+spec:
+  selector: {app.kubernetes.io/name: flow-collector}
+  ports: [{name: http, port: 8082, targetPort: http}]
+{{- end }}

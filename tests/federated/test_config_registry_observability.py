@@ -16,7 +16,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 class ConfigTests(unittest.TestCase):
     def test_repository_config_is_strict_and_stable(self):
-        config = load_phase2_config(ROOT / "configs/phase2/iot23-federated.yaml")
+        config = load_phase2_config(
+            ROOT / "configs/federated/phase2/iot23-federated.yaml"
+        )
         self.assertEqual(len(config.data.scenarios), 6)
         self.assertEqual(
             config.federation.strategies, ("fedavg", "fedprox", "fedper")
@@ -25,13 +27,15 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(len(config.digest), 64)
 
         global_config = load_phase2_config(
-            ROOT / "configs/phase3/ablations/global-class-weights.yaml"
+            ROOT / "configs/federated/phase3/ablations/global-class-weights.yaml"
         )
         self.assertEqual(global_config.training.class_weight_scope, "global")
         self.assertNotEqual(config.digest, global_config.digest)
 
     def test_unknown_key_is_rejected(self):
-        source = (ROOT / "configs/phase2/iot23-federated.yaml").read_text()
+        source = (
+            ROOT / "configs/federated/phase2/iot23-federated.yaml"
+        ).read_text()
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "bad.yaml"
             path.write_text(source + "unknown: true\n")
@@ -50,7 +54,9 @@ class RegistryTests(unittest.TestCase):
             registry.resolve("task", "missing")
 
     def test_builtins_cover_every_configured_extension_point(self):
-        config = load_phase2_config(ROOT / "configs/phase2/iot23-federated.yaml")
+        config = load_phase2_config(
+            ROOT / "configs/federated/phase2/iot23-federated.yaml"
+        )
         components = builtin_registry()
         for kind, name in config.components.__dict__.items():
             self.assertIn(name, components.names(kind))

@@ -1,0 +1,74 @@
+{{- if .Values.inference.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "detection-stack.fullname" . }}-inference
+  labels: {fedkube.io/release-id: {{ .Values.releaseId | quote }}}
+spec:
+  replicas: {{ .Values.inference.replicas }}
+  selector:
+    matchLabels: {app.kubernetes.io/name: fedper-inference}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: fedper-inference
+        fedkube.io/release-id: {{ .Values.releaseId | quote }}
+    spec:
+      serviceAccountName: {{ include "detection-stack.serviceAccountName" . }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 49999
+        fsGroup: 49999
+      containers:
+        - name: inference
+          image: {{ include "detection-stack.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - {name: MODEL_BUNDLE_PATH, value: {{ .Values.modelBundle.mountPath | quote }}}
+            - {name: INFERENCE_DEVICE, value: {{ .Values.inference.device | quote }}}
+          ports: [{name: http, containerPort: 8000}]
+          readinessProbe:
+            httpGet: {path: /health/ready, port: http}
+          livenessProbe:
+            httpGet: {path: /health/live, port: http}
+          resources: {{- toYaml .Values.inference.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: model-bundle, mountPath: {{ .Values.modelBundle.mountPath }}, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: model-bundle
+{{- if .Values.modelBundle.existingSecret }}
+          secret:
+            secretName: {{ .Values.modelBundle.existingSecret }}
+            items:
+              - {key: manifest.json, path: manifest.json}
+              - {key: shared-encoder.npz, path: shared-encoder.npz}
+              - {key: preprocessor.pkl, path: preprocessor.pkl}
+              - {key: model-spec.json, path: model-spec.json}
+              - {key: feature-schema.json, path: feature-schema.json}
+              - {key: label-schema.json, path: label-schema.json}
+              - {key: graph-schema.json, path: graph-schema.json}
+              - {key: head-1-1.npz, path: heads/1-1.npz}
+              - {key: head-3-1.npz, path: heads/3-1.npz}
+              - {key: head-9-1.npz, path: heads/9-1.npz}
+              - {key: head-34-1.npz, path: heads/34-1.npz}
+              - {key: head-36-1.npz, path: heads/36-1.npz}
+              - {key: head-39-1.npz, path: heads/39-1.npz}
+{{- else }}
+          persistentVolumeClaim: {claimName: {{ .Values.modelBundle.existingClaim }}}
+{{- end }}
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "detection-stack.fullname" . }}-inference
+spec:
+  selector: {app.kubernetes.io/name: fedper-inference}
+  ports: [{name: http, port: 8000, targetPort: http}]
+{{- end }}

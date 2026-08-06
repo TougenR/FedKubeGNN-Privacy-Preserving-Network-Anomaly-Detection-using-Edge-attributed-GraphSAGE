@@ -162,13 +162,12 @@ Chọn một trong hai cách và ghi test:
 Sau đó cấu hình `MODEL_CHECKPOINT_PATH`, `PREPROCESSOR_PATH` và `MODEL_VERSION`,
 không sửa hard-code trong app.
 
-### 3. Chạy lại Phase 3 evaluation
+### 3. Chạy Phase 4 scientific evaluation
 
 ```bash
-python -m phase3_monitoring.inference_service.model_loader
-python -m unittest discover -s tests/phase3 -v
-python phase3_monitoring/flow_feeder/evaluate_replay.py \
-  --output artifacts/phase3/replay-evaluation.json
+python -m unittest discover -s tests/application -v
+python -m src.application.evaluation.cli --help
+python -m src.application.evaluation.report --help
 ```
 
 Báo cáo tối thiểu: confusion matrix, fixed-K macro-F1, malicious recall, latency
@@ -190,5 +189,5 @@ validation và báo cáo precision/recall hoặc AUROC.
 - Replay evaluation lưu machine-readable result.
 - Báo cáo phân biệt rõ fact, limitation và future work.
 
-Chi tiết lệnh và troubleshooting Phase 3:
-[`phase3_monitoring/README.md`](../phase3_monitoring/README.md).
+Kiến trúc detection hiện tại và các gate local:
+[`PHASE4_ARCHITECTURE.md`](PHASE4_ARCHITECTURE.md).

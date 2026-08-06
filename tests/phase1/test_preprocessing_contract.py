@@ -6,7 +6,7 @@ import unittest
 import pandas as pd
 
 from src.imbalance import compute_class_weights, undersample_majority
-from src.preprocess import clean_flows, fit_preprocessor, transform
+from src.core.preprocess import clean_flows, fit_preprocessor, transform
 
 
 def _clean_frame() -> pd.DataFrame:

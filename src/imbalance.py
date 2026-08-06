@@ -537,7 +537,7 @@ def _run_real_test(path: str) -> None:
 
     from sklearn.model_selection import train_test_split
     from src.data_io import load_scenario
-    from src.preprocess import clean_flows, fit_preprocessor, transform
+    from src.core.preprocess import clean_flows, fit_preprocessor, transform
 
     if not os.path.isfile(path):
         raise FileNotFoundError(f"Không tìm thấy file: {path}")

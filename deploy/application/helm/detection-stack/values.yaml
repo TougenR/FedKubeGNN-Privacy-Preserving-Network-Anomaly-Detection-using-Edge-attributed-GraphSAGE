@@ -1,0 +1,97 @@
+image:
+  repository: fedkube-detection
+  tag: phase4-local
+  digest: ""
+  pullPolicy: IfNotPresent
+
+releaseId: phase4-unreleased
+
+modelBundle:
+  existingClaim: ""
+  existingSecret: ""
+  mountPath: /model-bundle
+
+inference:
+  enabled: true
+  replicas: 1
+  device: cpu
+  resources:
+    requests: {cpu: 500m, memory: 1Gi}
+    limits: {cpu: "2", memory: 2Gi}
+
+demoTarget:
+  enabled: true
+  observation:
+    enabled: false
+    sensorId: ""
+  resources:
+    requests: {cpu: 50m, memory: 64Mi}
+    limits: {cpu: 250m, memory: 256Mi}
+
+collector:
+  enabled: false
+  replicas: 1
+  window:
+    durationSeconds: null
+    maxFlows: null
+    emitStrideFlows: null
+    allowedLatenessSeconds: null
+  alertPolicy:
+    enabled: false
+    confidenceThreshold: null
+    confidenceBoundaries: null
+    entropyBoundaries: null
+    classSeverity: null
+    entityHashSecretName: ""
+    entityHashSecretKey: entity-hash-key
+  resources:
+    requests: {cpu: 100m, memory: 128Mi}
+    limits: {cpu: 500m, memory: 512Mi}
+
+alertRouter:
+  enabled: true
+  replicas: 1
+  resources:
+    requests: {cpu: 50m, memory: 64Mi}
+    limits: {cpu: 250m, memory: 256Mi}
+
+ingress:
+  enabled: false
+  className: nginx
+  host: fedkube-detection.local
+
+networkPolicy:
+  enabled: true
+
+elasticsearch:
+  enabled: false
+  endpoint: ""
+  index: fedper-detections
+  credentialsSecretName: ""
+  egressCIDR: ""
+
+serviceAccount:
+  create: true
+  name: ""
+
+evaluation:
+  enabled: false
+  artifactsClaim:
+    create: true
+    name: fedper-window-evaluation
+    storageClassName: standard-rwo
+    size: 1Gi
+  sourceContractPath: /app/configs/application/iot23-replay-sources.json
+  replayPath: /artifacts/replay/exact-gke-r0030
+  reportPath: /artifacts/evaluation/window-validation.json
+  candidateConfigPath: /app/configs/application/window-candidates.yaml
+  activeDeadlineSeconds: 86400
+  resources:
+    requests:
+      cpu: 50m
+      memory: 512Mi
+      ephemeral-storage: 14Gi
+    limits:
+      cpu: "3"
+      memory: 4Gi
+      ephemeral-storage: 18Gi

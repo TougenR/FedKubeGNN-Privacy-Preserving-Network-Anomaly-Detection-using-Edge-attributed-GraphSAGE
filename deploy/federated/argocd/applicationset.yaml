@@ -1,0 +1,44 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: fedkube
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - name: central
+            cluster: in-cluster
+            server: https://kubernetes.default.svc
+            valuesFile: deploy/federated/environments/central/values.yaml
+          - name: edge-01
+            cluster: fedkube-edge-01
+            server: ""
+            valuesFile: deploy/federated/environments/edge-01/values.yaml
+  template:
+    metadata:
+      name: fedkube-{{name}}
+      labels:
+        app.kubernetes.io/part-of: fedkube
+        fedkube.io/topology: "{{name}}"
+    spec:
+      project: fedkube
+      source:
+        repoURL: https://github.com/TougenR/FedKubeGNN-Privacy-Preserving-Network-Anomaly-Detection-using-Edge-attributed-GraphSAGE.git
+        targetRevision: main
+        path: deploy/federated/helm/fedkube
+        helm:
+          releaseName: fedkube-{{name}}
+          valueFiles:
+            - ../../{{valuesFile}}
+      destination:
+        name: "{{cluster}}"
+        namespace: fedkube
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+          - PruneLast=true

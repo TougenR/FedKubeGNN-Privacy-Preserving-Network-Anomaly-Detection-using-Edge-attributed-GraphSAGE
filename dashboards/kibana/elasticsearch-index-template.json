@@ -1,0 +1,28 @@
+{
+  "index_patterns": ["fedper-detections*"],
+  "template": {
+    "mappings": {
+      "dynamic": "strict",
+      "properties": {
+        "@timestamp": {"type": "date"},
+        "event_type": {"type": "constant_keyword", "value": "fedper_detection"},
+        "sensor_id": {"type": "keyword"},
+        "client_id": {"type": "keyword"},
+        "window_id": {"type": "keyword"},
+        "predicted_class": {"type": "keyword"},
+        "severity": {"type": "keyword"},
+        "confidence_bucket": {"type": "keyword"},
+        "entropy_bucket": {"type": "keyword"},
+        "flow_count": {"type": "integer"},
+        "entity_hash": {"type": "keyword", "index": false},
+        "model_digest": {"type": "keyword"},
+        "head_digest": {"type": "keyword"},
+        "schema_digest": {"type": "keyword"}
+      }
+    }
+  },
+  "_meta": {
+    "owner": "deploy/application",
+    "privacy": "no raw IP, features, tensors, probabilities, or ground truth"
+  }
+}

@@ -19,7 +19,7 @@ central_context="$(kubectl config current-context)"
 "${helm_command}" repo update argo
 "${helm_command}" upgrade --install argocd argo/argo-cd \
   --namespace argocd --create-namespace --version 9.1.3 \
-  --values "${repo_root}/argocd/values.yaml" \
+  --values "${repo_root}/deploy/federated/argocd/values.yaml" \
   --wait
 
 gcloud container clusters get-credentials fedkube-edge-01 \
@@ -27,7 +27,7 @@ gcloud container clusters get-credentials fedkube-edge-01 \
 edge_context="$(kubectl config current-context)"
 
 kubectl --context "${edge_context}" apply \
-  -f "${repo_root}/argocd/edge-manager.yaml"
+  -f "${repo_root}/deploy/federated/argocd/edge-manager.yaml"
 
 umask 077
 token_file="$(mktemp)"
@@ -66,9 +66,9 @@ kubectl --context "${central_context}" -n argocd create secret generic \
 kubectl --context "${central_context}" -n argocd label secret \
   cluster-fedkube-edge-01 argocd.argoproj.io/secret-type=cluster --overwrite
 
-kubectl --context "${central_context}" apply -f "${repo_root}/argocd/project.yaml"
-kubectl --context "${central_context}" apply -f "${repo_root}/argocd/rbac-cm.yaml"
-kubectl --context "${central_context}" apply -f "${repo_root}/argocd/operators.yaml"
-kubectl --context "${central_context}" apply -f "${repo_root}/argocd/applicationset.yaml"
+kubectl --context "${central_context}" apply -f "${repo_root}/deploy/federated/argocd/project.yaml"
+kubectl --context "${central_context}" apply -f "${repo_root}/deploy/federated/argocd/rbac-cm.yaml"
+kubectl --context "${central_context}" apply -f "${repo_root}/deploy/federated/argocd/operators.yaml"
+kubectl --context "${central_context}" apply -f "${repo_root}/deploy/federated/argocd/applicationset.yaml"
 
 echo "Argo CD bootstrap submitted; use argocd app list to observe reconciliation."

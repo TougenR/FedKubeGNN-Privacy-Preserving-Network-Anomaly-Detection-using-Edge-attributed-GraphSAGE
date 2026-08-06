@@ -27,6 +27,14 @@ phase3 = [
   "pydantic>=2.7.0",
   "uvicorn>=0.30.0",
 ]
+application = [
+  "fastapi>=0.110.0",
+  "pydantic>=2.7.0",
+  "uvicorn>=0.30.0",
+  "pandas>=2.0.0",
+  "scikit-learn>=1.3.0",
+  "torch-geometric>=2.5.0",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
@@ -54,7 +62,7 @@ seed = 42
 save-model = false
 model-output = "artifacts/phase2/toy_final_model.pt"
 task = "toy"
-phase2-config = "configs/phase2/iot23-federated.yaml"
+phase2-config = "configs/federated/phase2/iot23-federated.yaml"
 dataset-root = "artifacts/phase2/prepared/current"
 evaluate-split = "val"
 final-split = "test"

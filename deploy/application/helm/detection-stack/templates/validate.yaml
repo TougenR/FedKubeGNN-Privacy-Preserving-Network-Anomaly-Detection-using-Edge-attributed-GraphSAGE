@@ -1,0 +1,42 @@
+{{- if and (not .Values.modelBundle.existingClaim) (not .Values.modelBundle.existingSecret) }}
+{{- fail "one modelBundle existingClaim or existingSecret is required; the chart never downloads training state" }}
+{{- end }}
+{{- if and .Values.modelBundle.existingClaim .Values.modelBundle.existingSecret }}
+{{- fail "modelBundle existingClaim and existingSecret are mutually exclusive" }}
+{{- end }}
+{{- if and .Values.evaluation.enabled (not .Values.modelBundle.existingSecret) }}
+{{- fail "evaluation requires an externally supplied immutable modelBundle.existingSecret" }}
+{{- end }}
+{{- if not (regexMatch "^[a-zA-Z0-9][a-zA-Z0-9._-]{6,62}$" .Values.releaseId) }}
+{{- fail "releaseId must be a safe 7-63 character identifier" }}
+{{- end }}
+{{- if and .Values.elasticsearch.enabled (not .Values.elasticsearch.credentialsSecretName) }}
+{{- fail "elasticsearch.credentialsSecretName is required when Elasticsearch is enabled" }}
+{{- end }}
+{{- if and .Values.elasticsearch.enabled (not .Values.elasticsearch.endpoint) }}
+{{- fail "elasticsearch.endpoint is required when Elasticsearch is enabled" }}
+{{- end }}
+{{- if and .Values.collector.enabled (eq .Values.collector.window.durationSeconds nil) }}
+{{- fail "collector.window.durationSeconds must be selected from validation" }}
+{{- end }}
+{{- if and .Values.collector.enabled (eq .Values.collector.window.maxFlows nil) }}
+{{- fail "collector.window.maxFlows must be selected from validation" }}
+{{- end }}
+{{- if and .Values.collector.enabled (eq .Values.collector.window.emitStrideFlows nil) }}
+{{- fail "collector.window.emitStrideFlows must be selected from validation" }}
+{{- end }}
+{{- if and .Values.collector.enabled (eq .Values.collector.window.allowedLatenessSeconds nil) }}
+{{- fail "collector.window.allowedLatenessSeconds must be selected from validation" }}
+{{- end }}
+{{- if and .Values.demoTarget.observation.enabled (not .Values.collector.enabled) }}
+{{- fail "demoTarget observation requires collector.enabled" }}
+{{- end }}
+{{- if and .Values.demoTarget.observation.enabled (not .Values.demoTarget.observation.sensorId) }}
+{{- fail "demoTarget.observation.sensorId is required" }}
+{{- end }}
+{{- if and .Values.collector.alertPolicy.enabled (not .Values.alertRouter.enabled) }}
+{{- fail "collector alert policy requires alertRouter.enabled" }}
+{{- end }}
+{{- if and .Values.collector.alertPolicy.enabled (not .Values.collector.alertPolicy.entityHashSecretName) }}
+{{- fail "collector alert policy requires an entity hash secret" }}
+{{- end }}

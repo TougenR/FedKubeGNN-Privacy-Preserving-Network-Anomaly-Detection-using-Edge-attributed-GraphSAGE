@@ -39,7 +39,7 @@ def read_clean_priority_sample(
     """
     import pandas as pd
     from src.data_io import split_label_column
-    from src.preprocess import clean_flows
+    from src.core.preprocess import clean_flows
 
     source = Path(path)
     if not source.is_file():

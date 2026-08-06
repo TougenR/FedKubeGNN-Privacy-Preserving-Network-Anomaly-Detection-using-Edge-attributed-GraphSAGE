@@ -32,16 +32,16 @@ import torch
 import yaml
 from sklearn.metrics import confusion_matrix, f1_score
 
-from phase3_monitoring.inference_service.model_loader import (
+from src.core.legacy_bundle import (
     ModelContractError,
     load_runtime_bundle,
     validate_model_contract,
 )
-from src.graph_build import build_graph
+from src.core.graph import build_graph
 from src.imbalance import undersample_majority
-from src.model import build_model
+from src.core.model import build_model
 from src.phase1_contract import FIXED_LABELS
-from src.preprocess import Preprocessor, fit_preprocessor, transform
+from src.core.preprocess import Preprocessor, fit_preprocessor, transform
 from src.train import get_device, make_criterion, safe_stratified_split, set_seed
 
 

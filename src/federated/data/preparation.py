@@ -191,8 +191,8 @@ def prepare_iot23(
 
         import pandas as pd
         import torch
-        from src.graph_build import build_graph
-        from src.preprocess import fit_preprocessor, transform
+        from src.core.graph import build_graph
+        from src.core.preprocess import fit_preprocessor, transform
 
         train_rows = pd.concat(
             [frame.loc[masks[client_id][0]] for client_id, frame in cleaned.items()],

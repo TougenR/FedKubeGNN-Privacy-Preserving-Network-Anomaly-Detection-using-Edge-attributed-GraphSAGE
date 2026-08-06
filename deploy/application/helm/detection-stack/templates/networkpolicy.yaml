@@ -1,0 +1,87 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "detection-stack.fullname" . }}-default-deny
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "detection-stack.fullname" . }}-dns-egress
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels: {k8s-app: kube-dns}
+      ports:
+        - {protocol: UDP, port: 53}
+        - {protocol: TCP, port: 53}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "detection-stack.fullname" . }}-same-namespace
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector: {}
+  egress:
+    - to:
+        - podSelector: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "detection-stack.fullname" . }}-ingress-controller
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: demo-target}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+{{- if and .Values.elasticsearch.enabled .Values.elasticsearch.egressCIDR }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "detection-stack.fullname" . }}-elasticsearch-egress
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: alert-router}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - ipBlock: {cidr: {{ .Values.elasticsearch.egressCIDR | quote }}}
+      ports:
+        - {protocol: TCP, port: 9200}
+{{- end }}
+{{- if .Values.evaluation.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "detection-stack.fullname" . }}-evaluation-https-egress
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: fedper-window-evaluation}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - ipBlock: {cidr: 0.0.0.0/0}
+      ports:
+        - {protocol: TCP, port: 443}
+{{- end }}
+{{- end }}
