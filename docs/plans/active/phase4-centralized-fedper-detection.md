@@ -129,11 +129,10 @@ Out of scope:
 - [x] Export and validate the exact GKE best-round multi-head research bundle.
 - [x] Implement multi-head loader, trusted router, schemas, API, and readiness.
 - [x] Implement correctly routed, cross-head, local matrix, and oracle evaluation.
-- [ ] Implement rolling-window candidates and select on validation. Buffering,
-  lateness/drop accounting, and the candidate grid exist. A digest-pinned GKE
-  Job is now reconstructing the timestamped validation replay from the six
-  checksum-verified official IoT-23 sources; serving remains locked until that
-  Job emits the selection report.
+- [x] Implement rolling-window candidates, select on validation, promote the
+  immutable serving bundle, and evaluate the locked protocol exactly once on
+  test. The selected protocol is
+  `rolling-window-v1:duration=60s:max-flows=50:stride=1:lateness=1s`.
 - [ ] Implement collector, alert router, Kibana assets, Docker, and Helm chart.
   Collector/window orchestration, ingress-adapter contract, structured router,
   strict Elasticsearch mapping, Docker boundary, and chart templates exist;
@@ -251,23 +250,80 @@ Observed checkpoint evidence on 2026-08-06:
   Central/Edge remain `Synced/Healthy`; the detection Application is expected
   to remain `Progressing` until the batch Job finishes.
 
-Resume checkpoint while the GKE validation Job is active:
+Later GKE rolling-window and alert-policy evidence on 2026-08-06:
 
-1. Inspect Job/pod/PVC in namespace `fedkube-detection`; do not manually sync
-   the detection Application to a newer revision while the Job is running.
-2. Inspect `/work/raw` and `/artifacts/replay` in init container
-   `prepare-exact-replay`. A completed source is removed from raw workspace and
-   appears in the replay manifest/output; retries are checksum-verified and the
-   final manifest is atomic.
-3. After init completion, monitor container `benchmark-validation`. Copy
-   `/artifacts/evaluation/window-validation.json` and the replay manifest to
-   local application artifacts before pruning the temporary PVC.
-4. Promote a new immutable serving bundle only if the report identifies a
-   validation-selected rolling protocol and matches bundle/dataset provenance.
+- The validation selection report is stored locally at
+  `artifacts/application/evaluation/window-gke-r0030/window-validation.json`
+  with SHA-256
+  `3e290b4ef65c75e511efc7976f152b94c9e48e2067163708f143974b97ffd644`.
+  The selected validation metrics are accuracy `0.9043148880`, fixed-7
+  macro-F1 `0.8950243416`, weighted-F1 `0.9023351280`, inference p50
+  `1.3375 ms`, and p95 `2.0444 ms`.
+- Serving bundle
+  `fedper-gke-14339380272482304688-r0030-42642e4cc839-b02-serving-8d59392ff1`
+  is immutable, serving-ready, and binds that validation report and protocol.
+  Kubernetes Secret `fedper-model-bundle-serving-8d59392ff1` contains exactly
+  the flattened serving artifacts; no credential is stored in the bundle.
+- The locked test report is stored at
+  `artifacts/application/evaluation/window-gke-r0030/window-test.json` with
+  SHA-256
+  `11e9bc1a94e0a6b01ff6446f39467e79c22373b9aeaa37304ebfa4de22f21601`.
+  Test accuracy is `0.9288535923`, fixed-7 macro-F1 `0.9322982502`, and
+  weighted-F1 `0.9284162681`; all seven per-class F1 values exceed their
+  validation values. Test-minus-validation gaps are `+0.02454` accuracy,
+  `+0.03727` macro-F1, and `+0.02608` weighted-F1, so this evidence shows no
+  validation-to-test overfitting. Flow drop and batch-boundary prediction
+  change rates are both zero. The lower rolling score relative to transductive
+  graph evaluation is a serving-protocol gap, not evidence of overfitting.
+- Alert-policy validation initially failed closed because the serving bundle ID
+  was compared directly with the research bundle ID. Commit `14e59ff` changed
+  the check to the explicit serving-to-source relationship, requires a
+  serving-ready bundle, and added regression coverage. Jenkins build 41 then
+  failed only because Trivy exhausted the VM disk. Removing unused Docker
+  images recovered about 22 GiB; Jenkins was restarted to clear its temporary
+  disk-offline state. Build 43 passed build and the critical vulnerability
+  gate and published digest
+  `sha256:63f4d46e3f4e03d6dd1e9f482b089793856d0f42cd2b4f43d0e94a10f80574e3`.
+  Phase 3 paths/digests remained unchanged.
+- The alert-policy report is stored at
+  `artifacts/application/evaluation/window-gke-r0030/alert-policy-validation.json`
+  with SHA-256
+  `387af82833d0c5e2009fa0939b3c6c3397c518284e932d0a1c278f9b4dc9189e`.
+  It is derived only from validation and intentionally has
+  `selected_policy=null`. At confidence `0.80`, benign false-alert rate is
+  `0.001372` and malicious alert recall is `0.821765`; at `0.85`, they are
+  `0.000823` and `0.776353`. Selecting an operational threshold is blocked on
+  the user-authorized maximum acceptable benign false-alert rate.
+- Argo CD revision `e5f91fd8aaacc579a29f244cf3e9f047433917b6` is
+  `Synced/Healthy` for detection, Central, and Edge. The alert-policy Job
+  completed once in 2m33s. Its isolated 1 GiB evidence PVC remains bound until
+  the threshold decision or an explicit evidence-storage cleanup.
+- A Jenkins restart exposed that the legacy setup wizard still generated an
+  unlock secret even though JCasC manages the admin account. Treating that
+  bootstrap material as compromised, the live VM now runs with
+  `-Djenkins.install.runSetupWizard=false` and the legacy unlock-secret file is
+  absent. The durable Ansible systemd override enforces the same property and
+  removes the legacy file; syntax-check passes. Jenkins is active and the
+  `fedkube-main` pipeline job remains present.
+
+Resume checkpoint after scientific window evaluation:
+
+1. Obtain the maximum acceptable benign false-alert rate and select the
+   confidence threshold from the validation trade-off without reading test for
+   policy selection.
+2. Record the policy in application configuration and serving provenance, then
+   enable inference, demo target, collector, alert router, and the configured
+   Elasticsearch/Kibana boundary through the manual Argo CD Application.
+3. Run the lab-only live-ingress scenarios, verify event privacy and Kibana
+   visibility, and capture latency, flow-drop, and benign false-positive
+   evidence.
+4. After evidence is copied locally, explicitly decide whether to prune the
+   completed evaluation Job and its isolated 1 GiB PVC.
 
 ## Result
 
-Scientific evaluation and the fail-closed research runtime are implemented.
-Live serving remains intentionally blocked on timestamped validation replay,
-window/alert-policy selection, a serving-bundle promotion, and local
-ingress-to-Kibana acceptance. The plan remains active.
+Scientific evaluation, serving-bundle promotion, locked test execution, and
+the validation-only alert trade-off are implemented with GKE evidence. The
+model shows no validation-to-test overfitting in the locked rolling protocol.
+Live serving remains intentionally blocked on the authorized alert-policy
+ceiling and ingress-to-Kibana acceptance. The plan remains active.
