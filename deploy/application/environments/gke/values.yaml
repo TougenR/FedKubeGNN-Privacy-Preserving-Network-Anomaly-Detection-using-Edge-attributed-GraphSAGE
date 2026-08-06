@@ -1,8 +1,8 @@
 image:
   repository: hieunguyen595/fedkube-gnn
   tag: unset
-  digest: sha256:d1db8bc1341037413d98792c36706141407dcf98101a3eec32f5138599bc98e3
-releaseId: e5b157ec71df3ffc648c797815086eb891e71769
+  digest: sha256:63f4d46e3f4e03d6dd1e9f482b089793856d0f42cd2b4f43d0e94a10f80574e3
+releaseId: b968f14c351f590df884cf896f20995d4312b790
 modelBundle:
   existingClaim: ""
   existingSecret: fedper-model-bundle-serving-8d59392ff1
