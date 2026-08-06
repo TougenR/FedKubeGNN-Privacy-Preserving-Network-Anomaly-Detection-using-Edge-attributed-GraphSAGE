@@ -130,8 +130,10 @@ Out of scope:
 - [x] Implement multi-head loader, trusted router, schemas, API, and readiness.
 - [x] Implement correctly routed, cross-head, local matrix, and oracle evaluation.
 - [ ] Implement rolling-window candidates and select on validation. Buffering,
-  lateness/drop accounting, and the candidate grid exist; selection is blocked
-  because the retained prepared graphs contain no timestamps/raw flows.
+  lateness/drop accounting, and the candidate grid exist. A digest-pinned GKE
+  Job is now reconstructing the timestamped validation replay from the six
+  checksum-verified official IoT-23 sources; serving remains locked until that
+  Job emits the selection report.
 - [ ] Implement collector, alert router, Kibana assets, Docker, and Helm chart.
   Collector/window orchestration, ingress-adapter contract, structured router,
   strict Elasticsearch mapping, Docker boundary, and chart templates exist;
@@ -233,6 +235,35 @@ Observed checkpoint evidence on 2026-08-06:
   overlap-safe alert emission. Ruff, compile, both Helm charts, Terraform
   format/validate, Ansible syntax, strict Elasticsearch mapping, server-side
   Kubernetes dry-run, and `git diff --check` pass.
+- Commit `ede3b264c422b78b893657c40540316f4157ad50` passed all three GitHub
+  Actions jobs and Jenkins build 30 produced application image digest
+  `sha256:ccc98bfce2845a2bb649aca122c01dee3b8d6e390816dea0fb1e530ab2847ffd`.
+  Jenkins builds 31 and 32 proved the environment-only loop guard. The Phase 3
+  image digest and training configuration remained unchanged.
+- The relocated live ApplicationSet briefly rendered a doubled values path.
+  Commit `5247a14` corrected values files relative to the relocated federated
+  chart, after which both `fedkube-central` and `fedkube-edge-01` returned to
+  `Synced/Healthy` without a workload/image/training change.
+- The manually synchronized `fedkube-detection` Argo CD Application is pinned
+  to revision `c01eb447fb19913d073c7c35968d9b72bd35cd16` and deliberately has
+  no automated sync. Its evaluation Job uses the immutable application image,
+  an isolated 1 GiB evidence PVC, and node-local disposable raw workspace.
+  Central/Edge remain `Synced/Healthy`; the detection Application is expected
+  to remain `Progressing` until the batch Job finishes.
+
+Resume checkpoint while the GKE validation Job is active:
+
+1. Inspect Job/pod/PVC in namespace `fedkube-detection`; do not manually sync
+   the detection Application to a newer revision while the Job is running.
+2. Inspect `/work/raw` and `/artifacts/replay` in init container
+   `prepare-exact-replay`. A completed source is removed from raw workspace and
+   appears in the replay manifest/output; retries are checksum-verified and the
+   final manifest is atomic.
+3. After init completion, monitor container `benchmark-validation`. Copy
+   `/artifacts/evaluation/window-validation.json` and the replay manifest to
+   local application artifacts before pruning the temporary PVC.
+4. Promote a new immutable serving bundle only if the report identifies a
+   validation-selected rolling protocol and matches bundle/dataset provenance.
 
 ## Result
 
