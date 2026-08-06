@@ -81,12 +81,42 @@ def _candidate_grid(config: Mapping[str, Any]) -> Iterable[tuple[float, int]]:
             yield float(duration), int(limit)
 
 
+def preprocess_validation_frames(
+    *, bundle: Any, frames: Mapping[str, pd.DataFrame]
+) -> dict[str, pd.DataFrame]:
+    """Transform each validation flow once while retaining evaluation-only truth."""
+    transformed_frames: dict[str, pd.DataFrame] = {}
+    for client_id, frame in frames.items():
+        transformed = preprocess_production_flows(
+            frame.to_dict(orient="records"), bundle.preprocessor
+        )
+        if len(transformed) != len(frame):
+            raise WindowBenchmarkError(
+                f"Preprocessing changed validation row count for '{client_id}'."
+            )
+        # Production preprocessing injects label placeholders. Scientific truth
+        # and stable source identity are restored only in this labeled evaluator;
+        # neither field is a model feature or accepted by the production API.
+        transformed["detailed-label"] = frame["detailed-label"].astype(str).to_numpy()
+        transformed["source_edge_index"] = frame["source_edge_index"].to_numpy()
+        transformed_frames[client_id] = transformed
+    return transformed_frames
+
+
 def _graph_bytes(graph: Any) -> int:
-    tensors = (graph.x, graph.edge_index, graph.edge_attr, graph.edge_index_mp, graph.edge_attr_mp)
+    tensors = (
+        graph.x,
+        graph.edge_index,
+        graph.edge_attr,
+        graph.edge_index_mp,
+        graph.edge_attr_mp,
+    )
     return int(sum(tensor.nelement() * tensor.element_size() for tensor in tensors))
 
 
-def _late_event_probe(frame: pd.DataFrame, config: RollingWindowConfig) -> dict[str, Any]:
+def _late_event_probe(
+    frame: pd.DataFrame, config: RollingWindowConfig
+) -> dict[str, Any]:
     """Deterministically swap adjacent events and measure watermark loss only."""
     records = frame.to_dict(orient="records")
     for offset in range(0, len(records) - 1, 20):
@@ -132,9 +162,11 @@ def evaluate_candidate(
                 continue
             if len(snapshot.emission_indices) != 1:
                 raise WindowBenchmarkError("Stride-one snapshot lost its target flow.")
-            features = preprocess_production_flows(
-                list(snapshot.flows), bundle.preprocessor
-            )
+            # Frames were transformed once before the candidate grid. Repeating
+            # the frozen row-wise transform for every overlapping window is
+            # mathematically redundant and makes the 16-candidate benchmark
+            # several orders of magnitude slower.
+            features = pd.DataFrame(snapshot.flows)
             graph = build_inference_graph(
                 features,
                 bundle.preprocessor.feature_columns,
@@ -147,9 +179,13 @@ def evaluate_candidate(
             target_flow = snapshot.flows[target]
             source_edge = (client_id, int(target_flow["source_edge_index"]))
             if source_edge in scored_source_edges:
-                raise WindowBenchmarkError("A validation flow was scored more than once.")
+                raise WindowBenchmarkError(
+                    "A validation flow was scored more than once."
+                )
             scored_source_edges.add(source_edge)
-            truth = np.asarray([bundle.class_to_idx[str(target_flow["detailed-label"])]])
+            truth = np.asarray(
+                [bundle.class_to_idx[str(target_flow["detailed-label"])]]
+            )
             prediction = np.asarray([int(result.predicted_indices[target])])
             total += confusion_matrix(truth, prediction, num_classes=len(classes))
             predicted_sequence.append(int(prediction[0]))
@@ -158,7 +194,9 @@ def evaluate_candidate(
             graph_bytes.append(float(_graph_bytes(graph)))
         capacity_evictions += buffer.capacity_drop_count
         if len(predicted_sequence) > 1:
-            adjacent = np.asarray(predicted_sequence[1:]) == np.asarray(predicted_sequence[:-1])
+            adjacent = np.asarray(predicted_sequence[1:]) == np.asarray(
+                predicted_sequence[:-1]
+            )
             client_stability.append(float(adjacent.mean()))
         late_probes[client_id] = _late_event_probe(frame, candidate)
     expected = sum(len(frame) for frame in frames.values())
@@ -249,9 +287,13 @@ def run_benchmark(
         import yaml
 
         config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    transformed_frames = preprocess_validation_frames(bundle=bundle, frames=frames)
     candidates = [
         evaluate_candidate(
-            bundle=bundle, frames=frames, duration=duration, limit=limit
+            bundle=bundle,
+            frames=transformed_frames,
+            duration=duration,
+            limit=limit,
         )
         for duration, limit in _candidate_grid(config)
     ]

@@ -1,11 +1,71 @@
 from __future__ import annotations
 
 import unittest
+from types import SimpleNamespace
 
-from src.application.evaluation.window_benchmark import select_candidate
+import pandas as pd
+
+from src.application.evaluation.window_benchmark import (
+    preprocess_validation_frames,
+    select_candidate,
+)
+from src.application.graph_window.graph_builder import preprocess_production_flows
+from src.core.preprocess import clean_flows, fit_preprocessor
 
 
 class WindowBenchmarkTests(unittest.TestCase):
+    def test_one_pass_preprocessing_matches_per_window_transform(self) -> None:
+        frame = pd.DataFrame(
+            [
+                {
+                    "uid": "test-flow",
+                    "ts": 1.0,
+                    "id.orig_h": "10.0.0.1",
+                    "id.orig_p": 12345,
+                    "id.resp_h": "10.0.0.2",
+                    "id.resp_p": 80,
+                    "proto": "tcp",
+                    "service": "-",
+                    "duration": 2.0,
+                    "orig_bytes": 10,
+                    "resp_bytes": 20,
+                    "conn_state": "S0",
+                    "local_orig": "-",
+                    "local_resp": "-",
+                    "missed_bytes": 0,
+                    "history": "S",
+                    "orig_pkts": 1,
+                    "orig_ip_bytes": 20,
+                    "resp_pkts": 2,
+                    "resp_ip_bytes": 40,
+                    "tunnel_parents": "-",
+                    "label": "Malicious",
+                    "detailed-label": "Attack",
+                    "source_edge_index": 17,
+                }
+            ]
+        )
+        preprocessor = fit_preprocessor(clean_flows(frame))
+        bundle = SimpleNamespace(preprocessor=preprocessor)
+        expected = preprocess_production_flows(
+            frame.to_dict(orient="records"), bundle.preprocessor
+        )
+        actual = preprocess_validation_frames(bundle=bundle, frames={"1-1": frame})[
+            "1-1"
+        ]
+
+        model_columns = [
+            "id.orig_h",
+            "id.resp_h",
+            "ts",
+            *preprocessor.feature_columns,
+        ]
+        pd.testing.assert_frame_equal(
+            actual[model_columns], expected[model_columns], check_dtype=True
+        )
+        self.assertEqual(actual["detailed-label"].tolist(), ["Attack"])
+        self.assertEqual(actual["source_edge_index"].tolist(), [17])
+
     def test_selection_uses_validation_macro_f1_then_latency(self) -> None:
         base = {
             "duration_seconds": 5.0,

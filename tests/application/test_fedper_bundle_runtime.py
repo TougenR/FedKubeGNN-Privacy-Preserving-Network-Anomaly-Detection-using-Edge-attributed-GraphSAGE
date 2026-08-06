@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -121,8 +122,7 @@ class FedPerBundleRuntimeTests(unittest.TestCase):
             client_root = heads_root / client_id
             client_root.mkdir(parents=True)
             client_state = {
-                name: value + np.float32(index / 100)
-                for name, value in private.items()
+                name: value + np.float32(index / 100) for name, value in private.items()
             }
             state_path = client_root / "head-0003.npz"
             np.savez(state_path, **client_state)
@@ -201,6 +201,27 @@ class FedPerBundleRuntimeTests(unittest.TestCase):
             head.write_bytes(head.read_bytes() + b"corrupt")
             with self.assertRaisesRegex(InferenceBundleError, "Digest mismatch"):
                 load_inference_bundle(bundle_path)
+
+    def test_projected_secret_symlinks_preserve_logical_head_mapping(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            bundle_path, _ = self._bundle(root)
+            projection = root / "projection"
+            version = projection / "..2026_08_06_00_00_00"
+            projection.mkdir()
+            shutil.copytree(bundle_path, version)
+            for path in sorted(version.rglob("*")):
+                if not path.is_file():
+                    continue
+                relative = path.relative_to(version)
+                link = projection / relative
+                link.parent.mkdir(parents=True, exist_ok=True)
+                link.symlink_to(path.resolve())
+            (projection / "..data").symlink_to(version.name)
+
+            bundle = load_inference_bundle(projection)
+
+        self.assertEqual(set(bundle.heads), set(EXPECTED_CLIENTS))
 
     def test_production_schema_rejects_ground_truth_label(self) -> None:
         with self.assertRaises(ValidationError):

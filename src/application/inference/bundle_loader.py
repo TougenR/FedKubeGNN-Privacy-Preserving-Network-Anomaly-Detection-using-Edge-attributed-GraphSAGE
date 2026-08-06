@@ -70,8 +70,7 @@ def _load_npz(path: Path) -> dict[str, np.ndarray]:
     try:
         with np.load(path, allow_pickle=False) as archive:
             return {
-                str(name): np.asarray(archive[name]).copy()
-                for name in archive.files
+                str(name): np.asarray(archive[name]).copy() for name in archive.files
             }
     except (OSError, ValueError) as exc:
         raise InferenceBundleError(f"Cannot load NumPy state: {path}") from exc
@@ -90,9 +89,7 @@ def _validate_state(
         expected_dtype = str(specs[name]["dtype"])
         value = np.asarray(state[name])
         if value.shape != expected_shape or str(value.dtype) != expected_dtype:
-            raise InferenceBundleError(
-                f"{label} parameter '{name}' schema mismatch."
-            )
+            raise InferenceBundleError(f"{label} parameter '{name}' schema mismatch.")
 
 
 @dataclass(frozen=True)
@@ -185,8 +182,12 @@ def load_inference_bundle(
     specs = {str(item["name"]): item for item in parameter_items}
     if len(specs) != len(parameter_items):
         raise InferenceBundleError("Model spec has duplicate parameters.")
-    shared_names = tuple(str(name) for name in manifest.get("shared_parameter_names", ()))
-    private_names = tuple(str(name) for name in manifest.get("private_parameter_names", ()))
+    shared_names = tuple(
+        str(name) for name in manifest.get("shared_parameter_names", ())
+    )
+    private_names = tuple(
+        str(name) for name in manifest.get("private_parameter_names", ())
+    )
     if set(shared_names) | set(private_names) != set(specs):
         raise InferenceBundleError("FedPer parameter boundary is incomplete.")
     if set(shared_names) & set(private_names):
@@ -209,12 +210,17 @@ def load_inference_bundle(
         for name, value in shared_state.items()
     }
     incompatible = encoder.load_state_dict(shared_tensors, strict=False)
-    if set(incompatible.missing_keys) != set(private_names) or incompatible.unexpected_keys:
+    if (
+        set(incompatible.missing_keys) != set(private_names)
+        or incompatible.unexpected_keys
+    ):
         raise InferenceBundleError("Shared encoder cannot be loaded into model spec.")
     encoder.to(device).eval()
 
     client_mapping = manifest.get("client_head_mapping")
-    if not isinstance(client_mapping, dict) or set(client_mapping) != set(heads_document):
+    if not isinstance(client_mapping, dict) or set(client_mapping) != set(
+        heads_document
+    ):
         raise InferenceBundleError("Client/head mapping is incomplete.")
     heads: dict[str, torch.nn.Module] = {}
     for client_id, document in heads_document.items():
@@ -225,7 +231,12 @@ def load_inference_bundle(
         if int(document.get("completed_rounds", -1)) != int(manifest["best_round"]):
             raise InferenceBundleError(f"Head '{client_id}' is not at best_round.")
         path = _safe_artifact(root, document, f"head {client_id}")
-        if path.relative_to(root).as_posix() != client_mapping[client_id]:
+        # Compare manifest-level logical paths. Kubernetes projected Secret
+        # volumes resolve files through a versioned ``..data`` symlink; using
+        # the resolved physical path here incorrectly rejects the same
+        # digest-validated artifact mounted by Kubernetes.
+        logical_path = Path(str(document.get("path", ""))).as_posix()
+        if logical_path != client_mapping[client_id]:
             raise InferenceBundleError(f"Head path mapping mismatch for '{client_id}'.")
         state = _load_npz(path)
         _validate_state(state, specs, private_names, f"head {client_id}")
