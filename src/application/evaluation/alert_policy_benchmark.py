@@ -1,4 +1,4 @@
-"""Re-evaluate the validation-selected window to expose alert trade-offs."""
+"""Expose validation-only alert trade-offs from a locked serving bundle."""
 
 from __future__ import annotations
 
