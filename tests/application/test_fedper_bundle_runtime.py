@@ -224,5 +224,10 @@ class FedPerBundleRuntimeTests(unittest.TestCase):
             )
 
 
+def build_test_bundle(root: Path) -> tuple[Path, dict[str, np.ndarray]]:
+    """Create the synthetic bundle fixture without relying on local artifacts."""
+    return FedPerBundleRuntimeTests()._bundle(root)
+
+
 if __name__ == "__main__":
     unittest.main()
