@@ -2,6 +2,7 @@ schema_version: 1
 selection_split: validation
 time_window_seconds: [5, 15, 30, 60]
 flow_limits: [50, 100, 500, 1000]
+alert_confidence_thresholds: [0.0, 0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.925, 0.95, 0.975, 0.99]
 selection_metrics:
   - macro_f1_fixed
   - prediction_stability

@@ -7,6 +7,9 @@
 {{- if and .Values.evaluation.enabled (not .Values.modelBundle.existingSecret) }}
 {{- fail "evaluation requires an externally supplied immutable modelBundle.existingSecret" }}
 {{- end }}
+{{- if and .Values.evaluation.enabled (not (has .Values.evaluation.mode (list "window-validation" "locked-test" "alert-policy"))) }}
+{{- fail "evaluation.mode must be window-validation, locked-test, or alert-policy" }}
+{{- end }}
 {{- if not (regexMatch "^[a-zA-Z0-9][a-zA-Z0-9._-]{6,62}$" .Values.releaseId) }}
 {{- fail "releaseId must be a safe 7-63 character identifier" }}
 {{- end }}

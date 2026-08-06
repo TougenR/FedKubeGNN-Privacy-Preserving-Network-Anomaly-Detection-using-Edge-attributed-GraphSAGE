@@ -5,7 +5,7 @@ image:
 releaseId: 7222b69eddb6c62a232c37d0ccc94aae41aaa3d0
 modelBundle:
   existingClaim: ""
-  existingSecret: fedper-model-bundle
+  existingSecret: fedper-model-bundle-serving-8d59392ff1
 inference:
   enabled: false
 demoTarget:
@@ -14,6 +14,9 @@ alertRouter:
   enabled: false
 evaluation:
   enabled: true
+  mode: locked-test
+  windowReportPath: /artifacts/evaluation/window-validation.json
+  reportPath: /artifacts/evaluation/window-test.json
 ingress:
   enabled: false
 elasticsearch:

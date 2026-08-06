@@ -1,5 +1,6 @@
 {{- if .Values.evaluation.enabled }}
 {{- $claim := .Values.evaluation.artifactsClaim.name -}}
+{{- $jobIdentity := printf "%s:%s:%s" .Values.releaseId .Values.evaluation.mode .Values.evaluation.reportPath -}}
 {{- if .Values.evaluation.artifactsClaim.create }}
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -16,7 +17,7 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ printf "%s-window-%s" (include "detection-stack.fullname" .) (sha256sum .Values.releaseId | trunc 8) | trunc 63 | trimSuffix "-" }}
+  name: {{ printf "%s-window-%s" (include "detection-stack.fullname" .) (sha256sum $jobIdentity | trunc 8) | trunc 63 | trimSuffix "-" }}
   labels:
     app.kubernetes.io/name: fedper-window-evaluation
     fedkube.io/release-id: {{ .Values.releaseId | quote }}
@@ -55,9 +56,10 @@ spec:
             - {name: artifacts, mountPath: /artifacts}
             - {name: raw-work, mountPath: /work}
       containers:
-        - name: benchmark-validation
+        - name: benchmark-{{ .Values.evaluation.mode }}
           image: {{ include "detection-stack.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if eq .Values.evaluation.mode "window-validation" }}
           command: [python, -m, src.application.evaluation.window_benchmark]
           args:
             - --bundle
@@ -68,6 +70,31 @@ spec:
             - {{ .Values.evaluation.candidateConfigPath }}
             - --output
             - {{ .Values.evaluation.reportPath }}
+          {{- else if eq .Values.evaluation.mode "locked-test" }}
+          command: [python, -m, src.application.evaluation.locked_window_test]
+          args:
+            - --bundle
+            - {{ .Values.modelBundle.mountPath }}
+            - --replay
+            - {{ .Values.evaluation.replayPath }}
+            - --window-report
+            - {{ .Values.evaluation.windowReportPath }}
+            - --output
+            - {{ .Values.evaluation.reportPath }}
+          {{- else if eq .Values.evaluation.mode "alert-policy" }}
+          command: [python, -m, src.application.evaluation.alert_policy_benchmark]
+          args:
+            - --bundle
+            - {{ .Values.modelBundle.mountPath }}
+            - --replay
+            - {{ .Values.evaluation.replayPath }}
+            - --window-report
+            - {{ .Values.evaluation.windowReportPath }}
+            - --config
+            - {{ .Values.evaluation.candidateConfigPath }}
+            - --output
+            - {{ .Values.evaluation.reportPath }}
+          {{- end }}
           resources: {{- toYaml .Values.evaluation.resources | nindent 12 }}
           securityContext:
             allowPrivilegeEscalation: false

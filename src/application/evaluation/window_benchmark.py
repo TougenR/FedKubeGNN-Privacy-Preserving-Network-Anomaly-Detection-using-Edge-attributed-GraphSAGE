@@ -50,29 +50,37 @@ def _read_json(path: Path) -> dict[str, Any]:
     return value
 
 
-def _load_validation_frames(replay_root: Path) -> tuple[dict[str, pd.DataFrame], dict]:
+def load_replay_frames(
+    replay_root: Path, *, split: str
+) -> tuple[dict[str, pd.DataFrame], dict]:
+    if split not in {"validation", "test"}:
+        raise WindowBenchmarkError("Replay split must be validation or test.")
     manifest = _read_json(replay_root / "manifest.json")
     if manifest.get("kind") != "labeled-scientific-evaluation-only":
         raise WindowBenchmarkError("Replay manifest is not labeled evaluation data.")
     frames: dict[str, pd.DataFrame] = {}
     clients = manifest.get("clients", {})
     for client_id in sorted(clients):
-        document = clients[client_id]["validation"]
+        document = clients[client_id][split]
         path = (replay_root / str(document["path"])).resolve()
         if replay_root not in path.parents or _sha256(path) != document["sha256"]:
             raise WindowBenchmarkError(
-                f"Validation replay digest mismatch for '{client_id}'."
+                f"{split.title()} replay digest mismatch for '{client_id}'."
             )
         with gzip.open(path, "rt", encoding="utf-8") as handle:
             frame = pd.read_json(handle, orient="records", lines=True)
         if len(frame) != int(document["rows"]):
             raise WindowBenchmarkError(
-                f"Validation replay row count mismatch for '{client_id}'."
+                f"{split.title()} replay row count mismatch for '{client_id}'."
             )
         frames[str(client_id)] = frame.sort_values(
             ["ts", "source_edge_index"], kind="stable"
         ).reset_index(drop=True)
     return frames, manifest
+
+
+def _load_validation_frames(replay_root: Path) -> tuple[dict[str, pd.DataFrame], dict]:
+    return load_replay_frames(replay_root, split="validation")
 
 
 def _candidate_grid(config: Mapping[str, Any]) -> Iterable[tuple[float, int]]:
@@ -131,8 +139,71 @@ def _late_event_probe(
     }
 
 
+def alert_threshold_tradeoff(
+    *,
+    truth: list[int],
+    predictions: list[int],
+    confidence: list[float],
+    benign_index: int,
+    thresholds: Iterable[float],
+) -> list[dict[str, Any]]:
+    """Measure validation alert behavior without choosing a threshold."""
+    truth_array = np.asarray(truth, dtype=np.int64)
+    prediction_array = np.asarray(predictions, dtype=np.int64)
+    confidence_array = np.asarray(confidence, dtype=np.float64)
+    if not (len(truth_array) == len(prediction_array) == len(confidence_array)):
+        raise WindowBenchmarkError("Alert trade-off arrays have different lengths.")
+    benign = truth_array == benign_index
+    malicious = ~benign
+    benign_support = int(benign.sum())
+    malicious_support = int(malicious.sum())
+    rows: list[dict[str, Any]] = []
+    for raw_threshold in thresholds:
+        threshold = float(raw_threshold)
+        if not 0.0 <= threshold <= 1.0:
+            raise WindowBenchmarkError("Alert confidence thresholds must be in [0, 1].")
+        alerts = (prediction_array != benign_index) & (confidence_array >= threshold)
+        false_alerts = int((alerts & benign).sum())
+        malicious_alerts = int((alerts & malicious).sum())
+        correct_class_alerts = int(
+            (alerts & malicious & (prediction_array == truth_array)).sum()
+        )
+        alert_count = int(alerts.sum())
+        rows.append(
+            {
+                "confidence_threshold": threshold,
+                "alert_count": alert_count,
+                "benign_support": benign_support,
+                "benign_false_alerts": false_alerts,
+                "benign_false_alert_rate": (
+                    false_alerts / benign_support if benign_support else None
+                ),
+                "malicious_support": malicious_support,
+                "malicious_alerts": malicious_alerts,
+                "malicious_alert_recall": (
+                    malicious_alerts / malicious_support if malicious_support else None
+                ),
+                "correct_class_alerts": correct_class_alerts,
+                "correct_class_alert_recall": (
+                    correct_class_alerts / malicious_support
+                    if malicious_support
+                    else None
+                ),
+                "alert_precision_malicious": (
+                    malicious_alerts / alert_count if alert_count else None
+                ),
+            }
+        )
+    return rows
+
+
 def evaluate_candidate(
-    *, bundle: Any, frames: Mapping[str, pd.DataFrame], duration: float, limit: int
+    *,
+    bundle: Any,
+    frames: Mapping[str, pd.DataFrame],
+    duration: float,
+    limit: int,
+    alert_thresholds: Iterable[float] = (),
 ) -> dict[str, Any]:
     runtime = CentralizedFedPerRuntime(bundle)
     classes = tuple(bundle.class_to_idx)
@@ -145,6 +216,8 @@ def evaluate_candidate(
     late_probes: dict[str, Any] = {}
     capacity_evictions = 0
     scored_source_edges: set[tuple[str, int]] = set()
+    truth_indices: list[int] = []
+    predicted_indices: list[int] = []
     candidate = RollingWindowConfig(
         duration_seconds=duration,
         max_flows=limit,
@@ -188,6 +261,8 @@ def evaluate_candidate(
             )
             prediction = np.asarray([int(result.predicted_indices[target])])
             total += confusion_matrix(truth, prediction, num_classes=len(classes))
+            truth_indices.append(int(truth[0]))
+            predicted_indices.append(int(prediction[0]))
             predicted_sequence.append(int(prediction[0]))
             confidence.append(float(result.confidence[target]))
             entropy.append(float(result.entropy[target]))
@@ -235,6 +310,13 @@ def evaluate_candidate(
             "contract": "transport batches do not reset sensor-local buffer state",
             "prediction_change_rate": 0.0,
         },
+        "alert_threshold_tradeoff": alert_threshold_tradeoff(
+            truth=truth_indices,
+            predictions=predicted_indices,
+            confidence=confidence,
+            benign_index=bundle.class_to_idx["Benign"],
+            thresholds=alert_thresholds,
+        ),
     }
 
 
@@ -294,6 +376,7 @@ def run_benchmark(
             frames=transformed_frames,
             duration=duration,
             limit=limit,
+            alert_thresholds=config.get("alert_confidence_thresholds", ()),
         )
         for duration, limit in _candidate_grid(config)
     ]

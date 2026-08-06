@@ -76,6 +76,7 @@ serviceAccount:
 
 evaluation:
   enabled: false
+  mode: window-validation
   artifactsClaim:
     create: true
     name: fedper-window-evaluation
@@ -84,6 +85,7 @@ evaluation:
   sourceContractPath: /app/configs/application/iot23-replay-sources.json
   replayPath: /artifacts/replay/exact-gke-r0030
   reportPath: /artifacts/evaluation/window-validation.json
+  windowReportPath: /artifacts/evaluation/window-validation.json
   candidateConfigPath: /app/configs/application/window-candidates.yaml
   activeDeadlineSeconds: 86400
   resources:

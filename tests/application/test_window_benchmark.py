@@ -6,14 +6,65 @@ from types import SimpleNamespace
 import pandas as pd
 
 from src.application.evaluation.window_benchmark import (
+    alert_threshold_tradeoff,
     preprocess_validation_frames,
     select_candidate,
 )
 from src.application.graph_window.graph_builder import preprocess_production_flows
+from src.application.evaluation.locked_window_test import validate_locked_protocol
 from src.core.preprocess import clean_flows, fit_preprocessor
 
 
 class WindowBenchmarkTests(unittest.TestCase):
+    def test_locked_test_requires_exact_validation_selected_protocol(self) -> None:
+        report = {
+            "kind": "rolling_window_validation_selection",
+            "bundle_id": "research",
+            "dataset_digest": "d" * 64,
+            "selected": {
+                "selection_split": "validation",
+                "graph_protocol": "rolling-window-v1:test",
+                "duration_seconds": 60,
+                "max_flows": 50,
+                "emit_stride_flows": 1,
+                "allowed_lateness_seconds": 1,
+            },
+        }
+        manifest = {
+            "source_research_bundle": {"bundle_id": "research"},
+            "dataset_digest": "d" * 64,
+            "graph_protocol": "rolling-window-v1:test",
+            "rolling_window_protocol": {
+                "duration_seconds": 60,
+                "max_flows": 50,
+                "emit_stride_flows": 1,
+                "allowed_lateness_seconds": 1,
+            },
+        }
+
+        protocol = validate_locked_protocol(
+            serving_manifest=manifest, window_report=report
+        )
+        self.assertEqual(protocol["max_flows"], 50)
+        manifest["graph_protocol"] = "rolling-window-v1:changed"
+        with self.assertRaisesRegex(Exception, "differs from validation lock"):
+            validate_locked_protocol(serving_manifest=manifest, window_report=report)
+
+    def test_alert_tradeoff_reports_false_alert_and_detection_rates(self) -> None:
+        rows = alert_threshold_tradeoff(
+            truth=[0, 0, 1, 2],
+            predictions=[0, 1, 1, 0],
+            confidence=[0.99, 0.80, 0.90, 0.95],
+            benign_index=0,
+            thresholds=[0.0, 0.85],
+        )
+
+        self.assertEqual(rows[0]["benign_false_alert_rate"], 0.5)
+        self.assertEqual(rows[0]["malicious_alert_recall"], 0.5)
+        self.assertEqual(rows[0]["correct_class_alert_recall"], 0.5)
+        self.assertEqual(rows[1]["benign_false_alert_rate"], 0.0)
+        self.assertEqual(rows[1]["malicious_alert_recall"], 0.5)
+
     def test_one_pass_preprocessing_matches_per_window_transform(self) -> None:
         frame = pd.DataFrame(
             [
