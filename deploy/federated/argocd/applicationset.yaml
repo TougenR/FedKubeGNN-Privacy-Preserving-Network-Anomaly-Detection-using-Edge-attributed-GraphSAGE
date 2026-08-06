@@ -10,11 +10,11 @@ spec:
           - name: central
             cluster: in-cluster
             server: https://kubernetes.default.svc
-            valuesFile: deploy/federated/environments/central/values.yaml
+            valuesFile: environments/central/values.yaml
           - name: edge-01
             cluster: fedkube-edge-01
             server: ""
-            valuesFile: deploy/federated/environments/edge-01/values.yaml
+            valuesFile: environments/edge-01/values.yaml
   template:
     metadata:
       name: fedkube-{{name}}
