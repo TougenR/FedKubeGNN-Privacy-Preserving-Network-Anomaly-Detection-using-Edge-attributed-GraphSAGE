@@ -1,5 +1,5 @@
 # Phase 2 core + Flower simulation. This file intentionally excludes PyG and
 # all Phase 1-only dependencies so the federated boundary can run independently.
-numpy>=1.26,<2.0
+numpy>=1.26,<3.0
 torch>=2.1.0
 flwr[simulation]==1.32.1
