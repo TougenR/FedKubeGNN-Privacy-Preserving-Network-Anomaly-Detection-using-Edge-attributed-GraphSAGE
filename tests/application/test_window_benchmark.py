@@ -10,12 +10,60 @@ from src.application.evaluation.window_benchmark import (
     preprocess_validation_frames,
     select_candidate,
 )
+from src.application.evaluation.alert_policy_benchmark import (
+    validate_alert_policy_provenance,
+)
 from src.application.graph_window.graph_builder import preprocess_production_flows
 from src.application.evaluation.locked_window_test import validate_locked_protocol
 from src.core.preprocess import clean_flows, fit_preprocessor
 
 
 class WindowBenchmarkTests(unittest.TestCase):
+    def test_alert_policy_accepts_serving_bundle_derived_from_research_report(
+        self,
+    ) -> None:
+        report = {
+            "kind": "rolling_window_validation_selection",
+            "bundle_id": "research",
+            "dataset_digest": "d" * 64,
+            "selected": {
+                "selection_split": "validation",
+                "graph_protocol": "rolling-window-v1:test",
+                "duration_seconds": 60,
+                "max_flows": 50,
+                "emit_stride_flows": 1,
+                "allowed_lateness_seconds": 1,
+            },
+        }
+        manifest = {
+            "bundle_id": "serving",
+            "source_research_bundle": {"bundle_id": "research"},
+            "dataset_digest": "d" * 64,
+            "graph_protocol": "rolling-window-v1:test",
+            "rolling_window_protocol": {
+                "duration_seconds": 60,
+                "max_flows": 50,
+                "emit_stride_flows": 1,
+                "allowed_lateness_seconds": 1,
+            },
+        }
+        replay = {"derived_dataset_digest": "d" * 64}
+
+        protocol = validate_alert_policy_provenance(
+            serving_manifest=manifest,
+            window_report=report,
+            replay_manifest=replay,
+        )
+
+        self.assertEqual(protocol["max_flows"], 50)
+        replay["derived_dataset_digest"] = "e" * 64
+        with self.assertRaisesRegex(Exception, "replay dataset digests differ"):
+            validate_alert_policy_provenance(
+                serving_manifest=manifest,
+                window_report=report,
+                replay_manifest=replay,
+            )
+
     def test_locked_test_requires_exact_validation_selected_protocol(self) -> None:
         report = {
             "kind": "rolling_window_validation_selection",
