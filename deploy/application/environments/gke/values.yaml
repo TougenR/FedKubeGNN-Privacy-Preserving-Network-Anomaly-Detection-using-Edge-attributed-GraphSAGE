@@ -14,9 +14,9 @@ alertRouter:
   enabled: false
 evaluation:
   enabled: true
-  mode: locked-test
+  mode: alert-policy
   windowReportPath: /artifacts/evaluation/window-validation.json
-  reportPath: /artifacts/evaluation/window-test.json
+  reportPath: /artifacts/evaluation/alert-policy-validation.json
 ingress:
   enabled: false
 elasticsearch:
