@@ -10,6 +10,8 @@ spec:
   destinations:
     - namespace: fedkube
       server: "*"
+    - namespace: fedkube-detection
+      server: "*"
   clusterResourceWhitelist:
     - group: "*"
       kind: "*"

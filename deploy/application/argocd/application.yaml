@@ -4,7 +4,7 @@ metadata:
   name: fedkube-detection
   namespace: argocd
   annotations:
-    fedkube.io/deployment-gate: local-acceptance-and-cost-approval-required
+    fedkube.io/deployment-gate: gcp-approved-2026-08-06
 spec:
   project: fedkube
   source:
@@ -18,8 +18,8 @@ spec:
   destination:
     name: in-cluster
     namespace: fedkube-detection
-  # Deliberately no automated sync. Apply/sync only after local acceptance and
-  # a separate approval for GKE cost and the model-bundle PVC.
+  # Deliberately no automated sync. Each scientific/live transition is reviewed
+  # and synchronized explicitly even after the GCP approval.
   syncPolicy:
     syncOptions:
       - CreateNamespace=true
