@@ -6,6 +6,8 @@ image:
 
 releaseId: phase4-unreleased
 deploymentStrategy: RollingUpdate
+deploymentMaxSurge: 25%
+deploymentMaxUnavailable: 25%
 
 modelBundle:
   existingClaim: ""

@@ -3,7 +3,9 @@ image:
   tag: unset
   digest: sha256:d53c2b4f8837e68600ae8408c1710c6976c181697eeb461e0c7d912fcd46b748
 releaseId: 12214fada1a4498d2e697cba8638d510b8669485
-deploymentStrategy: Recreate
+deploymentStrategy: RollingUpdate
+deploymentMaxSurge: 0
+deploymentMaxUnavailable: 1
 modelBundle:
   existingClaim: ""
   existingSecret: fedper-model-bundle-serving-8d59392ff1

@@ -6,7 +6,11 @@ metadata:
   labels: {fedkube.io/release-id: {{ .Values.releaseId | quote }}}
 spec:
   replicas: {{ .Values.collector.replicas }}
-  strategy: {type: {{ .Values.deploymentStrategy }}}
+  strategy:
+    type: {{ .Values.deploymentStrategy }}
+    rollingUpdate:
+      maxSurge: {{ .Values.deploymentMaxSurge }}
+      maxUnavailable: {{ .Values.deploymentMaxUnavailable }}
   selector:
     matchLabels: {app.kubernetes.io/name: flow-collector}
   template:
