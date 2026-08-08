@@ -10,6 +10,7 @@ from unittest.mock import patch
 import pandas as pd
 
 from src.application.alerting.event import DetectionEvent, entity_hash, numeric_bucket
+from src.application.alerting.policy import AlertPolicy
 from src.application.alerting.privacy import validate_elasticsearch_document
 from src.application.alerting.elasticsearch import (
     ElasticsearchSettings,
@@ -203,6 +204,7 @@ class CollectionWindowAlertingTests(unittest.TestCase):
                 "client_id": "1-1",
                 "window_id": "window-1",
                 "predicted_class": "C&C",
+                "is_alert": True,
                 "severity": "medium",
                 "confidence_bucket": numeric_bucket(0.92, (0.0, 0.9, 0.95, 1.0)),
                 "entropy_bucket": numeric_bucket(0.2, (0.0, 0.5, 1.0)),
@@ -219,6 +221,45 @@ class CollectionWindowAlertingTests(unittest.TestCase):
         document["id.orig_h"] = "10.0.0.1"
         with self.assertRaises(ValueError):
             validate_elasticsearch_document(document)
+
+    def test_policy_indexes_all_decisions_but_only_qualifies_selected_alerts(self) -> None:
+        policy = AlertPolicy(
+            confidence_threshold=0.85,
+            confidence_boundaries=(0.0, 0.5, 0.85, 0.95, 1.0),
+            entropy_boundaries=(0.0, 0.25, 0.5, 1.0),
+            class_severity={"C&C": "high"},
+        )
+        common = {
+            "sensor_id": "sensor-34-1",
+            "window_id": "window-1",
+            "entity": "10.0.0.1",
+            "entity_key": b"test-key",
+            "flow_count": 10,
+            "response": {
+                "client_id": "34-1",
+                "model_digest": "a" * 64,
+                "head_digest": "b" * 64,
+                "schema_digest": "c" * 64,
+            },
+        }
+        benign = policy.detection_event(
+            **common,
+            prediction={"predicted_label": "Benign", "confidence": 0.99, "entropy": 0.01},
+        )
+        self.assertFalse(benign.is_alert)
+        self.assertEqual(benign.severity, "none")
+        self.assertIsNone(
+            policy.event_for_prediction(
+                **common,
+                prediction={"predicted_label": "Benign", "confidence": 0.99, "entropy": 0.01},
+            )
+        )
+        attack = policy.detection_event(
+            **common,
+            prediction={"predicted_label": "C&C", "confidence": 0.92, "entropy": 0.2},
+        )
+        self.assertTrue(attack.is_alert)
+        self.assertEqual(attack.severity, "high")
 
 
 if __name__ == "__main__":

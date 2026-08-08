@@ -21,6 +21,7 @@ data:
             "client_id": {"type": "keyword"},
             "window_id": {"type": "keyword"},
             "predicted_class": {"type": "keyword"},
+            "is_alert": {"type": "boolean"},
             "severity": {"type": "keyword"},
             "confidence_bucket": {"type": "keyword"},
             "entropy_bucket": {"type": "keyword"},

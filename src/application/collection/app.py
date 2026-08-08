@@ -197,7 +197,7 @@ async def observe(observation: CollectorObservation) -> dict[str, Any]:
         for index in snapshot.emission_indices:
             source_flow = snapshot.flows[index]
             prediction = response["predictions"][index]
-            event = policy.event_for_prediction(
+            event = policy.detection_event(
                 sensor_id=snapshot.sensor_id,
                 window_id=snapshot.window_id,
                 entity=str(source_flow["id.orig_h"]),
@@ -206,14 +206,14 @@ async def observe(observation: CollectorObservation) -> dict[str, Any]:
                 response=response,
                 prediction=prediction,
             )
-            if event is not None:
-                try:
-                    post_json(
-                        app_state["alert_router_url"],
-                        event.model_dump(by_alias=True, mode="json"),
-                    )
-                except ServiceRequestError as exc:
-                    raise HTTPException(status_code=502, detail=str(exc)) from exc
+            try:
+                post_json(
+                    app_state["alert_router_url"],
+                    event.model_dump(by_alias=True, mode="json"),
+                )
+            except ServiceRequestError as exc:
+                raise HTTPException(status_code=502, detail=str(exc)) from exc
+            if event.is_alert:
                 emitted += 1
                 alerted_indices.add(index)
     app_state["events"] += emitted

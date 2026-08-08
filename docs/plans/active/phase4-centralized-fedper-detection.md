@@ -368,11 +368,35 @@ Implementation checkpoint on 2026-08-09:
   charts, Kubernetes dry-run, Terraform format/validate, Ansible syntax, JSON,
   shell syntax, and `git diff --check` pass.
 
+Live GKE console evidence on 2026-08-09:
+
+- Argo CD revision `986eb92c63dfeb9c6c01eedfb0df666b54d2b8d7` reached
+  `Synced/Healthy`. All six application services, the single-node
+  Elasticsearch cluster, and Kibana are ready. The application-owned internal
+  gateway is assigned `10.10.0.5`; no public endpoint was created.
+- ECK required numeric application/curl UIDs, removal of its reserved security
+  setting, and a GitOps drain/restore for the one-node Kibana Deployment.
+  Kibana 9.2.3 is stable with a 512 MiB V8 heap and 1 GiB container limit. The
+  bootstrap Job completed and imported the strict index template and data view.
+- The six default scenarios completed with 311/311 successful requests:
+  benign browsing 20, connection burst 60, bounded request flood 200, slow
+  connections 10, fixed-target port probe 6, and periodic beacon 15. Collector
+  evidence is 311 observations/windows, zero dropped flows, inference p50
+  `65.012 ms`, and p95 `91.904 ms`.
+- All 311 synthetic live flows were predicted `Benign` by trusted route
+  `sensor-34-1 -> head 34-1`, with no policy-qualified alerts. This is retained
+  as a valid negative result: the UI patterns are not IoT-23 ground truth and
+  the approved threshold was not weakened to manufacture an alert.
+- The follow-up sink contract records every privacy-reduced model decision in
+  Elasticsearch with an explicit `is_alert` boolean; only non-Benign decisions
+  above the validation-selected threshold count as alerts. This enables Kibana
+  baseline/FPR visibility without changing model output or alert policy.
+
 ## Result
 
 Scientific evaluation, serving-bundle promotion, locked test execution, the
-validation-selected alert policy, and internal demo-console implementation are
-complete. The model shows no validation-to-test overfitting in the locked
-rolling protocol. Live serving awaits the Jenkins immutable image release,
-manual non-pruning Argo CD sync, six-scenario execution, and Kibana/UI evidence.
-The plan remains active.
+validation-selected alert policy, internal demo console, GKE stack, and all six
+live scenarios are complete. The model shows no validation-to-test overfitting
+in the locked rolling protocol. The all-decision privacy-reduced sink change
+still requires the immutable Jenkins image, Argo CD sync, and Kibana document
+verification before final UI screenshots/evidence. The plan remains active.

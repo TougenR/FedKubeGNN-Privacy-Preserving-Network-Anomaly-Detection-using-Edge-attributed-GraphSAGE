@@ -30,7 +30,7 @@ class AlertPolicy:
         if not self.class_severity:
             raise ValueError("class_severity must contain selected attack classes.")
 
-    def event_for_prediction(
+    def detection_event(
         self,
         *,
         sensor_id: str,
@@ -40,14 +40,15 @@ class AlertPolicy:
         flow_count: int,
         response: Mapping[str, Any],
         prediction: Mapping[str, Any],
-    ) -> DetectionEvent | None:
+    ) -> DetectionEvent:
         predicted_class = str(prediction["predicted_label"])
         confidence = float(prediction["confidence"])
-        if predicted_class == "Benign" or confidence < self.confidence_threshold:
-            return None
-        severity = self.class_severity.get(predicted_class)
-        if severity is None:
-            return None
+        configured_severity = self.class_severity.get(predicted_class)
+        is_alert = (
+            predicted_class != "Benign"
+            and confidence >= self.confidence_threshold
+            and configured_severity is not None
+        )
         return DetectionEvent(
             **{
                 "@timestamp": datetime.now(timezone.utc),
@@ -55,7 +56,8 @@ class AlertPolicy:
                 "client_id": str(response["client_id"]),
                 "window_id": window_id,
                 "predicted_class": predicted_class,
-                "severity": severity,
+                "is_alert": is_alert,
+                "severity": configured_severity if is_alert else "none",
                 "confidence_bucket": numeric_bucket(
                     confidence, self.confidence_boundaries
                 ),
@@ -71,6 +73,14 @@ class AlertPolicy:
                 "schema_digest": str(response["schema_digest"]),
             }
         )
+
+    def event_for_prediction(
+        self,
+        **kwargs: Any,
+    ) -> DetectionEvent | None:
+        """Return only policy-qualified alerts for compatibility with evaluators."""
+        event = self.detection_event(**kwargs)
+        return event if event.is_alert else None
 
 
 def parse_boundaries(value: Sequence[float]) -> tuple[float, ...]:

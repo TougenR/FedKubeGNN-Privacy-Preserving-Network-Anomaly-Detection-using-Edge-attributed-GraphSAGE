@@ -18,6 +18,7 @@ class DetectionEvent(BaseModel):
     client_id: str
     window_id: str
     predicted_class: str
+    is_alert: bool
     severity: str
     confidence_bucket: str
     entropy_bucket: str
