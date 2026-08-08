@@ -35,8 +35,8 @@ data:
       },
       "_meta": {"owner": "deploy/application", "privacy": "privacy-reduced-v1"}
     }
-  data-view.ndjson: |
-    {"type":"index-pattern","id":"fedper-detections","attributes":{"title":"fedper-detections*","timeFieldName":"@timestamp"},"references":[]}
+  saved-objects.ndjson: |-
+{{ .Files.Get "files/kibana.ndjson" | nindent 4 }}
 ---
 apiVersion: batch/v1
 kind: Job
@@ -71,7 +71,7 @@ spec:
               curl --fail --silent --cacert /kb-ca/ca.crt -u "${auth}" -X POST \
                 "${kb}/api/saved_objects/_import?overwrite=true" \
                 -H 'kbn-xsrf: fedkube-bootstrap' \
-                -F file=@/bootstrap/data-view.ndjson
+                -F file=@/bootstrap/saved-objects.ndjson
           env:
             - name: ELASTIC_PASSWORD
               valueFrom:
