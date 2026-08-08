@@ -30,6 +30,7 @@ metadata:
   labels: {fedkube.io/release-id: {{ .Values.releaseId | quote }}}
 spec:
   replicas: 1
+  strategy: {type: {{ .Values.deploymentStrategy }}}
   selector:
     matchLabels: {app.kubernetes.io/name: detection-gateway}
   template:

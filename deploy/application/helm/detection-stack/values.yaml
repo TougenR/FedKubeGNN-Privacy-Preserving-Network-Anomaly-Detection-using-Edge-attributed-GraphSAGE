@@ -5,6 +5,7 @@ image:
   pullPolicy: IfNotPresent
 
 releaseId: phase4-unreleased
+deploymentStrategy: RollingUpdate
 
 modelBundle:
   existingClaim: ""

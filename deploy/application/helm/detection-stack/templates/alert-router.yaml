@@ -6,6 +6,7 @@ metadata:
   labels: {fedkube.io/release-id: {{ .Values.releaseId | quote }}}
 spec:
   replicas: {{ .Values.alertRouter.replicas }}
+  strategy: {type: {{ .Values.deploymentStrategy }}}
   selector:
     matchLabels: {app.kubernetes.io/name: alert-router}
   template:
