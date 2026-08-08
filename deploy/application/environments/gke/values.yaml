@@ -9,7 +9,7 @@ modelBundle:
 inference:
   enabled: true
   resources:
-    requests: {cpu: 50m, memory: 1Gi}
+    requests: {cpu: 20m, memory: 1Gi}
     limits: {cpu: "2", memory: 2Gi}
 demoTarget:
   enabled: true
@@ -17,18 +17,18 @@ demoTarget:
     enabled: true
     sensorId: sensor-34-1
   resources:
-    requests: {cpu: 10m, memory: 64Mi}
+    requests: {cpu: 5m, memory: 64Mi}
     limits: {cpu: 250m, memory: 256Mi}
 demoConsole:
   enabled: true
   monitorBufferSize: 500
   resources:
-    requests: {cpu: 10m, memory: 64Mi}
+    requests: {cpu: 5m, memory: 64Mi}
     limits: {cpu: 500m, memory: 256Mi}
 gateway:
   enabled: true
   resources:
-    requests: {cpu: 10m, memory: 32Mi}
+    requests: {cpu: 5m, memory: 32Mi}
     limits: {cpu: 250m, memory: 128Mi}
 collector:
   enabled: true
@@ -52,12 +52,12 @@ collector:
       PartOfAHorizontalPortScan: medium
     entityHashSecretName: fedkube-detection-detection-stack-entity-hash
   resources:
-    requests: {cpu: 20m, memory: 128Mi}
+    requests: {cpu: 10m, memory: 128Mi}
     limits: {cpu: "1", memory: 512Mi}
 alertRouter:
   enabled: true
   resources:
-    requests: {cpu: 10m, memory: 64Mi}
+    requests: {cpu: 5m, memory: 64Mi}
     limits: {cpu: 500m, memory: 256Mi}
 evaluation:
   enabled: false
@@ -80,10 +80,10 @@ elasticStack:
   storageClassName: standard-rwo
   storageSize: 10Gi
   elasticsearchResources:
-    requests: {cpu: 50m, memory: 2Gi}
+    requests: {cpu: 10m, memory: 2Gi}
     limits: {cpu: "1", memory: 2Gi}
   kibanaResources:
-    requests: {cpu: 25m, memory: 768Mi}
+    requests: {cpu: 5m, memory: 768Mi}
     limits: {cpu: 500m, memory: 768Mi}
 externalSecrets:
   enabled: true

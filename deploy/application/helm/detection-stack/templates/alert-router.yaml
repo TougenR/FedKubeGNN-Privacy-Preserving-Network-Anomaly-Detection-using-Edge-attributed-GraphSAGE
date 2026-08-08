@@ -56,6 +56,7 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             runAsNonRoot: true
+            runAsUser: 49999
             capabilities: {drop: [ALL]}
       {{- if and .Values.elasticsearch.enabled .Values.elasticsearch.caSecretName }}
       volumes:
