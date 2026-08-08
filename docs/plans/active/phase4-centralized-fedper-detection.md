@@ -133,16 +133,16 @@ Out of scope:
   immutable serving bundle, and evaluate the locked protocol exactly once on
   test. The selected protocol is
   `rolling-window-v1:duration=60s:max-flows=50:stride=1:lateness=1s`.
-- [ ] Implement collector, alert router, Kibana assets, Docker, and Helm chart.
-  Collector/window orchestration, ingress-adapter contract, structured router,
-  strict Elasticsearch mapping, Docker boundary, and chart templates exist;
-  a validated Kibana saved-object export and live deployment evidence remain.
+- [x] Implement collector, alert router, Kibana assets, Docker, and Helm chart.
+  The application-owned saved-object bundle contains a data view, five
+  visualizations, a saved search, and a six-panel dashboard; Kibana 9.2.3
+  imports all eight objects without warnings.
 - [x] Implement the internal demo console, exact six-scenario catalog, bounded
   fixed-target runner, privacy-reduced live monitor, NGINX internal gateway,
   and application-owned ECK resources in the independent application chart.
-- [ ] Pass local scientific and live-ingress acceptance.
-- [ ] Run repository-wide validation and document remaining limitations.
-- [ ] Obtain separate approval before any GKE deployment or paid operation.
+- [x] Pass local scientific and live-ingress acceptance.
+- [x] Run repository-wide validation and document remaining limitations.
+- [x] Obtain separate approval before any GKE deployment or paid operation.
   Approval was granted on 2026-08-06; this item is retained only as history.
 
 ## Decisions
@@ -391,12 +391,32 @@ Live GKE console evidence on 2026-08-09:
   Elasticsearch with an explicit `is_alert` boolean; only non-Benign decisions
   above the validation-selected threshold count as alerts. This enables Kibana
   baseline/FPR visibility without changing model output or alert policy.
+- Jenkins published the sink image at immutable digest
+  `sha256:d53c2b4f8837e68600ae8408c1710c6976c181697eeb461e0c7d912fcd46b748`.
+  Argo CD revision `0311cd16bd324e2b77187442eb1b3216c7cb75c6` rolled all six
+  application services with bounded one-node `maxSurge=0` /
+  `maxUnavailable=1` behavior and returned to `Synced/Healthy`.
+- A five-request post-deployment benign baseline produced five monitor and
+  Elasticsearch documents, all `Benign` with `is_alert=false`. The indexed
+  documents contain only the 16 approved privacy-reduced fields; the forbidden
+  raw IP, feature, probability, tensor, and ground-truth fields are absent.
+- Commit `fe76ae77944c439f967317e3c6d2d9e6ebee2094` added the
+  version-controlled Kibana saved-object bundle. GitHub Actions run
+  `31280718082` passed all three jobs. The v4 bootstrap Job completed in seven
+  seconds, and the live dashboard `fedper-detection-overview` reads back with
+  six panels and six references. Argo CD is `Synced/Healthy` at that exact
+  revision; Elasticsearch and Kibana are both green.
+- The focused dependency-complete container run passes all 29 application
+  tests, including saved-object reference/privacy tests. Ruff, compile, Helm
+  lint/template, Kubernetes server-side dry-run, NDJSON parsing, and
+  `git diff --check` also pass.
 
 ## Result
 
 Scientific evaluation, serving-bundle promotion, locked test execution, the
 validation-selected alert policy, internal demo console, GKE stack, and all six
 live scenarios are complete. The model shows no validation-to-test overfitting
-in the locked rolling protocol. The all-decision privacy-reduced sink change
-still requires the immutable Jenkins image, Argo CD sync, and Kibana document
-verification before final UI screenshots/evidence. The plan remains active.
+in the locked rolling protocol. The all-decision privacy-reduced sink and the
+six-panel Kibana dashboard are deployed and verified on GKE. Final browser
+screenshots and the explicit disposition of the retained 1 GiB evaluation PVC
+remain, so the plan remains active.
