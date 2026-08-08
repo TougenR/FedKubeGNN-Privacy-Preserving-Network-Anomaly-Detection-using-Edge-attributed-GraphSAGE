@@ -28,7 +28,7 @@ demoConsole:
 gateway:
   enabled: true
   resources:
-    requests: {cpu: 5m, memory: 32Mi}
+    requests: {cpu: 1m, memory: 32Mi}
     limits: {cpu: 250m, memory: 128Mi}
 collector:
   enabled: true
