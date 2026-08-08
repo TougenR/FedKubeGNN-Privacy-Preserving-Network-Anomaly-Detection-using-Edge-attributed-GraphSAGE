@@ -40,7 +40,7 @@ data:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ printf "%s-eb-%s" (include "detection-stack.fullname" .) (.Values.releaseId | lower | trunc 12) | trunc 63 | trimSuffix "-" }}
+  name: {{ printf "%s-eb-%s" (include "detection-stack.fullname" .) (.Values.elasticStack.bootstrapRevision | lower | trunc 16) | trunc 63 | trimSuffix "-" }}
   annotations:
     argocd.argoproj.io/sync-wave: "1"
 spec:
@@ -88,6 +88,8 @@ spec:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             runAsNonRoot: true
+            runAsUser: 100
+            runAsGroup: 101
             capabilities: {drop: [ALL]}
       volumes:
         - name: bootstrap

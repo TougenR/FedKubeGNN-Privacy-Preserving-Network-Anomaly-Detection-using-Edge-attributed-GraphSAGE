@@ -35,11 +35,14 @@ metadata:
     argocd.argoproj.io/sync-wave: "0"
 spec:
   version: {{ .Values.elasticStack.version | quote }}
-  count: 1
+  count: {{ .Values.elasticStack.kibanaCount }}
   elasticsearchRef: {name: {{ .Values.elasticStack.name }}}
   podTemplate:
     spec:
       containers:
         - name: kibana
+          env:
+            - name: NODE_OPTIONS
+              value: {{ .Values.elasticStack.kibanaNodeOptions | quote }}
           resources: {{- toYaml .Values.elasticStack.kibanaResources | nindent 12 }}
 {{- end }}

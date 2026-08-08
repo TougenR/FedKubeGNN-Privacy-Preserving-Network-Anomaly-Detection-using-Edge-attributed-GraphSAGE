@@ -77,6 +77,9 @@ elasticStack:
   enabled: true
   name: fedper-detection
   version: 9.2.3
+  kibanaCount: 0
+  kibanaNodeOptions: --max-old-space-size=512
+  bootstrapRevision: v2-uid100
   storageClassName: standard-rwo
   storageSize: 10Gi
   elasticsearchResources:
@@ -84,6 +87,6 @@ elasticStack:
     limits: {cpu: "1", memory: 2Gi}
   kibanaResources:
     requests: {cpu: 25m, memory: 768Mi}
-    limits: {cpu: 500m, memory: 768Mi}
+    limits: {cpu: 500m, memory: 1Gi}
 externalSecrets:
   enabled: true

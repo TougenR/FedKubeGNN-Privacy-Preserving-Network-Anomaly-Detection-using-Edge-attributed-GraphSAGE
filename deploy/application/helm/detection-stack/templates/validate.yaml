@@ -49,6 +49,9 @@
 {{- if and .Values.elasticStack.enabled (not .Values.elasticsearch.enabled) }}
 {{- fail "elasticStack requires elasticsearch.enabled" }}
 {{- end }}
+{{- if and .Values.elasticStack.enabled (not (regexMatch "^[a-zA-Z0-9][a-zA-Z0-9-]{1,15}$" .Values.elasticStack.bootstrapRevision)) }}
+{{- fail "elasticStack.bootstrapRevision must be a safe 2-16 character identifier" }}
+{{- end }}
 {{- if and .Values.collector.alertPolicy.enabled (not .Values.alertRouter.enabled) }}
 {{- fail "collector alert policy requires alertRouter.enabled" }}
 {{- end }}
