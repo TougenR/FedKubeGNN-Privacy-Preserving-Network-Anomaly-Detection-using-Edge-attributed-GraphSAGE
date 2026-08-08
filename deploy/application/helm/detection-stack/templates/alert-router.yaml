@@ -28,10 +28,23 @@ spec:
               value: {{ .Values.elasticsearch.endpoint | quote }}
             - name: ELASTICSEARCH_INDEX
               value: {{ .Values.elasticsearch.index | quote }}
+            - name: ELASTICSEARCH_USERNAME
+              value: {{ .Values.elasticsearch.username | quote }}
+            - name: ELASTICSEARCH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.elasticsearch.credentialsSecretName }}
+                  key: {{ .Values.elasticsearch.credentialsSecretKey }}
+            {{- with .Values.elasticsearch.caSecretName }}
+            - name: ELASTICSEARCH_CA_CERT_PATH
+              value: /etc/elasticsearch-certs/ca.crt
             {{- end }}
-          {{- if .Values.elasticsearch.enabled }}
-          envFrom:
-            - secretRef: {name: {{ .Values.elasticsearch.credentialsSecretName }}}
+            {{- end }}
+          {{- if and .Values.elasticsearch.enabled .Values.elasticsearch.caSecretName }}
+          volumeMounts:
+            - name: elasticsearch-ca
+              mountPath: /etc/elasticsearch-certs
+              readOnly: true
           {{- end }}
           ports: [{name: http, containerPort: 8081}]
           readinessProbe:
@@ -44,6 +57,12 @@ spec:
             readOnlyRootFilesystem: true
             runAsNonRoot: true
             capabilities: {drop: [ALL]}
+      {{- if and .Values.elasticsearch.enabled .Values.elasticsearch.caSecretName }}
+      volumes:
+        - name: elasticsearch-ca
+          secret:
+            secretName: {{ .Values.elasticsearch.caSecretName }}
+      {{- end }}
 ---
 apiVersion: v1
 kind: Service

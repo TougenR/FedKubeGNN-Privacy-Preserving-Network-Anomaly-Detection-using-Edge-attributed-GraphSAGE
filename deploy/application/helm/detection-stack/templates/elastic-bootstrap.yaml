@@ -1,0 +1,99 @@
+{{- if .Values.elasticStack.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "detection-stack.fullname" . }}-elastic-bootstrap
+data:
+  index-template.json: |
+    {
+      "index_patterns": ["fedper-detections*"],
+      "template": {
+        "settings": {
+          "index.lifecycle.name": "fedper-detections-{{ .Values.elasticStack.retentionDays }}d",
+          "index.number_of_replicas": 0
+        },
+        "mappings": {
+          "dynamic": "strict",
+          "properties": {
+            "@timestamp": {"type": "date"},
+            "event_type": {"type": "constant_keyword", "value": "fedper_detection"},
+            "sensor_id": {"type": "keyword"},
+            "client_id": {"type": "keyword"},
+            "window_id": {"type": "keyword"},
+            "predicted_class": {"type": "keyword"},
+            "severity": {"type": "keyword"},
+            "confidence_bucket": {"type": "keyword"},
+            "entropy_bucket": {"type": "keyword"},
+            "flow_count": {"type": "integer"},
+            "entity_hash": {"type": "keyword", "index": false},
+            "model_digest": {"type": "keyword"},
+            "head_digest": {"type": "keyword"},
+            "schema_digest": {"type": "keyword"}
+          }
+        }
+      },
+      "_meta": {"owner": "deploy/application", "privacy": "privacy-reduced-v1"}
+    }
+  data-view.ndjson: |
+    {"type":"index-pattern","id":"fedper-detections","attributes":{"title":"fedper-detections*","timeFieldName":"@timestamp"},"references":[]}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ printf "%s-eb-%s" (include "detection-stack.fullname" .) (.Values.releaseId | lower | trunc 12) | trunc 63 | trimSuffix "-" }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  backoffLimit: 20
+  activeDeadlineSeconds: 1800
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: bootstrap
+          image: curlimages/curl:8.17.0
+          command: [sh, -euc]
+          args:
+            - |
+              es="https://{{ .Values.elasticStack.name }}-es-http:9200"
+              kb="https://{{ .Values.elasticStack.name }}-kb-http:5601"
+              auth="elastic:${ELASTIC_PASSWORD}"
+              until curl --fail --silent --cacert /es-ca/ca.crt -u "${auth}" "${es}/_cluster/health" >/dev/null; do sleep 10; done
+              curl --fail --silent --cacert /es-ca/ca.crt -u "${auth}" -X PUT \
+                "${es}/_ilm/policy/fedper-detections-{{ .Values.elasticStack.retentionDays }}d" \
+                -H 'content-type: application/json' \
+                -d '{"policy":{"phases":{"hot":{"actions":{}},"delete":{"min_age":"{{ .Values.elasticStack.retentionDays }}d","actions":{"delete":{}}}}}}'
+              curl --fail --silent --cacert /es-ca/ca.crt -u "${auth}" -X PUT \
+                "${es}/_index_template/fedper-detections" \
+                -H 'content-type: application/json' --data-binary @/bootstrap/index-template.json
+              until curl --fail --silent --cacert /kb-ca/ca.crt -u "${auth}" "${kb}/api/status" >/dev/null; do sleep 10; done
+              curl --fail --silent --cacert /kb-ca/ca.crt -u "${auth}" -X POST \
+                "${kb}/api/saved_objects/_import?overwrite=true" \
+                -H 'kbn-xsrf: fedkube-bootstrap' \
+                -F file=@/bootstrap/data-view.ndjson
+          env:
+            - name: ELASTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.elasticStack.name }}-es-elastic-user
+                  key: elastic
+          volumeMounts:
+            - {name: bootstrap, mountPath: /bootstrap, readOnly: true}
+            - {name: es-ca, mountPath: /es-ca, readOnly: true}
+            - {name: kb-ca, mountPath: /kb-ca, readOnly: true}
+          resources:
+            requests: {cpu: 10m, memory: 32Mi}
+            limits: {cpu: 100m, memory: 128Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities: {drop: [ALL]}
+      volumes:
+        - name: bootstrap
+          configMap: {name: {{ include "detection-stack.fullname" . }}-elastic-bootstrap}
+        - name: es-ca
+          secret: {secretName: {{ .Values.elasticStack.name }}-es-http-certs-public}
+        - name: kb-ca
+          secret: {secretName: {{ .Values.elasticStack.name }}-kb-http-certs-public}
+{{- end }}

@@ -7,17 +7,83 @@ modelBundle:
   existingClaim: ""
   existingSecret: fedper-model-bundle-serving-8d59392ff1
 inference:
-  enabled: false
-demoTarget:
-  enabled: false
-alertRouter:
-  enabled: false
-evaluation:
   enabled: true
-  mode: alert-policy
-  windowReportPath: /artifacts/evaluation/window-validation.json
-  reportPath: /artifacts/evaluation/alert-policy-validation.json
+  resources:
+    requests: {cpu: 50m, memory: 1Gi}
+    limits: {cpu: "2", memory: 2Gi}
+demoTarget:
+  enabled: true
+  observation:
+    enabled: true
+    sensorId: sensor-34-1
+  resources:
+    requests: {cpu: 10m, memory: 64Mi}
+    limits: {cpu: 250m, memory: 256Mi}
+demoConsole:
+  enabled: true
+  monitorBufferSize: 500
+  resources:
+    requests: {cpu: 10m, memory: 64Mi}
+    limits: {cpu: 500m, memory: 256Mi}
+gateway:
+  enabled: true
+  resources:
+    requests: {cpu: 10m, memory: 32Mi}
+    limits: {cpu: 250m, memory: 128Mi}
+collector:
+  enabled: true
+  monitorBufferSize: 500
+  window:
+    durationSeconds: 60
+    maxFlows: 50
+    emitStrideFlows: 1
+    allowedLatenessSeconds: 1
+  alertPolicy:
+    enabled: true
+    confidenceThreshold: 0.85
+    confidenceBoundaries: [0.0, 0.5, 0.7, 0.85, 0.95, 1.0]
+    entropyBoundaries: [0.0, 0.25, 0.5, 1.0, 2.0]
+    classSeverity:
+      Attack: low
+      C&C: high
+      C&C-HeartBeat: medium
+      DDoS: high
+      Okiru: high
+      PartOfAHorizontalPortScan: medium
+    entityHashSecretName: fedkube-detection-detection-stack-entity-hash
+  resources:
+    requests: {cpu: 20m, memory: 128Mi}
+    limits: {cpu: "1", memory: 512Mi}
+alertRouter:
+  enabled: true
+  resources:
+    requests: {cpu: 10m, memory: 64Mi}
+    limits: {cpu: 500m, memory: 256Mi}
+evaluation:
+  enabled: false
+  artifactsClaim:
+    retain: true
 ingress:
   enabled: false
 elasticsearch:
-  enabled: false
+  enabled: true
+  endpoint: https://fedper-detection-es-http:9200
+  index: fedper-detections
+  username: elastic
+  credentialsSecretName: fedper-detection-es-elastic-user
+  credentialsSecretKey: elastic
+  caSecretName: fedper-detection-es-http-certs-public
+elasticStack:
+  enabled: true
+  name: fedper-detection
+  version: 9.2.3
+  storageClassName: standard-rwo
+  storageSize: 10Gi
+  elasticsearchResources:
+    requests: {cpu: 50m, memory: 2Gi}
+    limits: {cpu: "1", memory: 2Gi}
+  kibanaResources:
+    requests: {cpu: 25m, memory: 768Mi}
+    limits: {cpu: 500m, memory: 768Mi}
+externalSecrets:
+  enabled: true

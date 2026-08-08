@@ -137,6 +137,9 @@ Out of scope:
   Collector/window orchestration, ingress-adapter contract, structured router,
   strict Elasticsearch mapping, Docker boundary, and chart templates exist;
   a validated Kibana saved-object export and live deployment evidence remain.
+- [x] Implement the internal demo console, exact six-scenario catalog, bounded
+  fixed-target runner, privacy-reduced live monitor, NGINX internal gateway,
+  and application-owned ECK resources in the independent application chart.
 - [ ] Pass local scientific and live-ingress acceptance.
 - [ ] Run repository-wide validation and document remaining limitations.
 - [ ] Obtain separate approval before any GKE deployment or paid operation.
@@ -180,6 +183,17 @@ Out of scope:
   environment digests, pods, and training state remain unchanged. Without that
   trailer, the normal path-based federated/application release behavior remains
   unchanged.
+- 2026-08-09: The user approved the GKE demo-console plan. The live alert
+  confidence threshold is `0.85`, selected from validation with benign
+  false-alert rate `0.000823` and malicious alert recall `0.776353`. The web
+  console remains internal-only, exposes only fixed lab targets, and enforces
+  bounded server-side scenario parameters. A displayed traffic pattern is not
+  ground truth and must remain visually distinct from the model prediction.
+- 2026-08-09: The approved live catalog is benign browsing, connection burst,
+  bounded request flood, slow connections, fixed-target port probing, and
+  periodic beacon-like traffic. The console documents all seven model output
+  classes but does not claim that a synthetic pattern is equivalent to an
+  IoT-23 malware label.
 
 ## Validation
 
@@ -320,10 +334,45 @@ Resume checkpoint after scientific window evaluation:
 4. After evidence is copied locally, explicitly decide whether to prune the
    completed evaluation Job and its isolated 1 GiB PVC.
 
+Approved demo-console continuation on 2026-08-09:
+
+1. Build a responsive, same-origin FastAPI web console, bounded scenario
+   runner, and privacy-reduced live monitor under `src/application/`.
+2. Add application-owned Elasticsearch/Kibana resources and saved objects
+   without using the Phase 3 logging workload as a runtime dependency.
+3. Extend the application Helm chart with internal-only ingress, least-privilege
+   network policy, Secret Manager-backed credentials, and explicit resources.
+4. Validate locally, publish through Jenkins with `[application-only]`, then
+   manually synchronize the Argo CD detection Application.
+5. Execute all six approved lab patterns on Central GKE and retain UI,
+   detection, latency, drop-rate, privacy, and Kibana evidence.
+
+Implementation checkpoint on 2026-08-09:
+
+- The approved `0.85` validation-selected policy is recorded in application
+  configuration; automatic blocking remains false.
+- The responsive console exposes the six approved patterns, documents all
+  seven model classes, and keeps the traffic pattern separate from the model
+  prediction. The runner rejects public/arbitrary targets, enforces parameter
+  bounds, and permits one active run at a time.
+- The GKE chart renders an internal NGINX LoadBalancer, console, observed demo
+  target, collector, inference, alert router, application-owned
+  Elasticsearch/Kibana, strict mapping bootstrap, data view, retained evidence
+  PVC, and Secret Manager-backed entity hash key. Server-side dry-run passes.
+- Central remains one `e2-standard-4` node. The demo profile adds 175m CPU
+  requests with explicit limits; it neither resizes the node nor changes Phase
+  3 workloads.
+- The image builds, its UI/catalog smoke test passes, 26 application tests pass,
+  and the dependency-complete repository boundary passes all 130 tests with 7
+  environment-conditioned skips. Ruff, compile, JavaScript syntax, both Helm
+  charts, Kubernetes dry-run, Terraform format/validate, Ansible syntax, JSON,
+  shell syntax, and `git diff --check` pass.
+
 ## Result
 
-Scientific evaluation, serving-bundle promotion, locked test execution, and
-the validation-only alert trade-off are implemented with GKE evidence. The
-model shows no validation-to-test overfitting in the locked rolling protocol.
-Live serving remains intentionally blocked on the authorized alert-policy
-ceiling and ingress-to-Kibana acceptance. The plan remains active.
+Scientific evaluation, serving-bundle promotion, locked test execution, the
+validation-selected alert policy, and internal demo-console implementation are
+complete. The model shows no validation-to-test overfitting in the locked
+rolling protocol. Live serving awaits the Jenkins immutable image release,
+manual non-pruning Argo CD sync, six-scenario execution, and Kibana/UI evidence.
+The plan remains active.

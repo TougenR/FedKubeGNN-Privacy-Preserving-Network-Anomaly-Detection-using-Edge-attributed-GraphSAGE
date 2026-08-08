@@ -1,0 +1,46 @@
+{{- if .Values.elasticStack.enabled }}
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: {{ .Values.elasticStack.name }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  version: {{ .Values.elasticStack.version | quote }}
+  nodeSets:
+    - name: default
+      count: 1
+      config:
+        node.store.allow_mmap: false
+        xpack.security.enabled: true
+      podTemplate:
+        spec:
+          containers:
+            - name: elasticsearch
+              env:
+                - {name: ES_JAVA_OPTS, value: "-Xms1g -Xmx1g"}
+              resources: {{- toYaml .Values.elasticStack.elasticsearchResources | nindent 16 }}
+      volumeClaimTemplates:
+        - metadata: {name: elasticsearch-data}
+          spec:
+            accessModes: [ReadWriteOnce]
+            storageClassName: {{ .Values.elasticStack.storageClassName }}
+            resources:
+              requests: {storage: {{ .Values.elasticStack.storageSize }}}
+---
+apiVersion: kibana.k8s.elastic.co/v1
+kind: Kibana
+metadata:
+  name: {{ .Values.elasticStack.name }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  version: {{ .Values.elasticStack.version | quote }}
+  count: 1
+  elasticsearchRef: {name: {{ .Values.elasticStack.name }}}
+  podTemplate:
+    spec:
+      containers:
+        - name: kibana
+          resources: {{- toYaml .Values.elasticStack.kibanaResources | nindent 12 }}
+{{- end }}

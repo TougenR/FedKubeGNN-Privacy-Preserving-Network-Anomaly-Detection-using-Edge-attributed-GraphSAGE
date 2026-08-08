@@ -95,6 +95,12 @@ class CollectionWindowAlertingTests(unittest.TestCase):
         self.assertEqual(captured["url"], "http://inference/predict")
         self.assertNotIn("label", captured["document"]["flows"][0])
         self.assertNotIn("detailed-label", captured["document"]["flows"][0])
+        monitor_event = list(collector_state["monitor_events"])[0]
+        self.assertEqual(monitor_event["predicted_class"], "Benign")
+        self.assertEqual(monitor_event["sensor_id"], "sensor-34-1")
+        self.assertNotIn("id.orig_h", monitor_event)
+        self.assertNotIn("probabilities", monitor_event)
+        self.assertNotIn("ground_truth", monitor_event)
 
     def test_elasticsearch_sink_sends_only_validated_document(self) -> None:
         captured = {}

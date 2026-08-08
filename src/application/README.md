@@ -14,9 +14,17 @@ FedPer heads. It is independent of Flower and the training runtime.
   converts connections into `conn` flow records; it does not classify attacks.
 - `graph_window/`: sensor-local event-time buffering and label-free graph
   construction.
-- `alerting/`: privacy-reduced Elasticsearch documents. Alert thresholds remain
-  disabled until selected from validation and false-alert evidence.
+- `alerting/`: privacy-reduced Elasticsearch documents. The live threshold
+  `0.85` was selected from labeled validation and does not trigger blocking.
 - `demo_target/`: harmless HTTP target for a user-owned lab.
+- `scenario_runner/`: six fixed-target, server-bounded traffic patterns. It
+  never accepts an arbitrary host, URL, command, or port.
+- `demo_console/`: internal-only responsive UI for scenario control and a
+  privacy-reduced live prediction monitor.
+
+The selected lab traffic pattern and the model prediction are intentionally
+shown as separate facts. Synthetic flood, beacon, or port-probe patterns are
+not ground-truth IoT-23 labels.
 
 The schema-v2 research bundle records the training protocol
 `transductive_edge_mask` but has `serving_ready=false` and no serving

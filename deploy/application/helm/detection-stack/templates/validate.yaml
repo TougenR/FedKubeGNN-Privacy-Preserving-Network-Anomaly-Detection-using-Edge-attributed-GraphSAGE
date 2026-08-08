@@ -37,6 +37,18 @@
 {{- if and .Values.demoTarget.observation.enabled (not .Values.demoTarget.observation.sensorId) }}
 {{- fail "demoTarget.observation.sensorId is required" }}
 {{- end }}
+{{- if and .Values.demoConsole.enabled (not .Values.gateway.enabled) }}
+{{- fail "demoConsole requires gateway.enabled" }}
+{{- end }}
+{{- if and .Values.demoConsole.enabled (not .Values.collector.enabled) }}
+{{- fail "demoConsole requires collector.enabled" }}
+{{- end }}
+{{- if and .Values.gateway.enabled (not .Values.demoTarget.enabled) }}
+{{- fail "gateway requires demoTarget.enabled" }}
+{{- end }}
+{{- if and .Values.elasticStack.enabled (not .Values.elasticsearch.enabled) }}
+{{- fail "elasticStack requires elasticsearch.enabled" }}
+{{- end }}
 {{- if and .Values.collector.alertPolicy.enabled (not .Values.alertRouter.enabled) }}
 {{- fail "collector alert policy requires alertRouter.enabled" }}
 {{- end }}

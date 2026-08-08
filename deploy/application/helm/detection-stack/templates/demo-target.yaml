@@ -47,5 +47,12 @@ metadata:
   name: {{ include "detection-stack.fullname" . }}-target
 spec:
   selector: {app.kubernetes.io/name: demo-target}
-  ports: [{name: http, port: 80, targetPort: http}]
+  ports:
+    - {name: http, port: 80, targetPort: http}
+    - {name: probe-0, port: 8080, targetPort: http}
+    - {name: probe-1, port: 8081, targetPort: http}
+    - {name: probe-2, port: 8082, targetPort: http}
+    - {name: probe-3, port: 8083, targetPort: http}
+    - {name: probe-4, port: 8084, targetPort: http}
+    - {name: probe-5, port: 8085, targetPort: http}
 {{- end }}

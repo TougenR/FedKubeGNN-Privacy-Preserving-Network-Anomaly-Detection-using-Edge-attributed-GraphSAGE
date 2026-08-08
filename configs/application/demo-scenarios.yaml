@@ -1,0 +1,75 @@
+schema_version: 1
+sensor_id: sensor-34-1
+disclaimer: >-
+  A selected lab traffic pattern is not ground truth. The FedPer prediction is
+  produced independently and synthetic traffic is not equivalent to IoT-23
+  malware behavior.
+model_classes:
+  - Benign
+  - Attack
+  - C&C
+  - C&C-HeartBeat
+  - DDoS
+  - Okiru
+  - PartOfAHorizontalPortScan
+scenarios:
+  - id: benign-browsing
+    display_name: Benign browsing
+    category: baseline
+    summary: Spaced HTTP requests representing an ordinary browsing baseline.
+    mechanism: Sends small GET requests at a controlled interval.
+    limitation: This is a false-positive baseline, not an attack.
+    defaults: {request_count: 20, interval_ms: 1000}
+    bounds:
+      request_count: {minimum: 5, maximum: 100, unit: requests}
+      interval_ms: {minimum: 200, maximum: 5000, unit: ms}
+  - id: connection-burst
+    display_name: Connection burst
+    category: attack-like
+    summary: Several groups of short concurrent HTTP connections.
+    mechanism: Opens a bounded number of connections at the same time.
+    limitation: A burst is not automatically a DDoS attack.
+    defaults: {bursts: 3, concurrency: 20, pause_ms: 1000}
+    bounds:
+      bursts: {minimum: 1, maximum: 10, unit: bursts}
+      concurrency: {minimum: 2, maximum: 50, unit: connections}
+      pause_ms: {minimum: 200, maximum: 5000, unit: ms}
+  - id: request-flood
+    display_name: Bounded request flood
+    category: attack-like
+    summary: Sustained HTTP requests at a higher, explicitly capped rate.
+    mechanism: Sends a fixed request rate for a short duration.
+    limitation: This lab pattern is DDoS-like but is not labeled ground truth.
+    defaults: {requests_per_second: 20, duration_seconds: 10}
+    bounds:
+      requests_per_second: {minimum: 5, maximum: 50, unit: req/s}
+      duration_seconds: {minimum: 2, maximum: 30, unit: seconds}
+  - id: slow-connections
+    display_name: Slow connections
+    category: attack-like
+    summary: Concurrent requests whose responses are deliberately delayed.
+    mechanism: Calls a bounded slow endpoint on the owned demo target.
+    limitation: This approximates slow-client behavior without exhausting sockets.
+    defaults: {connections: 10, delay_ms: 3000}
+    bounds:
+      connections: {minimum: 2, maximum: 50, unit: connections}
+      delay_ms: {minimum: 500, maximum: 10000, unit: ms}
+  - id: port-probe
+    display_name: Fixed-target port probe
+    category: attack-like
+    summary: Probes a small allow-listed set of ports on the lab target.
+    mechanism: Connects only to chart-defined target service ports.
+    limitation: It cannot accept an IP, hostname, URL, or arbitrary port.
+    defaults: {port_count: 6}
+    bounds:
+      port_count: {minimum: 1, maximum: 6, unit: ports}
+  - id: periodic-beacon
+    display_name: Periodic beacon-like traffic
+    category: attack-like
+    summary: Small requests repeated at a regular interval.
+    mechanism: Sends a deterministic low-volume periodic signal.
+    limitation: Beacon-like timing is not proof of C&C or HeartBeat activity.
+    defaults: {events: 15, interval_ms: 2000}
+    bounds:
+      events: {minimum: 5, maximum: 60, unit: events}
+      interval_ms: {minimum: 500, maximum: 10000, unit: ms}

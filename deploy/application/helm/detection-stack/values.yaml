@@ -28,9 +28,30 @@ demoTarget:
     requests: {cpu: 50m, memory: 64Mi}
     limits: {cpu: 250m, memory: 256Mi}
 
+demoConsole:
+  enabled: false
+  monitorBufferSize: 500
+  resources:
+    requests: {cpu: 25m, memory: 64Mi}
+    limits: {cpu: 250m, memory: 256Mi}
+
+gateway:
+  enabled: false
+  image: nginxinc/nginx-unprivileged:1.29.1-alpine
+  service:
+    type: LoadBalancer
+    loadBalancerIP: ""
+    annotations:
+      networking.gke.io/load-balancer-type: Internal
+      networking.gke.io/internal-load-balancer-allow-global-access: "true"
+  resources:
+    requests: {cpu: 25m, memory: 32Mi}
+    limits: {cpu: 100m, memory: 128Mi}
+
 collector:
   enabled: false
   replicas: 1
+  monitorBufferSize: 500
   window:
     durationSeconds: null
     maxFlows: null
@@ -67,18 +88,41 @@ elasticsearch:
   enabled: false
   endpoint: ""
   index: fedper-detections
+  username: elastic
   credentialsSecretName: ""
+  credentialsSecretKey: elastic
+  caSecretName: ""
   egressCIDR: ""
+
+elasticStack:
+  enabled: false
+  name: fedper-detection
+  version: 9.2.3
+  storageClassName: standard-rwo
+  storageSize: 10Gi
+  retentionDays: 7
+  elasticsearchResources:
+    requests: {cpu: 500m, memory: 2Gi}
+    limits: {cpu: "1", memory: 2Gi}
+  kibanaResources:
+    requests: {cpu: 250m, memory: 1Gi}
+    limits: {cpu: 500m, memory: 1Gi}
 
 serviceAccount:
   create: true
   name: ""
+
+externalSecrets:
+  enabled: false
+  clusterSecretStore: gcp-secret-manager
+  entityHashSecretId: fedkube-detection-entity-hash
 
 evaluation:
   enabled: false
   mode: window-validation
   artifactsClaim:
     create: true
+    retain: false
     name: fedper-window-evaluation
     storageClassName: standard-rwo
     size: 1Gi

@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import base64
 import json
+import ssl
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Callable, Mapping
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
@@ -24,6 +26,7 @@ class ElasticsearchSettings:
     username: str | None = None
     password: str | None = None
     api_key: str | None = None
+    ca_cert_path: str | None = None
     timeout_seconds: float = 5.0
 
     def __post_init__(self) -> None:
@@ -37,6 +40,8 @@ class ElasticsearchSettings:
             raise ValueError("Basic authentication requires username and password.")
         if self.timeout_seconds <= 0:
             raise ValueError("Elasticsearch timeout must be positive.")
+        if self.ca_cert_path and not Path(self.ca_cert_path).is_file():
+            raise ValueError("Elasticsearch CA certificate does not exist.")
 
 
 class ElasticsearchSink:
@@ -71,8 +76,13 @@ class ElasticsearchSink:
             headers=headers,
             method="POST",
         )
+        open_options: dict[str, Any] = {"timeout": self.settings.timeout_seconds}
+        if self.settings.ca_cert_path:
+            open_options["context"] = ssl.create_default_context(
+                cafile=self.settings.ca_cert_path
+            )
         try:
-            with self._opener(request, timeout=self.settings.timeout_seconds) as response:
+            with self._opener(request, **open_options) as response:
                 payload = json.loads(response.read().decode("utf-8"))
                 if int(response.status) not in {200, 201}:
                     raise ElasticsearchSinkError(

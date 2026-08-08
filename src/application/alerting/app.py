@@ -37,6 +37,7 @@ async def lifespan(_: FastAPI):
                     username=os.environ.get("ELASTICSEARCH_USERNAME"),
                     password=os.environ.get("ELASTICSEARCH_PASSWORD"),
                     api_key=os.environ.get("ELASTICSEARCH_API_KEY"),
+                    ca_cert_path=os.environ.get("ELASTICSEARCH_CA_CERT_PATH"),
                 )
             )
             app_state["mode"] = mode

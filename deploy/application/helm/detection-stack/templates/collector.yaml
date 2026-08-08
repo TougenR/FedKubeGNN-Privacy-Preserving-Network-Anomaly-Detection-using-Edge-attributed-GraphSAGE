@@ -31,6 +31,8 @@ spec:
               value: {{ .Values.collector.window.allowedLatenessSeconds | quote }}
             - name: INFERENCE_URL
               value: http://{{ include "detection-stack.fullname" . }}-inference:8000/predict
+            - name: MONITOR_BUFFER_SIZE
+              value: {{ .Values.collector.monitorBufferSize | quote }}
             - name: ALERT_POLICY_ENABLED
               value: {{ .Values.collector.alertPolicy.enabled | quote }}
             {{- if .Values.collector.alertPolicy.enabled }}
@@ -61,6 +63,11 @@ spec:
             readOnlyRootFilesystem: true
             runAsNonRoot: true
             capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: tmp
+          emptyDir: {sizeLimit: 256Mi}
 ---
 apiVersion: v1
 kind: Service

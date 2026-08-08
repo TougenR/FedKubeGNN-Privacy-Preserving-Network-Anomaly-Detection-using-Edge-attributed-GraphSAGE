@@ -5,12 +5,15 @@ from __future__ import annotations
 import json
 import os
 import time
+from collections import deque
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict
 
+from src.application.alerting.event import numeric_bucket
 from src.application.alerting.policy import AlertPolicy, parse_boundaries
 from src.application.api.schema import ProductionFlow
 from src.application.collection.transport import ServiceRequestError, post_json
@@ -73,6 +76,11 @@ async def lifespan(_: FastAPI):
         app_state["observations"] = 0
         app_state["windows"] = 0
         app_state["events"] = 0
+        monitor_size = int(os.environ.get("MONITOR_BUFFER_SIZE", "500"))
+        if not 10 <= monitor_size <= 1000:
+            raise ValueError("MONITOR_BUFFER_SIZE must be between 10 and 1000.")
+        app_state["monitor_events"] = deque(maxlen=monitor_size)
+        app_state["monitor_sequence"] = 0
     except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
         app_state["load_error"] = str(exc)
     yield
@@ -130,6 +138,24 @@ async def metrics() -> dict[str, Any]:
     }
 
 
+@app.get("/monitor/events")
+async def monitor_events(after: int = 0, limit: int = 100) -> dict[str, Any]:
+    _ready()
+    if after < 0 or not 1 <= limit <= 200:
+        raise HTTPException(status_code=422, detail="invalid monitor cursor or limit")
+    selected = [
+        event
+        for event in app_state["monitor_events"]
+        if int(event["sequence"]) > after
+    ][:limit]
+    metric_values = await metrics()
+    return {
+        "events": selected,
+        "next_cursor": selected[-1]["sequence"] if selected else after,
+        "metrics": metric_values,
+    }
+
+
 @app.post("/observe")
 async def observe(observation: CollectorObservation) -> dict[str, Any]:
     _ready()
@@ -165,6 +191,7 @@ async def observe(observation: CollectorObservation) -> dict[str, Any]:
     app_state["windows"] += 1
 
     emitted = 0
+    alerted_indices: set[int] = set()
     policy = app_state["policy"]
     if policy is not None:
         for index in snapshot.emission_indices:
@@ -188,7 +215,44 @@ async def observe(observation: CollectorObservation) -> dict[str, Any]:
                 except ServiceRequestError as exc:
                     raise HTTPException(status_code=502, detail=str(exc)) from exc
                 emitted += 1
+                alerted_indices.add(index)
     app_state["events"] += emitted
+    for index in snapshot.emission_indices:
+        prediction = response["predictions"][index]
+        app_state["monitor_sequence"] = app_state.get("monitor_sequence", 0) + 1
+        predicted_class = str(prediction["predicted_label"])
+        monitor_event = {
+            "sequence": app_state["monitor_sequence"],
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "sensor_id": snapshot.sensor_id,
+            "client_id": str(response["client_id"]),
+            "window_id": snapshot.window_id,
+            "predicted_class": predicted_class,
+            "is_alert": index in alerted_indices,
+            "severity": (
+                str(policy.class_severity.get(predicted_class, "none"))
+                if policy is not None
+                else "not-configured"
+            ),
+            "confidence_bucket": (
+                numeric_bucket(
+                    float(prediction["confidence"]), policy.confidence_boundaries
+                )
+                if policy is not None
+                else "not-configured"
+            ),
+            "entropy_bucket": (
+                numeric_bucket(float(prediction["entropy"]), policy.entropy_boundaries)
+                if policy is not None
+                else "not-configured"
+            ),
+            "flow_count": len(snapshot.flows),
+            "inference_latency_ms": round(latency_ms, 3),
+            "model_digest": str(response["model_digest"]),
+            "head_digest": str(response["head_digest"]),
+            "schema_digest": str(response["schema_digest"]),
+        }
+        app_state.setdefault("monitor_events", deque(maxlen=500)).append(monitor_event)
     predicted_counts: dict[str, int] = {}
     for prediction in response["predictions"]:
         label = str(prediction["predicted_label"])

@@ -37,3 +37,24 @@ def post_json(
     if not isinstance(payload, dict):
         raise ServiceRequestError("Service response must be a JSON object.")
     return payload
+
+
+def get_json(
+    url: str,
+    *,
+    timeout_seconds: float = 10.0,
+    opener: Callable[..., Any] = urlopen,
+) -> dict[str, Any]:
+    request = Request(url, headers={"Accept": "application/json"}, method="GET")
+    try:
+        with opener(request, timeout=timeout_seconds) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+            if int(response.status) < 200 or int(response.status) >= 300:
+                raise ServiceRequestError(f"Service returned HTTP {response.status}.")
+    except HTTPError as exc:
+        raise ServiceRequestError(f"Service returned HTTP {exc.code}.") from exc
+    except (URLError, OSError, json.JSONDecodeError) as exc:
+        raise ServiceRequestError("Service request failed.") from exc
+    if not isinstance(payload, dict):
+        raise ServiceRequestError("Service response must be a JSON object.")
+    return payload

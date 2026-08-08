@@ -1,12 +1,14 @@
-{{- if .Values.evaluation.enabled }}
 {{- $claim := .Values.evaluation.artifactsClaim.name -}}
-{{- $jobIdentity := printf "%s:%s:%s" .Values.releaseId .Values.evaluation.mode .Values.evaluation.reportPath -}}
-{{- if .Values.evaluation.artifactsClaim.create }}
+{{- if and .Values.evaluation.artifactsClaim.create (or .Values.evaluation.enabled .Values.evaluation.artifactsClaim.retain) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: {{ $claim }}
   labels: {fedkube.io/release-id: {{ .Values.releaseId | quote }}}
+  {{- if .Values.evaluation.artifactsClaim.retain }}
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+  {{- end }}
 spec:
   accessModes: [ReadWriteOnce]
   storageClassName: {{ .Values.evaluation.artifactsClaim.storageClassName | quote }}
@@ -14,6 +16,8 @@ spec:
     requests: {storage: {{ .Values.evaluation.artifactsClaim.size | quote }}}
 ---
 {{- end }}
+{{- if .Values.evaluation.enabled }}
+{{- $jobIdentity := printf "%s:%s:%s" .Values.releaseId .Values.evaluation.mode .Values.evaluation.reportPath -}}
 apiVersion: batch/v1
 kind: Job
 metadata:
