@@ -77,7 +77,7 @@ elasticStack:
   enabled: true
   name: fedper-detection
   version: 9.2.3
-  kibanaCount: 0
+  kibanaCount: 1
   kibanaNodeOptions: --max-old-space-size=512
   bootstrapRevision: v2-uid100
   storageClassName: standard-rwo
