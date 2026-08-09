@@ -740,6 +740,38 @@ Continuous monitor and false-alarm remediation approved on 2026-08-10:
   completeness, continuous zero sampling, attack-frequency bands, JavaScript,
   Helm wiring, and the deployed GKE behavior. Deployment remains GitOps-only.
 
+Continuous monitor GKE evidence on 2026-08-10:
+
+- Application commit `1d9b39751f70b854bafc2e5270433c292f404180`
+  passed 13 focused console/remediation tests, JavaScript syntax, Ruff, JSON,
+  Helm lint/template, `git diff --check`, a local production-image build, and a
+  production-image console readiness/catalog smoke. GitHub Actions run
+  `31327614917` passed Python, security, and infrastructure.
+- Jenkins build 76 honored the application-only gate, passed image import and
+  CRITICAL vulnerability scanning, and pushed immutable application digest
+  `sha256:6a385cbf1b42e15a08e601c768dea3fe5876fc93e4107138eefe57656e71d4a5`.
+  Its environment-only commit is
+  `84dc5e2e33161e866a57257dab1f041d172d1566`. The detection Application keeps
+  its intentional reviewed/manual sync policy; an explicit Argo CD core sync
+  performed the rollout. Argo CD reports `Synced/Healthy`, and all application
+  pods are ready with zero restarts.
+- Direct GKE replay proved the remediated boundary. The fixed Benign fixture
+  still reports raw `C&C` at `0.538746`, below the immutable C&C threshold
+  `0.761949`, so its decision is `below-threshold` and `is_alert=false`.
+  `Attack`, `C&C`, `C&C-HeartBeat`, `DDoS`, and `Okiru` are correctly classified
+  and policy-qualified. The one-flow `PartOfAHorizontalPortScan` fixture remains
+  raw `C&C` at `0.538746` and below-threshold; this unresolved scientific model
+  error is not relabeled for the demo. Every replay response confirms that the
+  production request contained no ground truth.
+- Firefox WebDriver BiDi exercised the deployed page rather than only reading
+  static assets. It observed all seven immutable class labels, an 80-point
+  one-second chart, and the selected fixture's protocol, service/state, port,
+  packet, byte, duration, sensor/head, behavior, and limitation fields. Benign
+  replay produced zero chart spikes and retained the Benign banner. Attack
+  replay produced one labeled `Attack · 1/s` spike; the next quiet sample
+  returned the current rate to `0 detection/s` and the banner to Benign while
+  retaining the historical spike in the rolling 80-second view.
+
 ## Result
 
 Scientific evaluation, serving-bundle promotion, locked test execution, the
