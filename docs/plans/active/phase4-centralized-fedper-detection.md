@@ -669,6 +669,27 @@ Multi-head fusion GKE rollout and live evidence on 2026-08-09:
   from the trusted head rather than incorrectly describing every non-alerting
   fused detection as merely below a confidence threshold.
 
+Compact class-first console approved on 2026-08-09:
+
+- Replace the verbose multi-section page with a two-column desktop dashboard
+  constrained to one viewport: exact model-class selection and validation
+  details on the left; metrics, attack-signal chart, latest prediction, and six
+  head diagnostics on the right. Small screens may scroll rather than making
+  controls inaccessible.
+- Model classes are immutable contract labels and must be shown verbatim:
+  `Benign`, `Attack`, `C&C`, `C&C-HeartBeat`, `DDoS`, `Okiru`, and
+  `PartOfAHorizontalPortScan`. Do not substitute Vietnamese class names.
+- The class selector executes the existing fixed validation-only scientific
+  replay. It must show sensor, trusted head, flow-window size, confidence, and
+  top-three model outputs while retaining the rule that expected labels never
+  enter the production inference request.
+- Keep the attack-signal SVG and the live collector monitor. A replay result may
+  add its model-predicted class to the browser chart only when visibly marked as
+  validation replay; it is never counted as a live policy alert. Remove the
+  verbose traffic-pattern controls, duplicate class glossary, long run counter
+  block, and unbounded timeline from the primary screen without removing their
+  backend APIs.
+
 ## Result
 
 Scientific evaluation, serving-bundle promotion, locked test execution, the
