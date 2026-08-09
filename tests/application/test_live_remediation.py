@@ -15,14 +15,18 @@ from src.application.collection.zeek_shipper import (
     production_flow_from_zeek,
 )
 from src.application.evaluation.replay_demo import (
+    ReplayPolicyError,
     execute_replay_case,
+    load_replay_alert_policy,
     load_scientific_replay,
+    public_catalog,
 )
 from src.core.preprocess import clean_flows, fit_preprocessor, transform
 
 
 ROOT = Path(__file__).resolve().parents[2]
 REPLAY = ROOT / "configs/application/scientific-replay.json"
+FUSION_POLICY = ROOT / "configs/application/multi-head-fusion-policy.json"
 
 
 class LiveRemediationTests(unittest.TestCase):
@@ -94,7 +98,17 @@ class LiveRemediationTests(unittest.TestCase):
 
     def test_scientific_replay_is_validation_only_and_label_free_on_wire(self) -> None:
         catalog = load_scientific_replay(REPLAY)
+        policy = load_replay_alert_policy(FUSION_POLICY)
         self.assertEqual(len(catalog.cases), 7)
+        public = public_catalog(catalog)
+        self.assertEqual(public["schema_version"], 2)
+        self.assertEqual(
+            {item["profile"]["class_name"] for item in public["cases"]},
+            {case.expected_class for case in catalog.cases},
+        )
+        self.assertEqual(
+            public["cases"][4]["sample_characteristics"]["flow_count"], 50
+        )
         captured = {}
         case = catalog.case("ddos")
 
@@ -113,6 +127,7 @@ class LiveRemediationTests(unittest.TestCase):
             ]
             return {
                 "client_id": case.client_id,
+                "fusion_policy_digest": policy.policy_digest,
                 "model_digest": "a" * 64,
                 "head_digest": "b" * 64,
                 "schema_digest": "c" * 64,
@@ -120,9 +135,14 @@ class LiveRemediationTests(unittest.TestCase):
             }
 
         result = execute_replay_case(
-            case=case, inference_url="http://inference/predict", sender=sender
+            case=case,
+            inference_url="http://inference/predict",
+            alert_policy=policy,
+            sender=sender,
         )
         self.assertTrue(result["correct"])
+        self.assertTrue(result["is_alert"])
+        self.assertEqual(result["decision_status"], "alert")
         self.assertFalse(result["request_contains_ground_truth"])
         self.assertEqual(captured["url"], "http://inference/predict")
         self.assertNotIn("expected_class", captured["document"])
@@ -130,6 +150,54 @@ class LiveRemediationTests(unittest.TestCase):
             self.assertNotIn("label", flow)
             self.assertNotIn("detailed-label", flow)
             self.assertNotRegex(flow["id.orig_h"], r"^\d+\.\d+\.\d+\.\d+$")
+
+    def test_benign_raw_false_classification_stays_visible_but_is_not_alert(self) -> None:
+        catalog = load_scientific_replay(REPLAY)
+        policy = load_replay_alert_policy(FUSION_POLICY)
+        case = catalog.case("benign")
+
+        def sender(_url, document):
+            return {
+                "client_id": case.client_id,
+                "fusion_policy_digest": policy.policy_digest,
+                "model_digest": "a" * 64,
+                "head_digest": "b" * 64,
+                "schema_digest": "c" * 64,
+                "predictions": [
+                    {
+                        "predicted_label": "C&C",
+                        "confidence": 0.539,
+                        "entropy": 1.1,
+                        "probabilities": {"C&C": 0.539, "Benign": 0.052},
+                    }
+                    for _ in document["flows"]
+                ],
+            }
+
+        result = execute_replay_case(
+            case=case,
+            inference_url="http://inference/predict",
+            alert_policy=policy,
+            sender=sender,
+        )
+        self.assertEqual(result["predicted_class"], "C&C")
+        self.assertFalse(result["correct"])
+        self.assertFalse(result["is_alert"])
+        self.assertEqual(result["decision_status"], "below-threshold")
+        self.assertAlmostEqual(result["alert_threshold"], 0.7619486451148987)
+
+    def test_replay_fails_closed_on_inference_policy_digest_mismatch(self) -> None:
+        catalog = load_scientific_replay(REPLAY)
+        policy = load_replay_alert_policy(FUSION_POLICY)
+        case = catalog.case("benign")
+
+        with self.assertRaisesRegex(ReplayPolicyError, "policy digest"):
+            execute_replay_case(
+                case=case,
+                inference_url="http://inference/predict",
+                alert_policy=policy,
+                sender=lambda _url, _document: {"fusion_policy_digest": "bad"},
+            )
 
     def test_zeek_normalizer_preserves_missing_numeric_values_and_forbids_labels(self) -> None:
         record = {

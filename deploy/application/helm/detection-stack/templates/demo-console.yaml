@@ -36,6 +36,8 @@ spec:
               value: http://{{ include "detection-stack.fullname" . }}-inference:8000/predict
             - name: SCIENTIFIC_REPLAY_CONFIG
               value: /app/configs/application/scientific-replay.json
+            - name: FUSION_POLICY_PATH
+              value: /app/configs/application/multi-head-fusion-policy.json
             - name: DEMO_TARGET_URL
               value: http://{{ include "detection-stack.fullname" . }}-gateway/target
             - name: DEMO_TARGET_STATUS_URL

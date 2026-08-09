@@ -64,11 +64,11 @@
 
           <div class="chart-shell">
             <div class="chart-title">
-              <div><strong>Attack signal</strong><small>Benign = đường nền · class tấn công = dao động</small></div>
-              <span id="chart-window-count">0 points</span>
+              <div><strong>Tần suất detection đạt ngưỡng</strong><small>Lấy mẫu mỗi 1 giây · không có detection = trở về Benign</small></div>
+              <span id="chart-window-count">80s · 0 detection/s</span>
             </div>
             <div class="chart-layout">
-              <div class="chart-y-axis" aria-hidden="true"><span>HIGH</span><span>MED</span><span>LOW</span><span>BENIGN</span></div>
+              <div class="chart-y-axis" aria-hidden="true"><span>6+/s</span><span>3–5/s</span><span>1–2/s</span><span>BENIGN</span></div>
               <svg id="detection-chart" viewBox="0 0 1000 220" preserveAspectRatio="none" role="img" aria-label="Biểu đồ dự đoán tấn công theo thời gian">
                 <defs>
                   <linearGradient id="chart-area-gradient" x1="0" y1="0" x2="0" y2="1">
@@ -89,8 +89,7 @@
             </div>
             <div class="chart-legend">
               <span><i class="legend-normal"></i>Benign</span>
-              <span><i class="legend-detection"></i>Detection / shadow</span>
-              <span><i class="legend-alert"></i>Policy alert</span>
+              <span><i class="legend-alert"></i>Detection đạt ngưỡng</span>
             </div>
           </div>
 

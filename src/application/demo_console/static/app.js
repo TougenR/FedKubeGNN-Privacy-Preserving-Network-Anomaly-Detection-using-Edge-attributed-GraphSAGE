@@ -2,22 +2,24 @@ const state = {
   replay: null,
   selectedCase: null,
   cursor: 0,
+  monitorInitialized: false,
   events: [],
-  chartEvents: []
+  chartSamples: [],
+  pendingDetections: []
 };
 
 const $ = (id) => document.getElementById(id);
 const SVG_NS = "http://www.w3.org/2000/svg";
-const severityLevel = {none: 0, low: 1, medium: 2, high: 3};
-const classHelp = {
-  "Benign": "Lưu lượng bình thường theo nhãn huấn luyện.",
-  "Attack": "Nhãn tấn công tổng quát, chủ yếu gồm hành vi SSH trong dữ liệu nguồn.",
-  "C&C": "Lưu lượng command-and-control đã biết trong IoT-23.",
-  "C&C-HeartBeat": "Nhịp liên lạc định kỳ giữa thiết bị và máy chủ C&C.",
-  "DDoS": "Lưu lượng distributed denial-of-service trong dữ liệu huấn luyện.",
-  "Okiru": "Hành vi thuộc họ malware Okiru trong dữ liệu huấn luyện.",
-  "PartOfAHorizontalPortScan": "Quét cùng một cổng trên nhiều máy đích."
-};
+const CHART_SAMPLE_LIMIT = 80;
+
+function emptyChartSample() {
+  return {attack_count: 0, level: 0, predicted_class: "Benign", is_alert: false};
+}
+
+function resetChartSamples() {
+  state.chartSamples = Array.from({length: CHART_SAMPLE_LIMIT}, emptyChartSample);
+  state.pendingDetections = [];
+}
 
 async function json(url, options = {}) {
   const response = await fetch(url, {headers: {"Content-Type": "application/json"}, ...options});
@@ -38,13 +40,25 @@ function selectReplayCase(item) {
   const name = document.createElement("strong");
   name.textContent = item.expected_class;
   const help = document.createElement("p");
-  help.textContent = classHelp[item.expected_class] || "Model output class.";
+  help.textContent = item.profile.behavior;
+  const indicators = document.createElement("ul");
+  indicators.className = "indicator-list";
+  item.profile.indicators.forEach((value) => {
+    const indicator = document.createElement("li");
+    indicator.textContent = value;
+    indicators.append(indicator);
+  });
   const meta = document.createElement("div");
   meta.className = "class-meta";
+  const sample = item.sample_characteristics;
   [
-    ["Sensor", item.sensor_id],
-    ["Trusted head", item.client_id],
-    ["Window", `${item.window_flows} flows`]
+    ["Sensor / head", `${item.sensor_id} / ${item.client_id}`],
+    ["Flow / protocol", `${sample.flow_count} / ${sample.protocols.join(", ")}`],
+    ["Service / state", `${sample.services.join(", ")} / ${sample.connection_states.join(", ")}`],
+    ["Cổng đích", sample.destination_ports.join(", ")],
+    ["Gói orig/resp", `${sample.total_origin_packets} / ${sample.total_response_packets}`],
+    ["Byte orig/resp", `${sample.total_origin_bytes} / ${sample.total_response_bytes}`],
+    ["Duration", sample.duration_seconds ? `${sample.duration_seconds.min.toFixed(3)}–${sample.duration_seconds.max.toFixed(3)}s` : "missing"]
   ].forEach(([label, value]) => {
     const cell = document.createElement("span");
     cell.textContent = label;
@@ -53,7 +67,10 @@ function selectReplayCase(item) {
     cell.append(content);
     meta.append(cell);
   });
-  detail.append(name, help, meta);
+  const limitation = document.createElement("small");
+  limitation.className = "profile-limitation";
+  limitation.textContent = item.profile.limitation;
+  detail.append(name, help, indicators, meta, limitation);
   $("run-replay-button").disabled = false;
 }
 
@@ -82,8 +99,10 @@ function replayChartEvent(result) {
     predicted_class: result.predicted_class,
     trusted_predicted_class: result.predicted_class,
     client_id: result.client_id,
-    severity: result.predicted_class === "Benign" ? "none" : "medium",
-    is_alert: false,
+    severity: result.is_alert ? "medium" : "none",
+    is_alert: result.is_alert,
+    decision_status: result.decision_status,
+    alert_threshold: result.alert_threshold,
     confidence_bucket: confidenceBucket(result.confidence),
     inference_latency_ms: "replay",
     source_type: "validation-replay",
@@ -110,16 +129,25 @@ async function runScientificReplay() {
     title.textContent = `${result.expected_class} → ${result.predicted_class}`;
     const detail = document.createElement("small");
     detail.textContent = `confidence ${confidenceBucket(result.confidence)} · ${result.sensor_id} → head ${result.client_id} · ${result.window_flows} flows`;
+    const decision = document.createElement("small");
+    decision.className = `decision ${result.is_alert ? "accepted" : "rejected"}`;
+    if (result.decision_status === "below-threshold") {
+      decision.textContent = `Không phát cảnh báo: ${confidenceBucket(result.confidence)} < ngưỡng ${result.predicted_class} ${confidenceBucket(result.alert_threshold)}.`;
+    } else if (result.decision_status === "alert") {
+      decision.textContent = `Đủ ngưỡng cảnh báo ${result.predicted_class} (${confidenceBucket(result.alert_threshold)}).`;
+    } else {
+      decision.textContent = "Không phát cảnh báo: dự đoán thô là Benign.";
+    }
     const top = document.createElement("small");
     top.textContent = `Top 3: ${result.top3.map((entry) => `${entry.class} ${(entry.probability * 100).toFixed(1)}%`).join(" · ")}`;
-    panel.append(title, detail, top);
+    panel.append(title, detail, decision, top);
 
     const event = replayChartEvent(result);
     state.events = [event, ...state.events].slice(0, 4);
-    state.chartEvents = [...state.chartEvents, event].slice(-80);
+    if (event.is_alert) state.pendingDetections.push(event);
     renderLatest(event);
     renderEventList();
-    renderChart();
+    updateAlertBanner(event);
   } catch (error) {
     $("replay-result").className = "replay-result incorrect";
     $("replay-result").textContent = `Replay failed: ${error.message}`;
@@ -129,27 +157,53 @@ async function runScientificReplay() {
   }
 }
 
-function eventLevel(event) {
-  if (event.predicted_class === "Benign") return 0;
-  return severityLevel[event.severity] || 1;
+function frequencyLevel(count) {
+  if (count === 0) return 0;
+  if (count <= 2) return 1;
+  if (count <= 5) return 2;
+  return 3;
+}
+
+function sampleAttackSignal() {
+  const detections = state.pendingDetections.splice(0);
+  const counts = new Map();
+  detections.forEach((event) => {
+    counts.set(event.predicted_class, (counts.get(event.predicted_class) || 0) + 1);
+  });
+  const dominant = [...counts.entries()].sort((left, right) => right[1] - left[1])[0];
+  const sample = dominant ? {
+    attack_count: detections.length,
+    level: frequencyLevel(detections.length),
+    predicted_class: dominant[0],
+    is_alert: true,
+    confidence_bucket: detections[detections.length - 1].confidence_bucket,
+    source_type: detections.some((event) => event.source_type === "live") ? "live" : "validation-replay"
+  } : emptyChartSample();
+  state.chartSamples = [...state.chartSamples, sample].slice(-CHART_SAMPLE_LIMIT);
+  renderChart();
+  updateAlertBanner(sample);
 }
 
 function updateAlertBanner(event) {
   const banner = $("alert-banner");
-  if (!event || event.predicted_class === "Benign") {
+  if (!event || event.predicted_class === "Benign" || event.decision_status === "below-threshold") {
     banner.className = "alert-banner normal";
     banner.querySelector(".alert-icon").textContent = "✓";
     $("alert-title").textContent = "Benign";
-    $("alert-detail").textContent = event ? "Model prediction is Benign." : "Đang chờ dự đoán mới.";
+    if (event?.decision_status === "below-threshold") {
+      $("alert-detail").textContent = `Dự đoán thô ${event.predicted_class} ${event.confidence_bucket}, dưới ngưỡng cảnh báo.`;
+    } else {
+      $("alert-detail").textContent = event ? "Không có detection đạt ngưỡng trong giây hiện tại." : "Đang chờ dự đoán mới.";
+    }
     return;
   }
   banner.className = `alert-banner ${event.is_alert ? "danger" : "detection"}`;
   banner.querySelector(".alert-icon").textContent = "!";
   $("alert-title").textContent = event.predicted_class;
   if (event.source_type === "validation-replay") {
-    $("alert-detail").textContent = "Validation replay detection; không phải live policy alert.";
+    $("alert-detail").textContent = `Validation replay đạt ngưỡng; ${event.attack_count || 1} detection/s, không phải live policy alert.`;
   } else if (event.is_alert) {
-    $("alert-detail").textContent = "Live prediction reached the policy alert gate.";
+    $("alert-detail").textContent = `${event.attack_count || 1} detection/s đã đạt ngưỡng policy.`;
   } else if (event.alert_decision_source === "trusted-shadow") {
     $("alert-detail").textContent = `6-head fusion detection · shadow mode · trusted head: ${event.trusted_predicted_class}.`;
   } else {
@@ -158,45 +212,43 @@ function updateAlertBanner(event) {
 }
 
 function renderChart() {
-  const samples = state.chartEvents.slice(-80);
-  const coordinates = [{x: 24, y: 180, event: null}];
-  samples.forEach((event, index) => {
-    const x = 24 + ((index + 1) / Math.max(1, samples.length)) * 956;
-    coordinates.push({x, y: 180 - eventLevel(event) * 48, event});
-  });
-  if (!samples.length) coordinates.push({x: 980, y: 180, event: null});
+  const samples = state.chartSamples.slice(-CHART_SAMPLE_LIMIT);
+  const coordinates = samples.map((sample, index) => ({
+    x: 24 + (index / Math.max(1, CHART_SAMPLE_LIMIT - 1)) * 956,
+    y: 180 - sample.level * 48,
+    sample
+  }));
   $("detection-line").setAttribute("points", coordinates.map((point) => `${point.x.toFixed(1)},${point.y}`).join(" "));
-  const hasPolicyAlert = samples.some((event) => event.is_alert);
-  const hasDetection = samples.some((event) => event.predicted_class !== "Benign");
-  $("detection-line").setAttribute("class", `detection-line ${hasPolicyAlert ? "danger" : (hasDetection ? "detection" : "normal")}`);
+  const hasDetection = samples.some((sample) => sample.attack_count > 0);
+  $("detection-line").setAttribute("class", `detection-line ${hasDetection ? "danger" : "normal"}`);
   const last = coordinates[coordinates.length - 1];
   $("detection-area").setAttribute("d", `M ${coordinates.map((point) => `${point.x.toFixed(1)} ${point.y}`).join(" L ")} L ${last.x.toFixed(1)} 180 L 24 180 Z`);
   $("detection-area").classList.toggle("active", hasDetection);
   $("detection-points").replaceChildren();
 
-  const attackPoints = coordinates.filter((point) => point.event && point.event.predicted_class !== "Benign");
+  const attackPoints = coordinates.filter((point) => point.sample.attack_count > 0);
   attackPoints.forEach((point, index) => {
     const group = document.createElementNS(SVG_NS, "g");
-    group.setAttribute("class", point.event.is_alert ? "chart-point danger" : "chart-point detection");
+    group.setAttribute("class", "chart-point danger");
     const circle = document.createElementNS(SVG_NS, "circle");
     circle.setAttribute("cx", point.x.toFixed(1));
     circle.setAttribute("cy", point.y);
     circle.setAttribute("r", "6");
     const tooltip = document.createElementNS(SVG_NS, "title");
-    tooltip.textContent = `${point.event.predicted_class} · ${point.event.confidence_bucket}`;
+    tooltip.textContent = `${point.sample.predicted_class} · ${point.sample.attack_count} detection/s`;
     circle.append(tooltip);
     group.append(circle);
     if (index >= attackPoints.length - 3) {
       const label = document.createElementNS(SVG_NS, "text");
       label.setAttribute("x", Math.min(910, Math.max(45, point.x)).toFixed(1));
       label.setAttribute("y", Math.max(20, point.y - 12));
-      label.textContent = point.event.predicted_class;
+      label.textContent = `${point.sample.predicted_class} · ${point.sample.attack_count}/s`;
       group.append(label);
     }
     $("detection-points").append(group);
   });
-  $("chart-window-count").textContent = `${samples.length} points`;
-  updateAlertBanner(samples[samples.length - 1]);
+  const current = samples[samples.length - 1];
+  $("chart-window-count").textContent = `80s · ${current.attack_count} detection/s`;
 }
 
 function renderLatest(event) {
@@ -217,7 +269,11 @@ function eventNode(event) {
   const main = document.createElement("div"); main.className = "event-main";
   const label = document.createElement("strong"); label.textContent = event.predicted_class;
   const detail = document.createElement("small");
-  detail.textContent = event.source_type === "validation-replay" ? "validation replay" : `${event.alert_decision_source || "live"} · trusted ${event.trusted_predicted_class || event.predicted_class}`;
+  if (event.source_type === "validation-replay") {
+    detail.textContent = event.decision_status === "below-threshold" ? "validation replay · dưới ngưỡng" : "validation replay · đạt ngưỡng";
+  } else {
+    detail.textContent = `${event.alert_decision_source || "live"} · trusted ${event.trusted_predicted_class || event.predicted_class}`;
+  }
   main.append(label, detail);
   const meta = document.createElement("div"); meta.className = "event-meta"; meta.textContent = event.confidence_bucket;
   row.append(mark, main, meta);
@@ -256,17 +312,21 @@ function renderHeadDiagnostics(event) {
 async function pollMonitor() {
   try {
     const body = await json(`/api/monitor?after=${state.cursor}&limit=100`);
+    const initialSnapshot = !state.monitorInitialized;
     if (body.events.length) {
       state.cursor = body.next_cursor;
       const fresh = body.events.map((event) => ({...event, source_type: "live"}));
-      state.chartEvents = [...state.chartEvents, ...fresh].slice(-80);
+      if (!initialSnapshot) {
+        state.pendingDetections.push(...fresh.filter((event) => event.is_alert));
+      }
       state.events = [...fresh.slice().reverse(), ...state.events].slice(0, 4);
       const latest = fresh[fresh.length - 1];
       renderLatest(latest);
       renderEventList();
       renderHeadDiagnostics(latest);
-      renderChart();
+      updateAlertBanner(latest);
     }
+    if (initialSnapshot && body.events.length < 100) state.monitorInitialized = true;
     const metrics = body.metrics;
     $("metric-windows").textContent = metrics.windows;
     $("metric-alerts").textContent = metrics.events;
@@ -282,7 +342,7 @@ async function pollMonitor() {
 
 function clearMonitor() {
   state.events = [];
-  state.chartEvents = [];
+  resetChartSamples();
   renderLatest(null);
   renderEventList();
   renderHeadDiagnostics(null);
@@ -290,6 +350,7 @@ function clearMonitor() {
 }
 
 async function boot() {
+  resetChartSamples();
   renderChart();
   try {
     renderReplayCatalog(await json("/api/scientific-replay"));
@@ -302,6 +363,7 @@ async function boot() {
   $("run-replay-button").addEventListener("click", runScientificReplay);
   $("clear-events").addEventListener("click", clearMonitor);
   setInterval(pollMonitor, 1000);
+  setInterval(sampleAttackSignal, 1000);
   await pollMonitor();
 }
 

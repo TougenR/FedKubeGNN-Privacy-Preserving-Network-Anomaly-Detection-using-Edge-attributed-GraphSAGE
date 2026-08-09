@@ -715,6 +715,31 @@ Compact console GKE evidence on 2026-08-09:
   `PartOfAHorizontalPortScan` fixtures both predicted `C&C` at `0.538746` and
   remain visible as errors rather than being relabeled for the demo.
 
+Continuous monitor and false-alarm remediation approved on 2026-08-10:
+
+- Keep the raw model result visible. In particular, the fixed one-flow Benign
+  validation fixture remains `C&C` at `0.538746`; the UI must not rewrite that
+  scientific error to `Benign`.
+- Separate raw classification from the alert decision using the immutable
+  validation-selected class thresholds in
+  `configs/application/multi-head-fusion-policy.json`. The replay endpoint must
+  verify that the inference response and decision policy have the same digest.
+  A non-Benign argmax below its class threshold is `below-threshold`, emits no
+  alert, and contributes zero to the attack-rate graph.
+- Replace event-arrival-only plotting with a fixed one-second browser sampling
+  clock. Each sample records the number of policy-qualified detections received
+  during that interval; no detections append a Benign zero, so the graph keeps
+  moving and returns to baseline. Presentation bands are 1-2, 3-5, and 6+
+  accepted detections/second; they do not alter model or alert policy.
+- The class catalog owns a concise behavioral profile for all seven immutable
+  labels. The API also derives exact protocol, service, connection-state,
+  destination-port, duration, and packet statistics from each fixed validation
+  replay window. The UI must distinguish general behavior from properties of
+  the selected fixture, especially the one-flow Benign and port-scan examples.
+- Validate the replay decision contract, label-free production request, profile
+  completeness, continuous zero sampling, attack-frequency bands, JavaScript,
+  Helm wiring, and the deployed GKE behavior. Deployment remains GitOps-only.
+
 ## Result
 
 Scientific evaluation, serving-bundle promotion, locked test execution, the

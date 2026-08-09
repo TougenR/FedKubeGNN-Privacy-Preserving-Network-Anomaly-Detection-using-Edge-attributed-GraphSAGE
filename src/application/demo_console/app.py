@@ -14,7 +14,9 @@ from pydantic import BaseModel, ConfigDict
 
 from src.application.collection.transport import ServiceRequestError, get_json, post_json
 from src.application.evaluation.replay_demo import (
+    ReplayPolicyError,
     execute_replay_case,
+    load_replay_alert_policy,
     load_scientific_replay,
     public_catalog,
 )
@@ -63,6 +65,12 @@ async def lifespan(_: FastAPI):
             os.environ.get(
                 "SCIENTIFIC_REPLAY_CONFIG",
                 "/app/configs/application/scientific-replay.json",
+            )
+        )
+        state["replay_alert_policy"] = load_replay_alert_policy(
+            os.environ.get(
+                "FUSION_POLICY_PATH",
+                "/app/configs/application/multi-head-fusion-policy.json",
             )
         )
         state["executor"] = ScenarioExecutor(
@@ -134,10 +142,11 @@ async def run_scientific_replay(case_id: str) -> dict[str, Any]:
             execute_replay_case,
             case=case,
             inference_url=inference_url,
+            alert_policy=state["replay_alert_policy"],
         )
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="không tìm thấy mẫu phát lại") from exc
-    except (ServiceRequestError, ValueError) as exc:
+    except (ReplayPolicyError, ServiceRequestError, ValueError) as exc:
         raise HTTPException(status_code=502, detail="phát lại khoa học thất bại") from exc
 
 

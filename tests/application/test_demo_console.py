@@ -37,13 +37,17 @@ class DemoConsoleTests(unittest.TestCase):
 
         script = (ROOT / "src/application/demo_console/static/app.js").read_text()
         self.assertIn('event.predicted_class === "Benign"', script)
-        self.assertIn("state.chartEvents.slice(-80)", script)
+        self.assertIn("setInterval(sampleAttackSignal, 1000)", script)
+        self.assertIn("state.pendingDetections.push", script)
+        self.assertIn("function frequencyLevel(count)", script)
         self.assertIn("event.is_alert", script)
         self.assertIn('event.alert_decision_source === "trusted-shadow"', script)
         self.assertIn("renderHeadDiagnostics", script)
         self.assertIn("button.textContent = item.expected_class", script)
         self.assertNotIn('"DDoS": "Từ chối', script)
         self.assertNotIn("scenario_id === \"DDoS\"", script)
+        self.assertIn("item.profile.indicators", script)
+        self.assertIn("item.sample_characteristics", script)
 
         styles = (ROOT / "src/application/demo_console/static/styles.css").read_text()
         self.assertIn("height: 100dvh", styles)

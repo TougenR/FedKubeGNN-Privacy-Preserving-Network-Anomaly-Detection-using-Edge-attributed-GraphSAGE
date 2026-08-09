@@ -1,11 +1,55 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "kind": "validation-only-scientific-replay",
   "selection_split": "validation",
   "selection_rule": "mẫu thứ 100 cố định của lớp; lấy tối đa 50 flow trong 60 giây trước đó",
   "dataset_digest": "c5ab9c02896c08c9f60e8efb9672a2090cbe595e4c344308f5e4dc2b0e51319a",
   "graph_protocol": "rolling-window-v1:duration=60s:max-flows=50:stride=1:lateness=1s",
   "disclaimer": "Replay có nhãn chỉ dùng tập validation. Nhãn kỳ vọng nằm trong bộ đánh giá và không bao giờ được gửi vào request inference production. Đây không phải lưu lượng trực tiếp.",
+  "class_profiles": [
+    {
+      "class_name": "Benign",
+      "behavior": "Lưu lượng không mang nhãn tấn công trong bộ IoT-23 đã dùng để huấn luyện.",
+      "indicators": ["Không có hành vi tấn công được gán nhãn", "Đặc trưng flow mức thấp vẫn có thể giống một flow tấn công đơn lẻ"],
+      "limitation": "Benign không đồng nghĩa mọi flow riêng lẻ đều dễ phân biệt; quyết định cảnh báo còn phải qua ngưỡng đã hiệu chỉnh."
+    },
+    {
+      "class_name": "Attack",
+      "behavior": "Nhãn tấn công tổng quát trong dữ liệu nguồn; mẫu validation cố định hiện thể hiện hoạt động TCP/SSH.",
+      "indicators": ["Kết nối tới dịch vụ SSH", "Có cả kết nối hoàn tất và kết nối chỉ khởi tạo"],
+      "limitation": "Đây là class của dataset, không phải tên của một kỹ thuật tấn công duy nhất."
+    },
+    {
+      "class_name": "C&C",
+      "behavior": "Lưu lượng command-and-control giữa thiết bị bị kiểm soát và hạ tầng điều khiển.",
+      "indicators": ["Kết nối TCP lặp lại tới endpoint điều khiển", "Mẫu validation dùng cổng đích 6667 và chủ yếu không có phản hồi"],
+      "limitation": "Model nhận diện mẫu flow đã học; kết quả không chứng minh danh tính hay nội dung của máy chủ C&C."
+    },
+    {
+      "class_name": "C&C-HeartBeat",
+      "behavior": "Liên lạc heartbeat định kỳ để duy trì trạng thái giữa thiết bị và máy chủ C&C.",
+      "indicators": ["Flow ngắn hoặc thưa lặp theo chu kỳ", "Lưu lượng TCP ít gói và thường ít hoặc không có phản hồi"],
+      "limitation": "Một cửa sổ ngắn không tự chứng minh tính định kỳ; cần quan sát nhiều cửa sổ liên tiếp."
+    },
+    {
+      "class_name": "DDoS",
+      "behavior": "Nhiều flow tấn công tập trung vào một dịch vụ hoặc mục tiêu để gây cạn tài nguyên.",
+      "indicators": ["Mật độ flow cao trong cửa sổ", "Mẫu validation có 50 flow TCP tới cổng 80"],
+      "limitation": "Ứng dụng chỉ phát hiện class theo đặc trưng flow, không tự động chặn lưu lượng."
+    },
+    {
+      "class_name": "Okiru",
+      "behavior": "Lưu lượng được gán nhãn hoạt động của họ malware Okiru trong IoT-23.",
+      "indicators": ["Nhiều kết nối TCP không hoàn tất", "Mẫu validation dùng các cổng đích 37215 và 57722"],
+      "limitation": "Class này không phải bằng chứng pháp y rằng một host đang chạy đúng biến thể malware Okiru."
+    },
+    {
+      "class_name": "PartOfAHorizontalPortScan",
+      "behavior": "Một phần của hoạt động quét cùng cổng hoặc dịch vụ trên nhiều máy đích.",
+      "indicators": ["Nhiều đích khác nhau với cổng đích giống nhau", "Kết nối thường chỉ gửi SYN và không hoàn tất"],
+      "limitation": "Fixture hiện chỉ có 1 flow nên không thể tự thể hiện đầy đủ tính ngang của toàn chiến dịch quét."
+    }
+  ],
   "cases": [
     {
       "id": "benign",
