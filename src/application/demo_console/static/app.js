@@ -203,9 +203,13 @@ function updateAlertBanner(event) {
   banner.className = `alert-banner ${event.is_alert ? "danger" : "detection"}`;
   banner.querySelector(".alert-icon").textContent = "!";
   $("alert-title").textContent = `${event.is_alert ? "Cảnh báo" : "Phát hiện"}: ${displayClass(event.predicted_class)}`;
-  $("alert-detail").textContent = event.is_alert
-    ? `Model phát hiện ${event.predicted_class} và kết quả đã đạt ngưỡng cảnh báo chính sách.`
-    : `Model phát hiện ${event.predicted_class}, nhưng độ tin cậy chưa đạt ngưỡng cảnh báo chính sách.`;
+  if (event.is_alert) {
+    $("alert-detail").textContent = `Model phát hiện ${event.predicted_class} và kết quả đã đạt ngưỡng cảnh báo chính sách.`;
+  } else if (event.alert_decision_source === "trusted-shadow") {
+    $("alert-detail").textContent = `Fusion 6 head phát hiện ${event.predicted_class}; đang chạy shadow nên cảnh báo vẫn theo trusted head (${displayClass(event.trusted_predicted_class)}).`;
+  } else {
+    $("alert-detail").textContent = `Model phát hiện ${event.predicted_class}, nhưng độ tin cậy chưa đạt ngưỡng cảnh báo chính sách.`;
+  }
 }
 
 function renderChart() {
@@ -253,7 +257,11 @@ function eventNode(event) {
   const mark = document.createElement("i"); mark.className = "event-mark";
   const main = document.createElement("div"); main.className = "event-main";
   const label = document.createElement("strong"); label.textContent = displayClass(event.predicted_class);
-  const policyState = event.is_alert ? `cảnh báo ${event.severity}` : (event.predicted_class === "Benign" ? "không cảnh báo" : "dưới ngưỡng chính sách");
+  const policyState = event.is_alert
+    ? `cảnh báo ${event.severity}`
+    : (event.predicted_class === "Benign"
+      ? "không cảnh báo"
+      : (event.alert_decision_source === "trusted-shadow" ? "shadow · cảnh báo theo trusted head" : "dưới ngưỡng chính sách"));
   const detail = document.createElement("small"); detail.textContent = `Fusion 6 head · trusted ${event.client_id}: ${displayClass(event.trusted_predicted_class || event.predicted_class)} · ${policyState}`; main.append(label, detail);
   const meta = document.createElement("div"); meta.className = "event-meta"; meta.textContent = `${event.confidence_bucket}\n${event.inference_latency_ms} mili giây`;
   row.append(mark, main, meta); return row;

@@ -630,6 +630,45 @@ Multi-head fusion checkpoint on 2026-08-09:
   retained only the known missing matplotlib/private Phase 1 fixture failures
   outside this change, plus 7 optional-Flower skips.
 
+Multi-head fusion GKE rollout and live evidence on 2026-08-09:
+
+- GitHub Actions run `31323047141` passed infrastructure, security, and the
+  dependency-complete Python job. Jenkins build 69 passed import smoke and
+  CRITICAL vulnerability scanning, pushed immutable application digest
+  `sha256:4e0aa072f204dcac7c5176d9b51f93399cf84581ca393591d366d8d1814d23d8`,
+  and committed only the GKE application environment update at
+  `f31461dcb0d0c502b732078cad4dfbf81f12dba0`.
+- Argo CD alone synchronized that revision and reports `Synced/Healthy`. All
+  six application Deployments are ready, Elasticsearch is green, Kibana is
+  available, and bootstrap job `eb-v5-fusion` completed. Inference readiness
+  exposes all six client IDs, decision mode
+  `validation-calibrated-multi-head-v1`, and policy digest
+  `0beef419f9cb7da3239ec43d12cdce174ddf37e1597bbee4c22c7979d292b951`.
+  Collector readiness confirms `ALERT_DECISION_SOURCE=trusted-shadow`.
+- A 20-request benign live run produced fused `Attack` decisions while trusted
+  head `34-1` remained `Benign`; heads `3-1` and `39-1` selected `Attack` and
+  the other four selected `Benign`. No policy alert was emitted. This directly
+  confirms both that every head is invoked and that promoting fusion alerts
+  would currently create benign false positives.
+- After an eight-second quiet-drain proved the Zeek cursor stable, a clean
+  periodic-beacon run completed 15/15 requests and exactly 15 collector
+  accepts/predictions with zero drops or downstream failures. It produced the
+  same fused `Attack` / trusted `Benign` split and zero policy alerts. The six
+  synthetic HTTP patterns therefore still do not provide model-discriminating
+  IoT-23 flow features; multi-head routing cannot manufacture that fidelity.
+- Running high-volume scenarios back-to-back exposed a separate evidence
+  isolation limit: Zeek can emit terminal connection records after the runner
+  has completed, and those records can be attributed to the next registered
+  run even though its graph buffer is reset. For example, a six-connection port
+  probe received 55 records while the preceding flood drained. Until the Zeek
+  flow can be joined to a run token, controlled comparisons require a verified
+  quiet cursor between runs and must not interpret rapid-run counters as
+  scenario-specific evidence.
+- The console distinguishes an amber fused detection from a red policy alert.
+  In `trusted-shadow`, its explanation now states that the alert decision came
+  from the trusted head rather than incorrectly describing every non-alerting
+  fused detection as merely below a confidence threshold.
+
 ## Result
 
 Scientific evaluation, serving-bundle promotion, locked test execution, the

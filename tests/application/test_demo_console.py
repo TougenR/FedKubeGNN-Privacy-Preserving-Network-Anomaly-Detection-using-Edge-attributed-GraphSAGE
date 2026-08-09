@@ -38,6 +38,8 @@ class DemoConsoleTests(unittest.TestCase):
         self.assertIn('event.predicted_class === "Benign"', script)
         self.assertIn("state.chartEvents.slice(-80)", script)
         self.assertIn("event.is_alert", script)
+        self.assertIn('event.alert_decision_source === "trusted-shadow"', script)
+        self.assertIn("Fusion 6 head phát hiện", script)
         self.assertIn("renderHeadDiagnostics", script)
         self.assertNotIn("scenario_id === \"DDoS\"", script)
 
