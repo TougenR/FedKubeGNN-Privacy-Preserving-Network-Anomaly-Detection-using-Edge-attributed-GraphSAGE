@@ -538,6 +538,36 @@ Local implementation checkpoint on 2026-08-09:
   CI/Jenkins image validation and the GKE rollout are intentionally deferred
   to the next work session, leaving the current cloud revision unchanged.
 
+Vietnamese chart-monitor GKE evidence on 2026-08-09:
+
+- GitHub Actions run `31319109965` passed infrastructure, security, and Python;
+  the dependency-complete Python job ran all 140 repository tests successfully
+  and Ruff passed. Jenkins build 66 applied the application-only guard, built
+  and import-smoked the application image, found zero CRITICAL vulnerabilities,
+  and pushed immutable digest
+  `sha256:3be1828c3d88c88fbdaac567b0a1419d39a046c6604a9506cc422f2c497a1104`.
+- Jenkins committed only the application environment digest/release change at
+  `30d097bded4b8d120213c0a9ca827516141b9b3c`; build 67 then proved the
+  environment-only loop guard by skipping test, build, push, and GitOps-update
+  stages. The federated image and environments were unchanged.
+- Argo CD alone rolled out the application and reached `Succeeded`, `Synced`,
+  and `Healthy` at revision `30d097bded4b8d120213c0a9ca827516141b9b3c`.
+  All six application Deployments and Kibana are available with zero restarts.
+- Gateway smoke tests read the Vietnamese title, live-monitor heading, scenario
+  catalog, scientific-replay labels, and SVG chart from the deployed image. A
+  five-request benign run completed 5/5 and the collector produced seven
+  accepted/predicted rolling windows, all `Benign`, with zero drops, inference
+  failures, sink failures, or policy alerts. The chart semantics therefore
+  retain the flat normal baseline for this live evidence.
+- A validation-only DDoS replay was independently predicted `DDoS` with
+  confidence `0.9984752536` and `request_contains_ground_truth=false`. A Node
+  semantic harness verified `Benign=0`, below-threshold non-Benign `=1`, and a
+  high-severity alert `=3`, plus the Vietnamese PortScan display label. This
+  proves the non-Benign chart branches without feeding validation labels or
+  synthetic scenario names into the live monitor.
+- Operator-only port forwards are active at `127.0.0.1:18080` for the console
+  and `https://127.0.0.1:15601` for Kibana. Kibana reports `available`.
+
 ## Result
 
 Scientific evaluation, serving-bundle promotion, locked test execution, the
