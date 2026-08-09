@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-import pickle
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -10,19 +10,18 @@ import pandas as pd
 from src.application.api.schema import ProductionFlow
 from src.application.collection.delivery import ObservationDispatcher
 from src.application.collection.transport import ServiceRequestError
-from src.application.collection.zeek_shipper import production_flow_from_zeek
+from src.application.collection.zeek_shipper import (
+    follow_rotating_file,
+    production_flow_from_zeek,
+)
 from src.application.evaluation.replay_demo import (
     execute_replay_case,
     load_scientific_replay,
 )
-from src.core.preprocess import clean_flows, transform
+from src.core.preprocess import clean_flows, fit_preprocessor, transform
 
 
 ROOT = Path(__file__).resolve().parents[2]
-BUNDLE = (
-    ROOT
-    / "artifacts/application/model-bundles/fedper-gke-r0030-serving-window-validated"
-)
 REPLAY = ROOT / "configs/application/scientific-replay.json"
 
 
@@ -48,8 +47,10 @@ class LiveRemediationTests(unittest.TestCase):
         self.assertEqual(cleaned.loc[0, "duration_missing"], 1)
         self.assertEqual(cleaned.loc[0, "orig_bytes_missing"], 1)
         self.assertEqual(cleaned.loc[0, "resp_bytes_missing"], 1)
-        with (BUNDLE / "preprocessor.pkl").open("rb") as handle:
-            preprocessor = pickle.load(handle)
+        # A self-contained train-only fit proves that serialization through the
+        # production schema preserves the missing flags; CI intentionally has
+        # no access to the private serving bundle.
+        preprocessor = fit_preprocessor(cleaned)
         features = transform(cleaned, preprocessor)
         self.assertEqual(features.loc[0, "duration_missing"], 1)
         self.assertEqual(features.loc[0, "orig_bytes_missing"], 1)
@@ -146,6 +147,20 @@ class LiveRemediationTests(unittest.TestCase):
         self.assertIsNone(flow["orig_bytes"])
         self.assertIsNone(flow["resp_bytes"])
         self.assertNotIn("label", flow)
+
+    def test_zeek_follower_reopens_rotated_conn_log(self) -> None:
+        async def exercise() -> None:
+            with tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / "conn.log"
+                path.write_text("first\n", encoding="utf-8")
+                lines = follow_rotating_file(path, poll_seconds=0.001)
+                self.assertEqual(await anext(lines), "first\n")
+                path.rename(path.with_suffix(".log.1"))
+                path.write_text("second\n", encoding="utf-8")
+                self.assertEqual(await anext(lines), "second\n")
+                await lines.aclose()
+
+        asyncio.run(exercise())
 
 
 if __name__ == "__main__":

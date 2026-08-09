@@ -40,6 +40,21 @@
 {{- if and .Values.demoTarget.observation.enabled (not .Values.demoTarget.observation.sensorId) }}
 {{- fail "demoTarget.observation.sensorId is required" }}
 {{- end }}
+{{- if and .Values.zeek.enabled (not .Values.demoTarget.enabled) }}
+{{- fail "zeek capture requires demoTarget.enabled" }}
+{{- end }}
+{{- if and .Values.zeek.enabled (not .Values.collector.enabled) }}
+{{- fail "zeek capture requires collector.enabled" }}
+{{- end }}
+{{- if and .Values.zeek.enabled .Values.demoTarget.observation.enabled }}
+{{- fail "zeek capture and ingress-adapter observation are mutually exclusive" }}
+{{- end }}
+{{- if and .Values.zeek.enabled (not .Values.zeek.sensorId) }}
+{{- fail "zeek.sensorId is required when Zeek capture is enabled" }}
+{{- end }}
+{{- if and .Values.zeek.enabled (not (regexMatch "^zeek/zeek@sha256:[0-9a-f]{64}$" .Values.zeek.image)) }}
+{{- fail "zeek.image must be an immutable zeek/zeek digest" }}
+{{- end }}
 {{- if and .Values.demoConsole.enabled (not .Values.gateway.enabled) }}
 {{- fail "demoConsole requires gateway.enabled" }}
 {{- end }}

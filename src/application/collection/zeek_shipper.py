@@ -6,7 +6,7 @@ import argparse
 import asyncio
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, AsyncIterator, TextIO
 
 from src.application.api.schema import ProductionFlow
 from src.application.collection.delivery import ObservationDispatcher
@@ -14,6 +14,46 @@ from src.application.collection.zeek_reader import parse_zeek_json
 
 
 logger = logging.getLogger(__name__)
+
+
+async def follow_rotating_file(
+    path: Path, *, poll_seconds: float
+) -> AsyncIterator[str]:
+    """Follow conn.log across Zeek rotation or in-place truncation."""
+    handle: TextIO | None = None
+    inode: int | None = None
+    position = 0
+    try:
+        while True:
+            try:
+                current = path.stat()
+            except FileNotFoundError:
+                if handle is not None:
+                    handle.close()
+                    handle = None
+                    inode = None
+                    position = 0
+                await asyncio.sleep(poll_seconds)
+                continue
+            if (
+                handle is None
+                or inode != current.st_ino
+                or current.st_size < position
+            ):
+                if handle is not None:
+                    handle.close()
+                handle = path.open("r", encoding="utf-8")
+                inode = current.st_ino
+                position = 0
+            line = handle.readline()
+            if line:
+                position = handle.tell()
+                yield line
+            else:
+                await asyncio.sleep(poll_seconds)
+    finally:
+        if handle is not None:
+            handle.close()
 
 
 def production_flow_from_zeek(record: dict[str, Any]) -> dict[str, Any]:
@@ -61,32 +101,25 @@ async def ship(
     )
     await dispatcher.start()
     try:
-        while not path.exists():
-            await asyncio.sleep(poll_seconds)
-        with path.open("r", encoding="utf-8") as handle:
-            while True:
-                line = handle.readline()
-                if not line:
-                    await asyncio.sleep(poll_seconds)
-                    continue
-                try:
-                    record = parse_zeek_json(line)
-                    flow = production_flow_from_zeek(record)
-                except (KeyError, TypeError, ValueError) as exc:
-                    logger.warning("Rejected Zeek conn record: %s", exc)
-                    continue
-                accepted = dispatcher.enqueue(
-                    {
-                        "sensor_id": sensor_id,
-                        "source": "zeek-json-v1",
-                        "run_id": None,
-                        "scenario_id": None,
-                        "flow": flow,
-                    },
-                    run_id=None,
-                )
-                if not accepted:
-                    logger.error("Zeek delivery queue is full; conn record dropped.")
+        async for line in follow_rotating_file(path, poll_seconds=poll_seconds):
+            try:
+                record = parse_zeek_json(line)
+                flow = production_flow_from_zeek(record)
+            except (KeyError, TypeError, ValueError) as exc:
+                logger.warning("Rejected Zeek conn record: %s", exc)
+                continue
+            accepted = dispatcher.enqueue(
+                {
+                    "sensor_id": sensor_id,
+                    "source": "zeek-json-v1",
+                    "run_id": None,
+                    "scenario_id": None,
+                    "flow": flow,
+                },
+                run_id=None,
+            )
+            if not accepted:
+                logger.error("Zeek delivery queue is full; conn record dropped.")
     finally:
         await dispatcher.stop()
 

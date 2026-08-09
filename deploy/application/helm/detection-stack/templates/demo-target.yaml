@@ -25,7 +25,7 @@ spec:
           image: {{ include "detection-stack.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args: ["src.application.demo_target.app:app", "--host", "0.0.0.0", "--port", "8080"]
-          {{- if .Values.demoTarget.observation.enabled }}
+          {{- if and .Values.demoTarget.observation.enabled (not .Values.zeek.enabled) }}
           env:
             - name: COLLECTOR_OBSERVE_URL
               value: http://{{ include "detection-stack.fullname" . }}-collector:8082/observe
@@ -35,6 +35,14 @@ spec:
               value: demo-target
             - name: DEMO_TARGET_PORT
               value: "8080"
+            - name: OBSERVATION_QUEUE_SIZE
+              value: {{ .Values.demoTarget.observation.queueSize | quote }}
+            - name: OBSERVATION_WORKERS
+              value: {{ .Values.demoTarget.observation.workers | quote }}
+            - name: OBSERVATION_RETRY_ATTEMPTS
+              value: {{ .Values.demoTarget.observation.retryAttempts | quote }}
+            - name: OBSERVATION_RETRY_BACKOFF_SECONDS
+              value: {{ .Values.demoTarget.observation.retryBackoffSeconds | quote }}
           {{- end }}
           ports: [{name: http, containerPort: 8080}]
           readinessProbe:
@@ -46,6 +54,64 @@ spec:
             runAsNonRoot: true
             runAsUser: 49999
             capabilities: {drop: [ALL]}
+        {{- if .Values.zeek.enabled }}
+        - name: zeek
+          image: {{ .Values.zeek.image | quote }}
+          imagePullPolicy: IfNotPresent
+          command: [bash, -euc]
+          args:
+            - |
+              cd /zeek-logs
+              # Pod veth checksum offload exposes pre-offload checksums to
+              # packet capture; -C is required for correct conn_state/history.
+              args=(-C -i "${ZEEK_INTERFACE}")
+              if [[ -n "${ZEEK_CAPTURE_FILTER}" ]]; then
+                args+=(-f "${ZEEK_CAPTURE_FILTER}")
+              fi
+              exec zeek "${args[@]}" LogAscii::use_json=T local
+          env:
+            - {name: ZEEK_INTERFACE, value: {{ .Values.zeek.interface | quote }}}
+            - {name: ZEEK_CAPTURE_FILTER, value: {{ .Values.zeek.captureFilter | quote }}}
+          resources: {{- toYaml .Values.zeek.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: false
+            runAsUser: 0
+            seccompProfile: {type: RuntimeDefault}
+            capabilities:
+              drop: [ALL]
+              add: [NET_ADMIN, NET_RAW]
+          volumeMounts:
+            - {name: zeek-logs, mountPath: /zeek-logs}
+            - {name: zeek-tmp, mountPath: /tmp}
+        - name: zeek-shipper
+          image: {{ include "detection-stack.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: [python, -m, src.application.collection.zeek_shipper]
+          args:
+            - --path=/zeek-logs/conn.log
+            - --collector-url=http://{{ include "detection-stack.fullname" . }}-collector:8082/observe
+            - --sensor-id={{ .Values.zeek.sensorId }}
+            - --queue-size={{ .Values.zeek.queueSize }}
+          resources: {{- toYaml .Values.zeek.shipperResources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 49999
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: zeek-logs, mountPath: /zeek-logs, readOnly: true}
+            - {name: zeek-tmp, mountPath: /tmp}
+        {{- end }}
+      {{- if .Values.zeek.enabled }}
+      volumes:
+        - name: zeek-logs
+          emptyDir: {sizeLimit: 128Mi}
+        - name: zeek-tmp
+          emptyDir: {sizeLimit: 64Mi}
+      {{- end }}
 ---
 apiVersion: v1
 kind: Service

@@ -30,8 +30,16 @@ spec:
               value: /app/configs/application/demo-scenarios.yaml
             - name: COLLECTOR_URL
               value: http://{{ include "detection-stack.fullname" . }}-collector:8082
+            - name: OBSERVATION_MODE
+              value: {{ ternary "zeek" "ingress-adapter" .Values.zeek.enabled | quote }}
+            - name: INFERENCE_URL
+              value: http://{{ include "detection-stack.fullname" . }}-inference:8000/predict
+            - name: SCIENTIFIC_REPLAY_CONFIG
+              value: /app/configs/application/scientific-replay.json
             - name: DEMO_TARGET_URL
               value: http://{{ include "detection-stack.fullname" . }}-gateway/target
+            - name: DEMO_TARGET_STATUS_URL
+              value: http://{{ include "detection-stack.fullname" . }}-target:8080
             - name: DEMO_SCAN_URLS
               value: {{ list
                 (printf "http://%s-target:8080" (include "detection-stack.fullname" .))

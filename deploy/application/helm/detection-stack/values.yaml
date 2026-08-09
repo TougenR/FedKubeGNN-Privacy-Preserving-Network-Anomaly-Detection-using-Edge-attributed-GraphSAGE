@@ -27,9 +27,27 @@ demoTarget:
   observation:
     enabled: false
     sensorId: ""
+    queueSize: 1000
+    workers: 1
+    retryAttempts: 3
+    retryBackoffSeconds: 0.25
   resources:
     requests: {cpu: 50m, memory: 64Mi}
     limits: {cpu: 250m, memory: 256Mi}
+
+zeek:
+  enabled: false
+  image: zeek/zeek@sha256:c7dfad9ab8296b2994d113222e77a22ebc9c8963b2b1200b798484ac923bc94f
+  interface: eth0
+  captureFilter: ""
+  sensorId: ""
+  queueSize: 1000
+  resources:
+    requests: {cpu: 50m, memory: 256Mi}
+    limits: {cpu: 500m, memory: 512Mi}
+  shipperResources:
+    requests: {cpu: 10m, memory: 64Mi}
+    limits: {cpu: 250m, memory: 128Mi}
 
 demoConsole:
   enabled: false
