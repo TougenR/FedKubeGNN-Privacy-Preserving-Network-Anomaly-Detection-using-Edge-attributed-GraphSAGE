@@ -9,6 +9,7 @@ import time
 from collections import defaultdict, deque
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException
@@ -19,6 +20,7 @@ from src.application.alerting.policy import AlertPolicy, parse_boundaries
 from src.application.api.schema import ProductionFlow
 from src.application.collection.transport import ServiceRequestError, post_json
 from src.application.graph_window.buffer import RollingWindowBuffer, RollingWindowConfig
+from src.application.inference.fusion import policy_digest
 
 
 class CollectorObservation(BaseModel):
@@ -59,8 +61,22 @@ def _required_int(name: str) -> int:
 def _load_policy() -> AlertPolicy | None:
     if os.environ.get("ALERT_POLICY_ENABLED", "false").lower() != "true":
         return None
+    decision_source = os.environ.get("ALERT_DECISION_SOURCE", "fusion")
+    if decision_source not in {"fusion", "trusted-shadow"}:
+        raise ValueError("ALERT_DECISION_SOURCE must be fusion or trusted-shadow.")
+    class_thresholds = None
+    if decision_source == "fusion":
+        fusion_document = json.loads(
+            Path(os.environ["FUSION_POLICY_PATH"]).read_text(encoding="utf-8")
+        )
+        if fusion_document.get("policy_digest") != policy_digest(fusion_document):
+            raise ValueError("Fusion policy digest mismatch in collector.")
+        class_thresholds = fusion_document.get("class_alert_thresholds")
+        if not isinstance(class_thresholds, dict):
+            raise ValueError("Fusion policy has no class alert thresholds.")
     return AlertPolicy(
         confidence_threshold=float(os.environ["ALERT_CONFIDENCE_THRESHOLD"]),
+        class_confidence_thresholds=class_thresholds,
         confidence_boundaries=parse_boundaries(
             json.loads(os.environ["ALERT_CONFIDENCE_BOUNDARIES"])
         ),
@@ -84,6 +100,9 @@ async def lifespan(_: FastAPI):
         app_state["inference_url"] = os.environ["INFERENCE_URL"]
         app_state["alert_router_url"] = os.environ.get("ALERT_ROUTER_URL")
         app_state["policy"] = _load_policy()
+        app_state["alert_decision_source"] = os.environ.get(
+            "ALERT_DECISION_SOURCE", "fusion"
+        )
         if app_state["policy"] is not None:
             app_state["entity_key"] = os.environ["ENTITY_HASH_KEY"].encode("utf-8")
             if not app_state["alert_router_url"]:
@@ -209,6 +228,12 @@ async def register_run(registration: LabRunRegistration) -> dict[str, str]:
         "run_id": registration.run_id,
         "scenario_id": registration.scenario_id,
     }
+    # A run is an independent experiment. Reusing sensor-local graph context
+    # would mix earlier scenario flows into the first windows of the new run.
+    app_state.setdefault("buffers", {}).pop(registration.sensor_id, None)
+    app_state.setdefault("flow_runs", defaultdict(dict)).pop(
+        registration.sensor_id, None
+    )
     # Materialize zero-valued metrics so the console can distinguish an active
     # run with no captured flows from an unavailable metrics endpoint.
     app_state["run_metrics"][registration.run_id]
@@ -300,6 +325,23 @@ async def observe(observation: CollectorObservation) -> dict[str, Any]:
         for index in snapshot.emission_indices:
             source_flow = snapshot.flows[index]
             prediction = response["predictions"][index]
+            policy_prediction = prediction
+            if app_state["alert_decision_source"] == "trusted-shadow":
+                policy_prediction = {
+                    **prediction["trusted_prediction"],
+                    "trusted_prediction": prediction["trusted_prediction"],
+                    "fused_predicted_label": prediction["predicted_label"],
+                    "head_disagreement_count": prediction[
+                        "head_disagreement_count"
+                    ],
+                    "alert_decision_source": "trusted-shadow",
+                }
+            else:
+                policy_prediction = {
+                    **prediction,
+                    "fused_predicted_label": prediction["predicted_label"],
+                    "alert_decision_source": "fusion",
+                }
             event = policy.detection_event(
                 sensor_id=snapshot.sensor_id,
                 window_id=snapshot.window_id,
@@ -307,7 +349,7 @@ async def observe(observation: CollectorObservation) -> dict[str, Any]:
                 entity_key=app_state["entity_key"],
                 flow_count=len(snapshot.flows),
                 response=response,
-                prediction=prediction,
+                prediction=policy_prediction,
             )
             try:
                 await asyncio.to_thread(
@@ -373,6 +415,35 @@ async def observe(observation: CollectorObservation) -> dict[str, Any]:
             "model_digest": str(response["model_digest"]),
             "head_digest": str(response["head_digest"]),
             "schema_digest": str(response["schema_digest"]),
+            "decision_mode": str(
+                response.get("decision_mode", "trusted-head-v1")
+            ),
+            "fusion_policy_digest": response.get("fusion_policy_digest"),
+            "alert_decision_source": app_state.get(
+                "alert_decision_source", "fusion"
+            ),
+            "trusted_predicted_class": str(
+                prediction.get("trusted_prediction", {}).get(
+                    "predicted_label", predicted_class
+                )
+            ),
+            "head_disagreement_count": int(
+                prediction.get("head_disagreement_count", 0)
+            ),
+            "head_predictions": {
+                str(head): {
+                    "predicted_label": str(value["predicted_label"]),
+                    "confidence_bucket": (
+                        numeric_bucket(
+                            float(value["confidence"]),
+                            policy.confidence_boundaries,
+                        )
+                        if policy is not None
+                        else "not-configured"
+                    ),
+                }
+                for head, value in prediction.get("head_predictions", {}).items()
+            },
         }
         app_state.setdefault("monitor_events", deque(maxlen=500)).append(monitor_event)
     predicted_counts: dict[str, int] = {}

@@ -5,6 +5,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from src.application.demo_console.app import current_run, state as console_state
+
 from src.application.scenario_runner.catalog import EXPECTED_SCENARIOS, load_catalog
 from src.application.scenario_runner.executor import (
     ScenarioConflictError,
@@ -30,11 +32,13 @@ class DemoConsoleTests(unittest.TestCase):
         self.assertIn('id="alert-banner"', page)
         self.assertIn('id="detection-chart"', page)
         self.assertIn('id="predicted"', page)
+        self.assertIn('id="head-grid"', page)
 
         script = (ROOT / "src/application/demo_console/static/app.js").read_text()
         self.assertIn('event.predicted_class === "Benign"', script)
         self.assertIn("state.chartEvents.slice(-80)", script)
         self.assertIn("event.is_alert", script)
+        self.assertIn("renderHeadDiagnostics", script)
         self.assertNotIn("scenario_id === \"DDoS\"", script)
 
     def test_parameters_are_server_side_bounded(self) -> None:
@@ -120,6 +124,42 @@ class DemoConsoleTests(unittest.TestCase):
                 executor.release()
                 await asyncio.wait_for(called.wait(), timeout=1)
                 await executor.stop()
+
+        asyncio.run(exercise())
+
+    def test_zeek_run_status_never_polls_observed_target(self) -> None:
+        async def exercise() -> None:
+            executor = ScenarioExecutor(
+                catalog=self.catalog,
+                target_url="http://target",
+                scan_urls=[f"http://target:{port}" for port in range(8080, 8086)],
+            )
+            await executor.start(
+                "benign-browsing",
+                {"request_count": 5, "interval_ms": 200},
+                gated=True,
+            )
+            console_state.update(
+                {
+                    "catalog": self.catalog,
+                    "executor": executor,
+                    "observation_mode": "zeek",
+                    "target_status_url": "http://observed-target",
+                    "collector_url": "http://collector",
+                }
+            )
+
+            def fake_get(url):
+                self.assertNotIn("observed-target", url)
+                return {"available": True, "accepted": 0}
+
+            with patch(
+                "src.application.demo_console.app.get_json", side_effect=fake_get
+            ):
+                response = await current_run()
+            self.assertFalse(response["run"]["pipeline"]["delivery"]["available"])
+            await executor.stop()
+            console_state.clear()
 
         asyncio.run(exercise())
 

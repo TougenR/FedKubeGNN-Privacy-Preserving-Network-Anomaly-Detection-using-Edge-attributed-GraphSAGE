@@ -45,10 +45,21 @@ class FlowPrediction(BaseModel):
     confidence: float
     probabilities: dict[str, float]
     entropy: float
+    trusted_prediction: "HeadPrediction"
+    head_predictions: dict[str, "HeadPrediction"]
+    head_disagreement_count: int
+
+
+class HeadPrediction(BaseModel):
+    predicted_label: str
+    confidence: float
+    entropy: float
 
 
 class ProductionInferenceResponse(BaseModel):
     client_id: str
+    decision_mode: str
+    fusion_policy_digest: str
     model_digest: str
     head_digest: str
     schema_digest: str

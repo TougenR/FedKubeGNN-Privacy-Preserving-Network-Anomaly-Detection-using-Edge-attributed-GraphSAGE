@@ -80,6 +80,7 @@ collector:
     allowedLatenessSeconds: null
   alertPolicy:
     enabled: false
+    decisionSource: fusion
     confidenceThreshold: null
     confidenceBoundaries: null
     entropyBoundaries: null

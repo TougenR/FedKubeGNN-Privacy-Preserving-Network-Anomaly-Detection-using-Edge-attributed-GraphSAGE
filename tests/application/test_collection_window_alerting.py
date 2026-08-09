@@ -3,9 +3,11 @@ from __future__ import annotations
 import unittest
 import json
 import asyncio
+import tempfile
 from collections import defaultdict, deque
 from datetime import datetime, timezone
 from io import BytesIO
+from pathlib import Path
 from unittest.mock import patch
 
 import pandas as pd
@@ -22,6 +24,7 @@ from src.application.collection.app import (
     CollectorObservation,
     LabRunRegistration,
     app_state as collector_state,
+    _load_policy,
     observe,
     register_run,
 )
@@ -30,6 +33,7 @@ from src.application.graph_window.buffer import (
     RollingWindowConfig,
 )
 from src.application.graph_window.graph_builder import build_inference_graph
+from src.application.inference.fusion import policy_digest
 
 
 class CollectionWindowAlertingTests(unittest.TestCase):
@@ -105,6 +109,107 @@ class CollectionWindowAlertingTests(unittest.TestCase):
         self.assertNotIn("id.orig_h", monitor_event)
         self.assertNotIn("probabilities", monitor_event)
         self.assertNotIn("ground_truth", monitor_event)
+
+    def test_collector_loads_class_thresholds_from_digest_bound_fusion_policy(self) -> None:
+        document = {
+            "kind": "validation-selected-multi-head-probability-fusion",
+            "class_alert_thresholds": {"C&C": 0.76},
+        }
+        document["policy_digest"] = policy_digest(document)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "fusion.json"
+            path.write_text(json.dumps(document), encoding="utf-8")
+            environment = {
+                "ALERT_POLICY_ENABLED": "true",
+                "FUSION_POLICY_PATH": str(path),
+                "ALERT_CONFIDENCE_THRESHOLD": "0.85",
+                "ALERT_CONFIDENCE_BOUNDARIES": "[0, 0.85, 1]",
+                "ALERT_ENTROPY_BOUNDARIES": "[0, 1, 2]",
+                "ALERT_CLASS_SEVERITY": '{"C&C": "high"}',
+            }
+            with patch.dict("os.environ", environment, clear=True):
+                loaded = _load_policy()
+        self.assertEqual(loaded.class_confidence_thresholds, {"C&C": 0.76})
+
+    def test_shadow_mode_displays_fusion_but_alerts_from_trusted_head(self) -> None:
+        collector_state.update(
+            {
+                "window_config": RollingWindowConfig(
+                    duration_seconds=5,
+                    max_flows=50,
+                    emit_stride_flows=1,
+                    allowed_lateness_seconds=1,
+                ),
+                "buffers": {},
+                "inference_url": "http://inference/predict",
+                "alert_router_url": "http://alert-router/events",
+                "policy": AlertPolicy(
+                    confidence_threshold=0.85,
+                    confidence_boundaries=(0.0, 0.85, 1.0),
+                    entropy_boundaries=(0.0, 1.0, 2.0),
+                    class_severity={"Attack": "low"},
+                ),
+                "alert_decision_source": "trusted-shadow",
+                "entity_key": b"test-key",
+                "inference_latency_ms": [],
+                "observations": 0,
+                "windows": 0,
+                "events": 0,
+            }
+        )
+        observation = CollectorObservation.model_validate(
+            {
+                "sensor_id": "sensor-34-1",
+                "source": "zeek-json-v1",
+                "flow": {
+                    "ts": 1.0,
+                    "uid": "shadow-flow",
+                    "id.orig_h": "10.0.0.1",
+                    "id.orig_p": 12345,
+                    "id.resp_h": "10.0.0.2",
+                    "id.resp_p": 80,
+                    "proto": "tcp",
+                    "conn_state": "SF",
+                },
+            }
+        )
+        indexed = {}
+
+        def fake_post(url, _document):
+            if url == "http://alert-router/events":
+                indexed.update(_document)
+                return {"accepted": True}
+            return {
+                "client_id": "34-1",
+                "decision_mode": "validation-calibrated-multi-head-v1",
+                "fusion_policy_digest": "d" * 64,
+                "model_digest": "a" * 64,
+                "head_digest": "b" * 64,
+                "schema_digest": "c" * 64,
+                "predictions": [
+                    {
+                        "predicted_label": "Attack",
+                        "confidence": 0.99,
+                        "entropy": 0.01,
+                        "trusted_prediction": {
+                            "predicted_label": "Benign",
+                            "confidence": 0.99,
+                            "entropy": 0.01,
+                        },
+                        "head_disagreement_count": 4,
+                        "head_predictions": {},
+                    }
+                ],
+            }
+
+        with patch("src.application.collection.app.post_json", side_effect=fake_post):
+            asyncio.run(observe(observation))
+        monitor = list(collector_state["monitor_events"])[0]
+        self.assertEqual(monitor["predicted_class"], "Attack")
+        self.assertFalse(monitor["is_alert"])
+        self.assertEqual(indexed["predicted_class"], "Benign")
+        self.assertEqual(indexed["fusion_predicted_class"], "Attack")
+        self.assertEqual(indexed["alert_decision_source"], "trusted-shadow")
 
     def test_zeek_flow_is_correlated_to_registered_run_outside_model_payload(self) -> None:
         collector_state.update(
@@ -186,6 +291,45 @@ class CollectionWindowAlertingTests(unittest.TestCase):
         self.assertEqual(metrics["predicted"], 1)
         self.assertNotIn("run_id", captured["request"])
         self.assertNotIn("scenario_id", captured["request"])
+
+    def test_registering_new_run_resets_sensor_graph_context(self) -> None:
+        collector_state.update(
+            {
+                "window_config": RollingWindowConfig(
+                    duration_seconds=60,
+                    max_flows=50,
+                    emit_stride_flows=1,
+                    allowed_lateness_seconds=1,
+                ),
+                "buffers": {
+                    "sensor-34-1": RollingWindowBuffer(
+                        sensor_id="sensor-34-1",
+                        config=RollingWindowConfig(
+                            duration_seconds=60,
+                            max_flows=50,
+                            emit_stride_flows=1,
+                            allowed_lateness_seconds=1,
+                        ),
+                    )
+                },
+                "flow_runs": defaultdict(
+                    dict, {"sensor-34-1": {"old-flow": "old-run"}}
+                ),
+                "run_metrics": defaultdict(dict),
+                "active_runs": {},
+            }
+        )
+        asyncio.run(
+            register_run(
+                LabRunRegistration(
+                    run_id="new-run",
+                    scenario_id="connection-burst",
+                    sensor_id="sensor-34-1",
+                )
+            )
+        )
+        self.assertNotIn("sensor-34-1", collector_state["buffers"])
+        self.assertNotIn("sensor-34-1", collector_state["flow_runs"])
 
     def test_elasticsearch_sink_sends_only_validated_document(self) -> None:
         captured = {}
@@ -344,6 +488,54 @@ class CollectionWindowAlertingTests(unittest.TestCase):
         )
         self.assertTrue(attack.is_alert)
         self.assertEqual(attack.severity, "high")
+
+    def test_policy_uses_validation_selected_threshold_for_fused_class(self) -> None:
+        policy = AlertPolicy(
+            confidence_threshold=0.85,
+            confidence_boundaries=(0.0, 0.5, 0.85, 0.95, 1.0),
+            entropy_boundaries=(0.0, 0.25, 0.5, 1.0),
+            class_severity={"Attack": "low", "C&C": "high"},
+            class_confidence_thresholds={"Attack": 0.96, "C&C": 0.76},
+        )
+        common = {
+            "sensor_id": "sensor-34-1",
+            "window_id": "window-fused",
+            "entity": "private",
+            "entity_key": b"test-key",
+            "flow_count": 10,
+            "response": {
+                "client_id": "34-1",
+                "decision_mode": "validation-calibrated-multi-head-v1",
+                "fusion_policy_digest": "d" * 64,
+                "model_digest": "a" * 64,
+                "head_digest": "b" * 64,
+                "schema_digest": "c" * 64,
+            },
+        }
+        below = policy.detection_event(
+            **common,
+            prediction={
+                "predicted_label": "Attack",
+                "confidence": 0.95,
+                "entropy": 0.1,
+                "trusted_prediction": {"predicted_label": "Benign"},
+                "head_disagreement_count": 2,
+            },
+        )
+        above = policy.detection_event(
+            **common,
+            prediction={
+                "predicted_label": "C&C",
+                "confidence": 0.80,
+                "entropy": 0.1,
+                "trusted_prediction": {"predicted_label": "Benign"},
+                "head_disagreement_count": 3,
+            },
+        )
+        self.assertFalse(below.is_alert)
+        self.assertTrue(above.is_alert)
+        self.assertEqual(above.trusted_predicted_class, "Benign")
+        self.assertEqual(above.head_disagreement_count, 3)
 
 
 if __name__ == "__main__":

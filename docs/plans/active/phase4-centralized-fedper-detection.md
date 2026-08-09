@@ -194,6 +194,17 @@ Out of scope:
   periodic beacon-like traffic. The console documents all seven model output
   classes but does not claim that a synthetic pattern is equivalent to an
   IoT-23 malware label.
+- 2026-08-09: The user approved a validation-calibrated multi-head serving
+  extension after live diagnosis proved that GKE routes every demo flow from
+  `sensor-34-1` only to head `34-1`. Production will encode each graph once,
+  evaluate all six exact heads, retain the trusted-route result for
+  explainability, and use only a validation-selected fusion policy for the
+  primary detection decision. An `any-head` rule is explicitly forbidden:
+  head `3-1` classified the known benign baseline as `Attack` above the current
+  alert threshold. The policy must be selected on validation, locked before a
+  single test evaluation, expose per-head disagreement without raw feature or
+  probability data in Elasticsearch, and fail readiness when its provenance or
+  head set does not match the serving bundle.
 
 ## Validation
 
@@ -567,6 +578,57 @@ Vietnamese chart-monitor GKE evidence on 2026-08-09:
   synthetic scenario names into the live monitor.
 - Operator-only port forwards are active at `127.0.0.1:18080` for the console
   and `https://127.0.0.1:15601` for Kibana. Kibana reports `available`.
+
+Multi-head fusion checkpoint on 2026-08-09:
+
+- Live diagnosis confirmed the production endpoint encoded a graph and invoked
+  only trusted head `34-1`; the existing all-head runtime path was restricted to
+  evaluation. The same 50-flow connection-burst window produced `Attack` from
+  heads `3-1` and `39-1`, while the other four heads returned `Benign`. Head
+  `3-1` also returned `Attack` above threshold for a known benign baseline, so
+  `any-head` alerting was rejected with direct evidence.
+- The new API encodes once, invokes all six exact heads, emits a primary fused
+  decision plus trusted-head and per-head diagnostics, and fails readiness when
+  the policy does not match the bundle/model/dataset/protocol/head digests or
+  validation provenance. The collector stores only trusted label,
+  disagreement count, decision mode, and policy digest in Elasticsearch; head
+  probability vectors remain excluded.
+- A first class-F1 weighted candidate was rejected before test/deployment
+  because validation fixed-7 macro-F1 was only `0.759394`, below the existing
+  trusted rolling result `0.895024`. A temporally separated validation stacking
+  selector trained on the first 70% of each client and selected on the final
+  30%; `logistic-log-probability-balanced-c10` achieved validation macro-F1
+  `0.943932`, accuracy `0.944033`, and zero benign alerts in 967 selection
+  examples. Validation report SHA-256 is
+  `21c551a1d99b183e6ad24765b8df7c3107524b3ae0400539514842f85e281b4b`;
+  locked policy digest is
+  `0beef419f9cb7da3239ec43d12cdce174ddf37e1597bbee4c22c7979d292b951`.
+- The policy was frozen before one locked test execution. Test macro-F1 is
+  `0.938705`, accuracy `0.941692`, and weighted-F1 `0.944668`, showing the
+  classification fusion generalized. Alert calibration did not pass its gate:
+  benign false-alert rate rose to `0.010007` (73/7,295), above the retained
+  `0.001` limit, despite malicious alert recall `0.920680`. Therefore no GKE
+  rollout or GitOps environment image update was performed from this checkpoint.
+- The validation-only seven-case smoke shows five of six attack classes
+  correctly under fusion; PortScan and the known erroneous Benign fixture both
+  collapse to the same `C&C` result and confidence. This remains evidence that
+  scenario/feature fidelity cannot be repaired by choosing a head or by an
+  ensemble alone.
+- Zeek-mode console status no longer polls the observed target, and registering
+  a new lab run resets that sensor's graph buffer and flow correlation map.
+  This removes management-traffic capture and cross-run window contamination
+  before the next live calibration.
+- Because the locked fusion threshold exceeded the false-alert gate, the GKE
+  values select `trusted-shadow`: fusion remains the UI/diagnostic decision,
+  while policy alerts continue to use trusted head `34-1`. Elasticsearch
+  records both labels and the decision source without probabilities. Promotion
+  to fusion alerts remains gated on deployment-domain benign calibration.
+- Focused application validation passes 43 tests, Ruff, JavaScript syntax,
+  Helm lint/template, JSON validation, `git diff --check`, real-bundle API
+  readiness, and a built-image smoke. The dependency-complete repository image
+  was not used for the broad test command; the application image's broad run
+  retained only the known missing matplotlib/private Phase 1 fixture failures
+  outside this change, plus 7 optional-Flower skips.
 
 ## Result
 

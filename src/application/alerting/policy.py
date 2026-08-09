@@ -19,10 +19,21 @@ class AlertPolicy:
     confidence_boundaries: tuple[float, ...]
     entropy_boundaries: tuple[float, ...]
     class_severity: Mapping[str, str]
+    class_confidence_thresholds: Mapping[str, float] | None = None
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.confidence_threshold <= 1.0:
             raise ValueError("confidence_threshold must be in [0, 1].")
+        if self.class_confidence_thresholds is not None:
+            if set(self.class_confidence_thresholds) != set(self.class_severity):
+                raise ValueError(
+                    "class_confidence_thresholds must cover selected attack classes."
+                )
+            if any(
+                not 0.0 <= float(value) <= 1.0
+                for value in self.class_confidence_thresholds.values()
+            ):
+                raise ValueError("Class confidence thresholds must be in [0, 1].")
         numeric_bucket(0.0, self.confidence_boundaries)
         numeric_bucket(0.0, self.entropy_boundaries)
         if "Benign" in self.class_severity:
@@ -44,9 +55,15 @@ class AlertPolicy:
         predicted_class = str(prediction["predicted_label"])
         confidence = float(prediction["confidence"])
         configured_severity = self.class_severity.get(predicted_class)
+        selected_threshold = (
+            float(self.class_confidence_thresholds[predicted_class])
+            if self.class_confidence_thresholds is not None
+            and predicted_class in self.class_confidence_thresholds
+            else self.confidence_threshold
+        )
         is_alert = (
             predicted_class != "Benign"
-            and confidence >= self.confidence_threshold
+            and confidence >= selected_threshold
             and configured_severity is not None
         )
         return DetectionEvent(
@@ -71,6 +88,22 @@ class AlertPolicy:
                 "model_digest": str(response["model_digest"]),
                 "head_digest": str(response["head_digest"]),
                 "schema_digest": str(response["schema_digest"]),
+                "decision_mode": str(
+                    response.get("decision_mode", "trusted-head-v1")
+                ),
+                "fusion_policy_digest": response.get("fusion_policy_digest"),
+                "trusted_predicted_class": prediction.get(
+                    "trusted_prediction", {}
+                ).get("predicted_label"),
+                "head_disagreement_count": int(
+                    prediction.get("head_disagreement_count", 0)
+                ),
+                "fusion_predicted_class": prediction.get(
+                    "fused_predicted_label", predicted_class
+                ),
+                "alert_decision_source": str(
+                    prediction.get("alert_decision_source", "fusion")
+                ),
             }
         )
 

@@ -31,6 +31,7 @@ spec:
           env:
             - {name: MODEL_BUNDLE_PATH, value: {{ .Values.modelBundle.mountPath | quote }}}
             - {name: INFERENCE_DEVICE, value: {{ .Values.inference.device | quote }}}
+            - {name: FUSION_POLICY_PATH, value: /app/configs/application/multi-head-fusion-policy.json}
           ports: [{name: http, containerPort: 8000}]
           readinessProbe:
             httpGet: {path: /health/ready, port: http}

@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import torch
 
 from src.application.inference.bundle_loader import FedPerServingBundle
+
+if TYPE_CHECKING:
+    from src.application.inference.fusion import FusedPrediction, MultiHeadFusionPolicy
 
 
 @dataclass(frozen=True)
@@ -16,6 +20,13 @@ class RoutedPrediction:
     predicted_indices: torch.Tensor
     confidence: torch.Tensor
     entropy: torch.Tensor
+
+
+@dataclass(frozen=True)
+class MultiHeadPrediction:
+    trusted: RoutedPrediction
+    heads: dict[str, RoutedPrediction]
+    fused: "FusedPrediction"
 
 
 class CentralizedFedPerRuntime:
@@ -71,3 +82,14 @@ class CentralizedFedPerRuntime:
                     entropy=entropy.cpu(),
                 )
         return results
+
+    def predict_graph_with_fusion(
+        self, *, sensor_id: str, graph, policy: "MultiHeadFusionPolicy"
+    ) -> MultiHeadPrediction:
+        client_id = self.bundle.router.route(sensor_id)
+        predictions = self.predict_graph_all_heads(graph)
+        return MultiHeadPrediction(
+            trusted=predictions[client_id],
+            heads=predictions,
+            fused=policy.fuse(predictions),
+        )

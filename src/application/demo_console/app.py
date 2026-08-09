@@ -187,10 +187,21 @@ async def current_run() -> dict[str, Any]:
         except ServiceRequestError:
             return {"available": False}
 
-    delivery, collector = await asyncio.gather(
-        optional_metrics(f"{state['target_status_url']}/observations/runs/{record.run_id}"),
-        optional_metrics(f"{state['collector_url']}/runs/{record.run_id}/metrics"),
-    )
+    if state["observation_mode"] == "zeek":
+        # Querying the observed target for adapter counters would itself become
+        # a captured HTTP flow. Zeek bypasses that adapter, so the value is both
+        # inapplicable and harmful to the experiment.
+        delivery = {"available": False}
+        collector = await optional_metrics(
+            f"{state['collector_url']}/runs/{record.run_id}/metrics"
+        )
+    else:
+        delivery, collector = await asyncio.gather(
+            optional_metrics(
+                f"{state['target_status_url']}/observations/runs/{record.run_id}"
+            ),
+            optional_metrics(f"{state['collector_url']}/runs/{record.run_id}/metrics"),
+        )
     public["pipeline"] = {"delivery": delivery, "collector": collector}
     return {"run": public}
 

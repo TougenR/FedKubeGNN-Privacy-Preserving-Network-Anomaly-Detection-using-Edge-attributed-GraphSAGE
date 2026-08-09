@@ -254,9 +254,30 @@ function eventNode(event) {
   const main = document.createElement("div"); main.className = "event-main";
   const label = document.createElement("strong"); label.textContent = displayClass(event.predicted_class);
   const policyState = event.is_alert ? `cảnh báo ${event.severity}` : (event.predicted_class === "Benign" ? "không cảnh báo" : "dưới ngưỡng chính sách");
-  const detail = document.createElement("small"); detail.textContent = `${event.sensor_id} → đầu ${event.client_id} · ${policyState}`; main.append(label, detail);
+  const detail = document.createElement("small"); detail.textContent = `Fusion 6 head · trusted ${event.client_id}: ${displayClass(event.trusted_predicted_class || event.predicted_class)} · ${policyState}`; main.append(label, detail);
   const meta = document.createElement("div"); meta.className = "event-meta"; meta.textContent = `${event.confidence_bucket}\n${event.inference_latency_ms} mili giây`;
   row.append(mark, main, meta); return row;
+}
+
+function renderHeadDiagnostics(event) {
+  const entries = Object.entries(event?.head_predictions || {});
+  if (!entries.length) {
+    $("head-disagreement").textContent = "Chưa có dữ liệu";
+    $("head-grid").innerHTML = '<div class="empty-event">Đang chờ dự đoán từ cả sáu head.</div>';
+    return;
+  }
+  $("head-disagreement").textContent = `${event.head_disagreement_count}/6 head khác quyết định fusion`;
+  $("head-grid").replaceChildren(...entries.map(([head, prediction]) => {
+    const card = document.createElement("article");
+    const isTrusted = head === event.client_id;
+    const agrees = prediction.predicted_label === event.predicted_class;
+    card.className = `head-card${isTrusted ? " trusted" : ""}${agrees ? " agrees" : " disagrees"}`;
+    const name = document.createElement("small"); name.textContent = `HEAD ${head}${isTrusted ? " · TRUSTED" : ""}`;
+    const label = document.createElement("strong"); label.textContent = displayClass(prediction.predicted_label);
+    const confidence = document.createElement("span"); confidence.textContent = `Tin cậy ${prediction.confidence_bucket}`;
+    card.append(name, label, confidence);
+    return card;
+  }));
 }
 
 async function pollMonitor() {
@@ -271,6 +292,7 @@ async function pollMonitor() {
       const latest = state.events[0];
       $("prediction-focus").querySelector("strong").textContent = displayClass(latest.predicted_class);
       $("prediction-focus").querySelector("span").textContent = `${latest.sensor_id} → đầu FedPer ${latest.client_id} · độ tin cậy ${latest.confidence_bucket} · entropy ${latest.entropy_bucket}`;
+      renderHeadDiagnostics(latest);
       renderChart();
     }
     const metrics = body.metrics; $("metric-windows").textContent = metrics.windows; $("metric-alerts").textContent = metrics.events;
@@ -286,6 +308,7 @@ function clearMonitor() {
   $("event-list").innerHTML = '<div class="empty-event">Đã xóa màn hình; con trỏ dữ liệu vẫn được giữ.</div>';
   $("prediction-focus").querySelector("strong").textContent = "Đang chờ flow…";
   $("prediction-focus").querySelector("span").textContent = "Kịch bản lưu lượng và dự đoán của model là hai thông tin độc lập.";
+  renderHeadDiagnostics(null);
   renderChart();
 }
 

@@ -76,3 +76,6 @@
 {{- if and .Values.collector.alertPolicy.enabled (not .Values.collector.alertPolicy.entityHashSecretName) }}
 {{- fail "collector alert policy requires an entity hash secret" }}
 {{- end }}
+{{- if not (has .Values.collector.alertPolicy.decisionSource (list "fusion" "trusted-shadow")) }}
+{{- fail "collector.alertPolicy.decisionSource must be fusion or trusted-shadow" }}
+{{- end }}

@@ -55,6 +55,7 @@ collector:
     allowedLatenessSeconds: 1
   alertPolicy:
     enabled: true
+    decisionSource: trusted-shadow
     confidenceThreshold: 0.85
     confidenceBoundaries: [0.0, 0.5, 0.7, 0.85, 0.95, 1.0]
     entropyBoundaries: [0.0, 0.25, 0.5, 1.0, 2.0]
@@ -94,7 +95,7 @@ elasticStack:
   version: 9.2.3
   kibanaCount: 1
   kibanaNodeOptions: --max-old-space-size=512
-  bootstrapRevision: v4-dashboard
+  bootstrapRevision: v5-fusion
   storageClassName: standard-rwo
   storageSize: 10Gi
   elasticsearchResources:

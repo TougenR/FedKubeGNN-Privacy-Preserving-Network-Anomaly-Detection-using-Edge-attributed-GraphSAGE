@@ -27,10 +27,26 @@ class DetectionEvent(BaseModel):
     model_digest: str
     head_digest: str
     schema_digest: str
+    decision_mode: str = "trusted-head-v1"
+    fusion_policy_digest: str | None = None
+    trusted_predicted_class: str | None = None
+    head_disagreement_count: int = Field(default=0, ge=0, le=6)
+    fusion_predicted_class: str | None = None
+    alert_decision_source: str = Field(
+        default="fusion", pattern=r"^(fusion|trusted-shadow)$"
+    )
 
-    @field_validator("entity_hash", "model_digest", "head_digest", "schema_digest")
+    @field_validator(
+        "entity_hash",
+        "model_digest",
+        "head_digest",
+        "schema_digest",
+        "fusion_policy_digest",
+    )
     @classmethod
-    def validate_digest(cls, value: str) -> str:
+    def validate_digest(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
         if len(value) != 64 or any(character not in "0123456789abcdef" for character in value):
             raise ValueError("Digest fields must be lowercase SHA-256 hex.")
         return value

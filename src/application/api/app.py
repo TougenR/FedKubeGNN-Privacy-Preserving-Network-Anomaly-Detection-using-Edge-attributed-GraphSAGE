@@ -23,6 +23,7 @@ from src.application.inference.bundle_loader import (
     InferenceBundleError,
     load_inference_bundle,
 )
+from src.application.inference.fusion import FusionPolicyError, load_fusion_policy
 from src.application.inference.router import TrustedRoutingError
 from src.application.inference.runtime import CentralizedFedPerRuntime
 
@@ -46,7 +47,17 @@ async def lifespan(_: FastAPI):
             )
             app_state["bundle"] = bundle
             app_state["runtime"] = CentralizedFedPerRuntime(bundle)
-        except (InferenceBundleError, KeyError, OSError, ValueError) as exc:
+            policy_path = os.environ.get("FUSION_POLICY_PATH")
+            if not policy_path:
+                raise FusionPolicyError("FUSION_POLICY_PATH is required.")
+            app_state["fusion_policy"] = load_fusion_policy(policy_path, bundle)
+        except (
+            FusionPolicyError,
+            InferenceBundleError,
+            KeyError,
+            OSError,
+            ValueError,
+        ) as exc:
             app_state["load_error"] = str(exc)
             logger.error("Detection runtime is not ready: %s", exc)
     yield
@@ -86,6 +97,8 @@ async def health_ready() -> dict[str, Any]:
         "feature_schema_digest": bundle.manifest["feature_schema_digest"],
         "label_schema_digest": bundle.manifest["label_schema_digest"],
         "clients": sorted(bundle.heads),
+        "decision_mode": "validation-calibrated-multi-head-v1",
+        "fusion_policy_digest": app_state["fusion_policy"].policy_digest,
     }
 
 
@@ -102,7 +115,11 @@ async def predict(request: ProductionInferenceRequest) -> ProductionInferenceRes
             bundle.preprocessor.feature_columns,
             sensor_id=request.sensor_id,
         )
-        result = runtime.predict_graph(sensor_id=request.sensor_id, graph=graph)
+        result = runtime.predict_graph_with_fusion(
+            sensor_id=request.sensor_id,
+            graph=graph,
+            policy=app_state["fusion_policy"],
+        )
     except TrustedRoutingError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except (KeyError, RuntimeError, ValueError) as exc:
@@ -111,7 +128,7 @@ async def predict(request: ProductionInferenceRequest) -> ProductionInferenceRes
     labels = bundle.idx_to_class
     predictions: list[FlowPrediction] = []
     for index, flow in enumerate(request.flows):
-        probabilities = result.probabilities[index]
+        probabilities = result.fused.probabilities[index]
         flow_id = (
             flow.uid
             if flow.uid and flow.uid != "-"
@@ -120,22 +137,45 @@ async def predict(request: ProductionInferenceRequest) -> ProductionInferenceRes
                 f"->{flow.id_resp_h}:{flow.id_resp_p}"
             )
         )
+        head_predictions = {
+            client_id: {
+                "predicted_label": labels[int(head.predicted_indices[index])],
+                "confidence": float(head.confidence[index]),
+                "entropy": float(head.entropy[index]),
+            }
+            for client_id, head in result.heads.items()
+        }
+        fused_label = labels[int(result.fused.predicted_indices[index])]
         predictions.append(
             FlowPrediction(
                 flow_id=flow_id,
-                predicted_label=labels[int(result.predicted_indices[index])],
-                confidence=float(result.confidence[index]),
-                entropy=float(result.entropy[index]),
+                predicted_label=fused_label,
+                confidence=float(result.fused.confidence[index]),
+                entropy=float(result.fused.entropy[index]),
                 probabilities={
                     labels[class_index]: float(probabilities[class_index])
                     for class_index in range(len(labels))
                 },
+                trusted_prediction={
+                    "predicted_label": labels[
+                        int(result.trusted.predicted_indices[index])
+                    ],
+                    "confidence": float(result.trusted.confidence[index]),
+                    "entropy": float(result.trusted.entropy[index]),
+                },
+                head_predictions=head_predictions,
+                head_disagreement_count=sum(
+                    item["predicted_label"] != fused_label
+                    for item in head_predictions.values()
+                ),
             )
         )
     return ProductionInferenceResponse(
-        client_id=result.client_id,
+        client_id=result.trusted.client_id,
+        decision_mode="validation-calibrated-multi-head-v1",
+        fusion_policy_digest=app_state["fusion_policy"].policy_digest,
         model_digest=bundle.manifest["model_digest"],
-        head_digest=bundle.manifest["head_digests"][result.client_id],
+        head_digest=bundle.manifest["head_digests"][result.trusted.client_id],
         schema_digest=bundle.manifest["feature_schema_digest"],
         graph_protocol=bundle.manifest["graph_protocol"],
         predictions=predictions,
