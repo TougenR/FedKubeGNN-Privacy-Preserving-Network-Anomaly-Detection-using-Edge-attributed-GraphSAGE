@@ -25,8 +25,8 @@ demoTarget:
 zeek:
   enabled: true
   # Capture both directions of pod-originated demo connections while excluding
-  # kubelet probes sourced from the node subnet.
-  captureFilter: tcp and ((src net 10.40.0.0/14 and dst port 8080) or (dst net 10.40.0.0/14 and src port 8080))
+  # kubelet probes SNATed through the first reserved Pod-range address.
+  captureFilter: tcp and not host 10.40.0.1 and ((src net 10.40.0.0/14 and dst port 8080) or (dst net 10.40.0.0/14 and src port 8080))
   sensorId: sensor-34-1
   resources:
     requests: {cpu: 5m, memory: 256Mi}
