@@ -690,6 +690,31 @@ Compact class-first console approved on 2026-08-09:
   block, and unbounded timeline from the primary screen without removing their
   backend APIs.
 
+Compact console GKE evidence on 2026-08-09:
+
+- Commit `d39f85009c903ed8f0fe0213ce3fb30d88f16008` passes the six focused
+  console tests, JavaScript syntax, Ruff, DOM-reference audit, Helm
+  lint/template, and `git diff --check`. GitHub Actions run `31324040264`
+  passed Python, security, and infrastructure.
+- Jenkins build 73 honored the application-only gate, passed image import and
+  CRITICAL vulnerability checks, and pushed immutable digest
+  `sha256:ea609a38979a9f7052f96d61ea3d636053ab90d44834036908d3dd20ee73c505`.
+  Its GitOps environment commit is
+  `b0f609afd690a58406bc2016a433782afcd9d680`.
+- Argo CD alone synchronized that revision and reports `Synced/Healthy`. All
+  application pods are ready with zero restarts. Deployed HTML contains the
+  compact selector, SVG attack chart, and six-head panel; deployed JavaScript
+  binds button names directly to `expected_class`; deployed CSS constrains the
+  normal desktop layout to `100dvh` with page overflow disabled while retaining
+  a small-screen scrolling fallback.
+- The deployed catalog returns the seven exact labels in training order. All
+  seven selector actions reached production inference with
+  `request_contains_ground_truth=false`. Five attack fixtures were correct:
+  `Attack` (`0.999671`), `C&C` (`0.937061`), `C&C-HeartBeat` (`0.988157`),
+  `DDoS` (`0.999932`), and `Okiru` (`0.994773`). The fixed `Benign` and
+  `PartOfAHorizontalPortScan` fixtures both predicted `C&C` at `0.538746` and
+  remain visible as errors rather than being relabeled for the demo.
+
 ## Result
 
 Scientific evaluation, serving-bundle promotion, locked test execution, the
