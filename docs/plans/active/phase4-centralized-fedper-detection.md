@@ -469,6 +469,39 @@ Observed diagnosis before remediation:
   overstates end-to-end prediction coverage and must be split into stage-level
   counters.
 
+Live remediation evidence on 2026-08-09:
+
+- The dependency-complete application image passes 36/36 application tests;
+  nullable production values recreate train-time missing flags, bounded
+  delivery retries are counted, registered Zeek runs remain outside the model
+  payload, and the Zeek tailer reopens rotated/truncated `conn.log` files.
+  Ruff, compile, JavaScript syntax, Helm lint/template, server-side GKE dry-run,
+  and `git diff --check` pass. GitHub Actions run `31303189781` passed all three
+  jobs; its Python job passed the full 140-test repository boundary.
+- Jenkins builds 59 and 61 succeeded. The final application image is immutable
+  digest `sha256:df0d4f0173ed4bdde6b489f8a22573302c2d746464705678fcaf1763b1458582`
+  and release ID `96a84f4e9763e707d7a57de46e293ab0e417f0a1`.
+- Argo CD alone synchronized the GKE stack at revision
+  `9aaa5700c79958da39311bc73e654ca90cf985e4`; status is `Synced/Healthy` and
+  every application Deployment is 1/1 ready. The target pod has target, pinned
+  Zeek 8.0.9, and shipper containers at 3/3 ready with zero restarts.
+- Real Zeek capture emits `http/SF/ShADadFf` records with measured duration,
+  bytes, and packet counts. The capture filter excludes GKE health probes
+  SNATed through `10.40.0.1`: a final five-request run produced exactly five
+  Zeek records, five collector accepts, and five predictions with zero late
+  drops, inference failures, alert-sink failures, or duplicates.
+- All seven validation-only replay cases passed the production request
+  contract with `request_contains_ground_truth=false`. Six fixed cases were
+  classified correctly (Attack, C&C, C&C-HeartBeat, DDoS, Okiru, PortScan).
+  The fixed Benign case was classified as PortScan at confidence `0.548787` and
+  remains visible as a truthful error rather than being replaced post hoc.
+- The final synthetic HTTP run still predicts Benign on trusted route
+  `sensor-34-1 -> head 34-1`. Together with successful non-Benign replay, this
+  confirms the inference/runtime path is functioning and that the live result
+  is a domain/feature mismatch, not evidence that the endpoint always returns a
+  hard-coded Benign class. Alert threshold `0.85` and trusted routing were not
+  changed.
+
 ## Result
 
 Scientific evaluation, serving-bundle promotion, locked test execution, the
