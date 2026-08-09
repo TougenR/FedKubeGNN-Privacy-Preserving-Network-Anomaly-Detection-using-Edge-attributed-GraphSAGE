@@ -55,6 +55,14 @@
               <div><small>Succeeded</small><strong id="succeeded">0</strong></div>
               <div><small>Failed</small><strong id="failed">0</strong></div>
             </div>
+            <div class="pipeline-stats">
+              <div><small id="queued-label">Adapter queued</small><strong id="queued">0</strong></div>
+              <div><small id="delivered-label">Adapter delivered</small><strong id="delivered">0</strong></div>
+              <div><small>Collector accepted</small><strong id="collected">0</strong></div>
+              <div><small>Predicted</small><strong id="predicted">0</strong></div>
+              <div><small>Late drop</small><strong id="run-late-dropped">0</strong></div>
+              <div><small>Delivery fail</small><strong id="delivery-failed">0</strong></div>
+            </div>
             <code id="run-id">Chưa có run</code>
           </div>
         </section>
@@ -80,8 +88,15 @@
         </section>
       </div>
 
+      <section class="replay-panel panel">
+        <div class="section-heading"><div><span class="step">04</span><h2>Scientific Replay</h2></div><span class="pill">Validation only</span></div>
+        <p id="replay-disclaimer" class="replay-disclaimer">Đang tải validation replay contract…</p>
+        <div id="replay-cases" class="replay-cases"></div>
+        <div id="replay-result" class="replay-result empty-state">Chọn một lớp để chạy qua production inference boundary.</div>
+      </section>
+
       <section class="classes-panel panel">
-        <div class="section-heading"><div><span class="step">04</span><h2>Bảy lớp đầu ra của model</h2></div><span class="pill muted">Không phải scenario mapping</span></div>
+        <div class="section-heading"><div><span class="step">05</span><h2>Bảy lớp đầu ra của model</h2></div><span class="pill muted">Không phải scenario mapping</span></div>
         <div id="class-list" class="class-list"></div>
       </section>
     </main>

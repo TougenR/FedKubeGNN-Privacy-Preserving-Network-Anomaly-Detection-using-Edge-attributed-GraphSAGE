@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 import json
 import asyncio
+from collections import defaultdict, deque
 from datetime import datetime, timezone
 from io import BytesIO
 from unittest.mock import patch
@@ -19,8 +20,10 @@ from src.application.alerting.elasticsearch import (
 from src.application.collection.zeek_reader import ZeekRecordError, parse_zeek_json
 from src.application.collection.app import (
     CollectorObservation,
+    LabRunRegistration,
     app_state as collector_state,
     observe,
+    register_run,
 )
 from src.application.graph_window.buffer import (
     RollingWindowBuffer,
@@ -102,6 +105,87 @@ class CollectionWindowAlertingTests(unittest.TestCase):
         self.assertNotIn("id.orig_h", monitor_event)
         self.assertNotIn("probabilities", monitor_event)
         self.assertNotIn("ground_truth", monitor_event)
+
+    def test_zeek_flow_is_correlated_to_registered_run_outside_model_payload(self) -> None:
+        collector_state.update(
+            {
+                "window_config": RollingWindowConfig(
+                    duration_seconds=5,
+                    max_flows=50,
+                    emit_stride_flows=1,
+                    allowed_lateness_seconds=1,
+                ),
+                "buffers": {},
+                "inference_url": "http://inference/predict",
+                "alert_router_url": None,
+                "policy": None,
+                "inference_latency_ms": [],
+                "observations": 0,
+                "windows": 0,
+                "events": 0,
+                "run_metrics": defaultdict(
+                    lambda: {
+                        "received": 0,
+                        "accepted": 0,
+                        "predicted": 0,
+                        "late_dropped": 0,
+                        "inference_failures": 0,
+                        "alert_sink_failures": 0,
+                        "duplicates": 0,
+                    }
+                ),
+                "flow_runs": defaultdict(dict),
+                "completed_uids": deque(maxlen=5000),
+                "active_runs": {},
+            }
+        )
+        registration = LabRunRegistration(
+            run_id="demo-correlation",
+            scenario_id="request-flood",
+            sensor_id="sensor-34-1",
+        )
+        asyncio.run(register_run(registration))
+        observation = CollectorObservation.model_validate(
+            {
+                "sensor_id": "sensor-34-1",
+                "source": "zeek-json-v1",
+                "flow": {
+                    "ts": 1.0,
+                    "uid": "zeek-flow-1",
+                    "id.orig_h": "10.0.0.1",
+                    "id.orig_p": 12345,
+                    "id.resp_h": "10.0.0.2",
+                    "id.resp_p": 8080,
+                    "proto": "tcp",
+                    "conn_state": "SF",
+                },
+            }
+        )
+        captured: dict[str, object] = {}
+
+        def fake_post(_url, document):
+            captured["request"] = document
+            return {
+                "client_id": "34-1",
+                "model_digest": "a" * 64,
+                "head_digest": "b" * 64,
+                "schema_digest": "c" * 64,
+                "predictions": [
+                    {
+                        "predicted_label": "Benign",
+                        "confidence": 0.99,
+                        "entropy": 0.01,
+                    }
+                ],
+            }
+
+        with patch("src.application.collection.app.post_json", side_effect=fake_post):
+            asyncio.run(observe(observation))
+        metrics = collector_state["run_metrics"]["demo-correlation"]
+        self.assertEqual(metrics["received"], 1)
+        self.assertEqual(metrics["predicted"], 1)
+        self.assertNotIn("run_id", captured["request"])
+        self.assertNotIn("scenario_id", captured["request"])
 
     def test_elasticsearch_sink_sends_only_validated_document(self) -> None:
         captured = {}

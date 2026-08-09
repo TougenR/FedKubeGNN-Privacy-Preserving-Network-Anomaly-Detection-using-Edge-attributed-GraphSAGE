@@ -23,6 +23,11 @@ class DemoConsoleTests(unittest.TestCase):
         self.assertEqual({item.id for item in self.catalog.scenarios}, EXPECTED_SCENARIOS)
         self.assertEqual(len(self.catalog.model_classes), 7)
         self.assertEqual(self.catalog.sensor_id, "sensor-34-1")
+        replay = (ROOT / "configs/application/scientific-replay.json").read_text()
+        self.assertIn('"selection_split": "validation"', replay)
+        page = (ROOT / "src/application/demo_console/static/index.html").read_text()
+        self.assertIn("Scientific Replay", page)
+        self.assertIn('id="predicted"', page)
 
     def test_parameters_are_server_side_bounded(self) -> None:
         flood = self.catalog.scenario("request-flood")
@@ -80,6 +85,32 @@ class DemoConsoleTests(unittest.TestCase):
                         {"request_count": 5, "interval_ms": 200},
                     )
                 gate.set()
+                await executor.stop()
+
+        asyncio.run(exercise())
+
+    def test_gated_run_does_not_emit_traffic_before_registration(self) -> None:
+        async def exercise() -> None:
+            executor = ScenarioExecutor(
+                catalog=self.catalog,
+                target_url="http://target",
+                scan_urls=[f"http://target:{port}" for port in range(8080, 8086)],
+            )
+            called = asyncio.Event()
+
+            async def tracked_request(*_args, **_kwargs):
+                called.set()
+
+            with patch.object(executor, "_request", side_effect=tracked_request):
+                await executor.start(
+                    "benign-browsing",
+                    {"request_count": 5, "interval_ms": 200},
+                    gated=True,
+                )
+                await asyncio.sleep(0)
+                self.assertFalse(called.is_set())
+                executor.release()
+                await asyncio.wait_for(called.wait(), timeout=1)
                 await executor.stop()
 
         asyncio.run(exercise())

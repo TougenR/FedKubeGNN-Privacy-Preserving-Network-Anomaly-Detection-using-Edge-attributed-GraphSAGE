@@ -16,18 +16,18 @@ class ProductionFlow(BaseModel):
     id_resp_p: int = Field(alias="id.resp_p")
     proto: str
     service: str = "-"
-    duration: float = 0.0
-    orig_bytes: float = 0.0
-    resp_bytes: float = 0.0
+    duration: float | None = None
+    orig_bytes: float | None = None
+    resp_bytes: float | None = None
     conn_state: str
     local_orig: str = "-"
     local_resp: str = "-"
-    missed_bytes: float = 0.0
+    missed_bytes: float | None = None
     history: str = "-"
-    orig_pkts: float = 0.0
-    orig_ip_bytes: float = 0.0
-    resp_pkts: float = 0.0
-    resp_ip_bytes: float = 0.0
+    orig_pkts: float | None = None
+    orig_ip_bytes: float | None = None
+    resp_pkts: float | None = None
+    resp_ip_bytes: float | None = None
     tunnel_parents: str = "-"
 
 

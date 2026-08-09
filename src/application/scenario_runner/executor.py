@@ -51,8 +51,13 @@ class RunRecord:
         return asdict(self)
 
 
-def _bounded_get(url: str, timeout_seconds: float) -> bool:
-    request = Request(url, headers={"User-Agent": "FedKube-Lab-Runner/1"})
+def _bounded_get(
+    url: str, timeout_seconds: float, *, headers: dict[str, str] | None = None
+) -> bool:
+    request = Request(
+        url,
+        headers={"User-Agent": "FedKube-Lab-Runner/1", **(headers or {})},
+    )
     try:
         with urlopen(request, timeout=timeout_seconds) as response:
             response.read(1024)
@@ -80,14 +85,25 @@ class ScenarioExecutor:
         self._task: asyncio.Task[None] | None = None
         self._cancel = asyncio.Event()
         self._lock = asyncio.Lock()
+        self._start_gate = asyncio.Event()
+        self._start_gate.set()
 
-    async def start(self, scenario_id: str, raw_parameters: dict[str, Any]) -> RunRecord:
+    async def start(
+        self,
+        scenario_id: str,
+        raw_parameters: dict[str, Any],
+        *,
+        gated: bool = False,
+    ) -> RunRecord:
         scenario = self.catalog.scenario(scenario_id)
         parameters = scenario.validate_parameters(raw_parameters)
         async with self._lock:
             if self._task is not None and not self._task.done():
                 raise ScenarioConflictError("another lab scenario is already running")
             self._cancel = asyncio.Event()
+            self._start_gate = asyncio.Event()
+            if not gated:
+                self._start_gate.set()
             self._record = RunRecord(
                 run_id=f"demo-{uuid.uuid4().hex[:12]}",
                 scenario_id=scenario_id,
@@ -96,11 +112,16 @@ class ScenarioExecutor:
                 status="running",
                 started_at=time.time(),
             )
-            self._task = asyncio.create_task(self._execute(self._record))
+            self._task = asyncio.create_task(self._execute_after_gate(self._record))
             return self._record
+
+    def release(self) -> None:
+        """Release a gated run after collector correlation is registered."""
+        self._start_gate.set()
 
     async def stop(self) -> RunRecord | None:
         self._cancel.set()
+        self._start_gate.set()
         if self._task is not None and not self._task.done():
             await self._task
         return self._record
@@ -112,7 +133,15 @@ class ScenarioExecutor:
         if self._record is None or self._cancel.is_set():
             return
         self._record.attempted += 1
-        ok = await asyncio.to_thread(_bounded_get, url, timeout)
+        ok = await asyncio.to_thread(
+            _bounded_get,
+            url,
+            timeout,
+            headers={
+                "X-FedKube-Demo-Run": self._record.run_id,
+                "X-FedKube-Demo-Scenario": self._record.scenario_id,
+            },
+        )
         if ok:
             self._record.succeeded += 1
         else:
@@ -174,6 +203,10 @@ class ScenarioExecutor:
             record.error = type(exc).__name__
         finally:
             record.finished_at = time.time()
+
+    async def _execute_after_gate(self, record: RunRecord) -> None:
+        await self._start_gate.wait()
+        await self._execute(record)
 
 
 def scan_urls_from_json(raw: str) -> list[str]:

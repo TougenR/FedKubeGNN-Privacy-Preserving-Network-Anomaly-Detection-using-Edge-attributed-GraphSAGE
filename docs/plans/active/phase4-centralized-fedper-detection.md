@@ -411,6 +411,64 @@ Live GKE console evidence on 2026-08-09:
   lint/template, Kubernetes server-side dry-run, NDJSON parsing, and
   `git diff --check` also pass.
 
+Live-prediction remediation approved on 2026-08-09:
+
+1. Preserve missing numeric values through the production request as `null` so
+   frozen preprocessing can recreate the train-time `*_missing` flags. An
+   observed numeric zero remains a measured zero and must not be rewritten as
+   missing.
+2. Replace per-request fire-and-forget delivery from the demo target with one
+   bounded worker queue, retry/backoff, and per-run delivery counters. The
+   console must distinguish target attempts, delivered observations, collector
+   accepts, predictions, late drops, and terminal delivery failures.
+3. Add a validation-only Scientific Replay panel. Its fixtures use the fixed
+   100th occurrence of each class from a predeclared owning client, retain at
+   most the selected 60-second/50-flow context, pseudonymize IP identities while
+   preserving graph equality, and never place expected labels in the production
+   inference request. Replay output is educational validation evidence, not a
+   new test metric or live-traffic claim.
+4. Add a real Zeek JSON path rather than describing the ingress adapter as
+   packet capture. Zeek is an opt-in target-pod sidecar pinned to LTS 8.0.9
+   digest `sha256:c7dfad9ab8296b2994d113222e77a22ebc9c8963b2b1200b798484ac923bc94f`;
+   its shipper is label-forbidding and uses the same bounded delivery contract.
+   Enabling it disables the approximate ingress adapter to avoid duplicate
+   observations. Required `NET_RAW`/`NET_ADMIN` capability and root capture are
+   explicit in Helm values and must pass server-side admission before GKE sync.
+5. Do not change the alert threshold, select a head by desired class, or claim
+   the six synthetic HTTP patterns are IoT-23 attacks. Current evidence shows
+   all six heads classify those completed HTTP/SF approximations as Benign;
+   correct remediation is observation fidelity and a separate labeled replay.
+6. Correlate Zeek records to a lab run by registering the active trusted
+   `sensor_id` at the collector before the runner is released. The registration
+   metadata is control-plane-only and is never added to the production model
+   request. Because the Zeek path bypasses the target adapter, its adapter queue
+   counters are explicitly shown as N/A while collector accepted/predicted and
+   drop counters remain per-run.
+7. Keep the current single Central node. Based on observed Phase 4 CPU usage,
+   lower only Phase 4 scheduling requests (not limits) and preserve the model's
+   memory headroom so the Zeek/shipper sidecars fit without resizing or creating
+   billable infrastructure. Admission and live rollout must still prove the
+   chosen requests are viable.
+
+Observed diagnosis before remediation:
+
+- The live buffer held 500/500 Benign predictions, all in confidence bucket
+  `0.95-1`, while inference readiness and all request paths were healthy.
+- The same live production endpoint predicted deterministic held-out replay
+  samples for all seven classes when labels were retained only by the local
+  evaluator. Locked rolling-window test accuracy/macro-F1 remain
+  `0.9288535923` / `0.9322982502`.
+- The approximate adapter emits `tcp/http`, `SF`, `ShADadFf`, and one packet in
+  each direction for every scenario. By contrast, test DDoS is 99.1% `OTH`,
+  PortScan is 99.5% `S0`, HeartBeat/Okiru are predominantly `S0`, and Attack is
+  predominantly SSH. All six heads return Benign for each approximate profile,
+  so routing or threshold changes would not repair the mismatch.
+- Since the current target pod started, it logged 43 failed collector
+  deliveries; the collector accepted 517 observations, produced 514 windows,
+  and late-dropped three flows. The UI's target HTTP success count therefore
+  overstates end-to-end prediction coverage and must be split into stage-level
+  counters.
+
 ## Result
 
 Scientific evaluation, serving-bundle promotion, locked test execution, the

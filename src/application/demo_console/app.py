@@ -12,7 +12,12 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict
 
-from src.application.collection.transport import ServiceRequestError, get_json
+from src.application.collection.transport import ServiceRequestError, get_json, post_json
+from src.application.evaluation.replay_demo import (
+    execute_replay_case,
+    load_scientific_replay,
+    public_catalog,
+)
 from src.application.scenario_runner.catalog import load_catalog
 from src.application.scenario_runner.executor import (
     ScenarioConflictError,
@@ -43,9 +48,26 @@ async def lifespan(_: FastAPI):
         )
         state["catalog"] = catalog
         state["collector_url"] = os.environ["COLLECTOR_URL"].rstrip("/")
+        state["observation_mode"] = os.environ.get(
+            "OBSERVATION_MODE", "ingress-adapter"
+        )
+        if state["observation_mode"] not in {"ingress-adapter", "zeek"}:
+            raise ValueError("OBSERVATION_MODE must be ingress-adapter or zeek")
+        target_url = os.environ["DEMO_TARGET_URL"].rstrip("/")
+        state["target_status_url"] = os.environ.get(
+            "DEMO_TARGET_STATUS_URL", target_url
+        ).rstrip("/")
+        inference_url = os.environ.get("INFERENCE_URL")
+        state["inference_url"] = inference_url.rstrip("/") if inference_url else None
+        state["scientific_replay"] = load_scientific_replay(
+            os.environ.get(
+                "SCIENTIFIC_REPLAY_CONFIG",
+                "/app/configs/application/scientific-replay.json",
+            )
+        )
         state["executor"] = ScenarioExecutor(
             catalog=catalog,
-            target_url=os.environ["DEMO_TARGET_URL"],
+            target_url=target_url,
             scan_urls=scan_urls_from_json(os.environ["DEMO_SCAN_URLS"]),
         )
     except (KeyError, OSError, ValueError) as exc:
@@ -82,20 +104,69 @@ async def health_ready() -> dict[str, str]:
 @app.get("/api/config")
 async def config() -> dict[str, Any]:
     catalog, _ = _ready()
-    return catalog.model_dump()
+    return {
+        **catalog.model_dump(),
+        "observation_mode": state["observation_mode"],
+    }
+
+
+@app.get("/api/scientific-replay")
+async def scientific_replay_catalog() -> dict[str, Any]:
+    _ready()
+    return public_catalog(state["scientific_replay"])
+
+
+@app.post("/api/scientific-replay/{case_id}")
+async def run_scientific_replay(case_id: str) -> dict[str, Any]:
+    _ready()
+    inference_url = state.get("inference_url")
+    if not isinstance(inference_url, str):
+        raise HTTPException(
+            status_code=503,
+            detail="scientific replay is not configured on this deployment revision",
+        )
+    try:
+        case = state["scientific_replay"].case(case_id)
+        return await asyncio.to_thread(
+            execute_replay_case,
+            case=case,
+            inference_url=inference_url,
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="unknown replay case") from exc
+    except (ServiceRequestError, ValueError) as exc:
+        raise HTTPException(status_code=502, detail="scientific replay failed") from exc
 
 
 @app.post("/api/runs", status_code=202)
 async def start_run(request: StartRunRequest) -> dict[str, Any]:
     _, executor = _ready()
     try:
-        record = await executor.start(request.scenario_id, request.parameters)
+        record = await executor.start(
+            request.scenario_id, request.parameters, gated=True
+        )
+        await asyncio.to_thread(
+            post_json,
+            f"{state['collector_url']}/runs/register",
+            {
+                "run_id": record.run_id,
+                "scenario_id": record.scenario_id,
+                "sensor_id": record.sensor_id,
+            },
+        )
+        executor.release()
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except ScenarioConflictError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ServiceRequestError as exc:
+        executor.release()
+        await executor.stop()
+        raise HTTPException(
+            status_code=502, detail="collector run registration failed"
+        ) from exc
     return record.public()
 
 
@@ -103,7 +174,22 @@ async def start_run(request: StartRunRequest) -> dict[str, Any]:
 async def current_run() -> dict[str, Any]:
     _, executor = _ready()
     record = executor.current()
-    return {"run": record.public() if record else None}
+    if record is None:
+        return {"run": None}
+    public = record.public()
+
+    async def optional_metrics(url: str) -> dict[str, Any]:
+        try:
+            return await asyncio.to_thread(get_json, url)
+        except ServiceRequestError:
+            return {"available": False}
+
+    delivery, collector = await asyncio.gather(
+        optional_metrics(f"{state['target_status_url']}/observations/runs/{record.run_id}"),
+        optional_metrics(f"{state['collector_url']}/runs/{record.run_id}/metrics"),
+    )
+    public["pipeline"] = {"delivery": delivery, "collector": collector}
+    return {"run": public}
 
 
 @app.delete("/api/runs/current")

@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import time
-from collections import deque
+from collections import defaultdict, deque
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.application.alerting.event import numeric_bucket
 from src.application.alerting.policy import AlertPolicy, parse_boundaries
@@ -25,7 +26,23 @@ class CollectorObservation(BaseModel):
 
     sensor_id: str
     source: Literal["zeek-json-v1", "ingress-adapter-v1"]
+    run_id: str | None = Field(
+        default=None, pattern=r"^[a-z0-9][a-z0-9-]{0,63}$"
+    )
+    scenario_id: str | None = Field(
+        default=None, pattern=r"^[a-z0-9][a-z0-9-]{0,63}$"
+    )
     flow: ProductionFlow
+
+
+class LabRunRegistration(BaseModel):
+    """Internal correlation metadata; it never becomes a model feature."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    run_id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{0,63}$")
+    scenario_id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{0,63}$")
+    sensor_id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{0,63}$")
 
 
 app_state: dict[str, Any] = {}
@@ -81,6 +98,20 @@ async def lifespan(_: FastAPI):
             raise ValueError("MONITOR_BUFFER_SIZE must be between 10 and 1000.")
         app_state["monitor_events"] = deque(maxlen=monitor_size)
         app_state["monitor_sequence"] = 0
+        app_state["run_metrics"] = defaultdict(
+            lambda: {
+                "received": 0,
+                "accepted": 0,
+                "predicted": 0,
+                "late_dropped": 0,
+                "inference_failures": 0,
+                "alert_sink_failures": 0,
+                "duplicates": 0,
+            }
+        )
+        app_state["flow_runs"] = defaultdict(dict)
+        app_state["completed_uids"] = deque(maxlen=5000)
+        app_state["active_runs"] = {}
     except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
         app_state["load_error"] = str(exc)
     yield
@@ -156,9 +187,50 @@ async def monitor_events(after: int = 0, limit: int = 100) -> dict[str, Any]:
     }
 
 
+@app.get("/runs/{run_id}/metrics")
+async def run_metrics(run_id: str) -> dict[str, Any]:
+    _ready()
+    if not run_id or len(run_id) > 64:
+        raise HTTPException(status_code=422, detail="invalid run ID")
+    metrics_by_run = app_state["run_metrics"]
+    values = dict(metrics_by_run.get(run_id, {}))
+    return {
+        "run_id": run_id,
+        "available": bool(values),
+        **values,
+    }
+
+
+@app.post("/runs/register")
+async def register_run(registration: LabRunRegistration) -> dict[str, str]:
+    """Associate subsequent label-free Zeek flows with the one active lab run."""
+    _ready()
+    app_state.setdefault("active_runs", {})[registration.sensor_id] = {
+        "run_id": registration.run_id,
+        "scenario_id": registration.scenario_id,
+    }
+    # Materialize zero-valued metrics so the console can distinguish an active
+    # run with no captured flows from an unavailable metrics endpoint.
+    app_state["run_metrics"][registration.run_id]
+    return {
+        "status": "registered",
+        "run_id": registration.run_id,
+        "sensor_id": registration.sensor_id,
+    }
+
+
 @app.post("/observe")
 async def observe(observation: CollectorObservation) -> dict[str, Any]:
     _ready()
+    active = app_state.setdefault("active_runs", {}).get(observation.sensor_id, {})
+    resolved_run_id = observation.run_id or active.get("run_id")
+    run_values = (
+        app_state["run_metrics"][resolved_run_id]
+        if resolved_run_id is not None
+        else None
+    )
+    if run_values is not None:
+        run_values["received"] += 1
     buffers = app_state["buffers"]
     buffer = buffers.setdefault(
         observation.sensor_id,
@@ -168,8 +240,30 @@ async def observe(observation: CollectorObservation) -> dict[str, Any]:
         ),
     )
     flow = observation.flow.model_dump(by_alias=True)
+    uid = str(flow.get("uid", "-"))
+    completed_uids = app_state.setdefault("completed_uids", deque(maxlen=5000))
+    if uid != "-" and uid in completed_uids:
+        if run_values is not None:
+            run_values["duplicates"] += 1
+        return {"accepted": True, "duplicate": True, "window_emitted": False}
+    late_before = buffer.late_drop_count
     snapshot = buffer.add(flow)
     app_state["observations"] += 1
+    if buffer.late_drop_count > late_before:
+        if run_values is not None:
+            run_values["late_dropped"] += 1
+        return {
+            "accepted": False,
+            "window_emitted": False,
+            "late_dropped": True,
+            "flow_drop_rate": buffer.flow_drop_rate,
+        }
+    if run_values is not None:
+        run_values["accepted"] += 1
+    if uid != "-":
+        app_state.setdefault("flow_runs", defaultdict(dict))[observation.sensor_id][
+            uid
+        ] = resolved_run_id
     if snapshot is None:
         return {
             "accepted": True,
@@ -183,8 +277,17 @@ async def observe(observation: CollectorObservation) -> dict[str, Any]:
     }
     started = time.perf_counter()
     try:
-        response = post_json(app_state["inference_url"], inference_request)
+        response = await asyncio.to_thread(
+            post_json, app_state["inference_url"], inference_request
+        )
     except ServiceRequestError as exc:
+        for index in snapshot.emission_indices:
+            emitted_uid = str(snapshot.flows[index].get("uid", "-"))
+            emitted_run = app_state["flow_runs"][snapshot.sensor_id].pop(
+                emitted_uid, None
+            )
+            if emitted_run is not None:
+                app_state["run_metrics"][emitted_run]["inference_failures"] += 1
         raise HTTPException(status_code=502, detail=str(exc)) from exc
     latency_ms = (time.perf_counter() - started) * 1000
     app_state["inference_latency_ms"].append(latency_ms)
@@ -207,17 +310,36 @@ async def observe(observation: CollectorObservation) -> dict[str, Any]:
                 prediction=prediction,
             )
             try:
-                post_json(
+                await asyncio.to_thread(
+                    post_json,
                     app_state["alert_router_url"],
                     event.model_dump(by_alias=True, mode="json"),
                 )
-            except ServiceRequestError as exc:
-                raise HTTPException(status_code=502, detail=str(exc)) from exc
+            except ServiceRequestError:
+                emitted_uid = str(source_flow.get("uid", "-"))
+                emitted_run = app_state["flow_runs"][snapshot.sensor_id].get(
+                    emitted_uid
+                )
+                if emitted_run is not None:
+                    app_state["run_metrics"][emitted_run]["alert_sink_failures"] += 1
+                # Prediction already succeeded. Do not make an upstream retry
+                # add this flow to the rolling buffer a second time merely
+                # because the downstream evidence sink was unavailable.
+                continue
             if event.is_alert:
                 emitted += 1
                 alerted_indices.add(index)
     app_state["events"] += emitted
     for index in snapshot.emission_indices:
+        source_flow = snapshot.flows[index]
+        emitted_uid = str(source_flow.get("uid", "-"))
+        emitted_run = app_state["flow_runs"][snapshot.sensor_id].pop(
+            emitted_uid, None
+        )
+        if emitted_run is not None:
+            app_state["run_metrics"][emitted_run]["predicted"] += 1
+        if emitted_uid != "-":
+            completed_uids.append(emitted_uid)
         prediction = response["predictions"][index]
         app_state["monitor_sequence"] = app_state.get("monitor_sequence", 0) + 1
         predicted_class = str(prediction["predicted_label"])

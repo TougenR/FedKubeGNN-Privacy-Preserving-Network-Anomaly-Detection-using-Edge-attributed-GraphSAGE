@@ -1,4 +1,4 @@
-const state = { catalog: null, selected: null, cursor: 0, events: [] };
+const state = { catalog: null, replay: null, selected: null, cursor: 0, events: [] };
 const $ = (id) => document.getElementById(id);
 const classHelp = {
   "Benign": "Flow được model xem là bình thường.",
@@ -40,6 +40,12 @@ function selectScenario(scenario) {
 
 function renderCatalog(catalog) {
   $("disclaimer").textContent = catalog.disclaimer;
+  if (catalog.observation_mode === "zeek") {
+    $("queued-label").textContent = "Adapter queued (N/A)";
+    $("delivered-label").textContent = "Adapter delivered (N/A)";
+    $("queued").textContent = "—";
+    $("delivered").textContent = "—";
+  }
   catalog.scenarios.forEach((scenario) => {
     const card = document.createElement("button"); card.type = "button"; card.className = "scenario-card"; card.dataset.id = scenario.id;
     const title = document.createElement("strong"); title.textContent = scenario.display_name;
@@ -52,6 +58,44 @@ function renderCatalog(catalog) {
     const help = document.createElement("small"); help.textContent = classHelp[name] || "Model output class.";
     card.append(title, help); $("class-list").append(card);
   });
+}
+
+function renderReplayCatalog(catalog) {
+  state.replay = catalog;
+  $("replay-disclaimer").textContent = catalog.disclaimer;
+  catalog.cases.forEach((item) => {
+    const button = document.createElement("button");
+    button.type = "button"; button.className = "replay-case";
+    button.textContent = item.display_name;
+    button.title = `${item.sensor_id} → head ${item.client_id} · ${item.window_flows} flow(s)`;
+    button.addEventListener("click", () => runScientificReplay(item, button));
+    $("replay-cases").append(button);
+  });
+}
+
+async function runScientificReplay(item, button) {
+  const buttons = [...document.querySelectorAll(".replay-case")];
+  buttons.forEach((candidate) => { candidate.disabled = true; });
+  $("replay-result").className = "replay-result";
+  $("replay-result").textContent = `Đang chạy ${item.display_name}…`;
+  try {
+    const result = await json(`/api/scientific-replay/${item.id}`, {method: "POST"});
+    $("replay-result").replaceChildren();
+    $("replay-result").classList.add(result.correct ? "correct" : "incorrect");
+    const title = document.createElement("strong");
+    title.textContent = `${result.expected_class} → ${result.predicted_class}`;
+    const detail = document.createElement("small");
+    detail.textContent = `validation-only · ${result.sensor_id} → head ${result.client_id} · confidence ${result.confidence.toFixed(4)} · ${result.window_flows} flow(s) · label sent to inference: ${result.request_contains_ground_truth ? "YES" : "NO"}`;
+    const top = document.createElement("small");
+    top.textContent = `Top-3: ${result.top3.map((entry) => `${entry.class} ${(entry.probability * 100).toFixed(2)}%`).join(" · ")}`;
+    $("replay-result").append(title, detail, top);
+  } catch (error) {
+    $("replay-result").className = "replay-result incorrect";
+    $("replay-result").textContent = `Replay thất bại: ${error.message}`;
+  } finally {
+    buttons.forEach((candidate) => { candidate.disabled = false; });
+    button.focus();
+  }
 }
 
 function runParameters() {
@@ -87,6 +131,14 @@ async function pollRun() {
     if (!run) return;
     $("run-status").textContent = run.status.toUpperCase(); $("run-id").textContent = run.run_id;
     $("attempted").textContent = run.attempted; $("succeeded").textContent = run.succeeded; $("failed").textContent = run.failed;
+    const delivery = run.pipeline?.delivery || {};
+    const collector = run.pipeline?.collector || {};
+    $("queued").textContent = delivery.available === false && state.catalog?.observation_mode === "zeek" ? "—" : (delivery.enqueued || 0);
+    $("delivered").textContent = delivery.available === false && state.catalog?.observation_mode === "zeek" ? "—" : (delivery.delivered || 0);
+    $("collected").textContent = collector.accepted || 0;
+    $("predicted").textContent = collector.predicted || 0;
+    $("run-late-dropped").textContent = collector.late_dropped || 0;
+    $("delivery-failed").textContent = (delivery.terminal_failures || 0) + (delivery.queue_dropped || 0);
     $("progress-bar").style.width = `${Math.min(100, run.attempted / Math.max(1, expectedAttempts(run)) * 100)}%`;
     const active = run.status === "running"; $("start-button").disabled = active || !state.selected; $("stop-button").disabled = !active;
   } catch (_) { /* health indicator owns connectivity state */ }
@@ -121,7 +173,11 @@ async function pollMonitor() {
 }
 
 async function boot() {
-  try { state.catalog = await json("/api/config"); renderCatalog(state.catalog); $("system-dot").className = "status-dot ready"; $("system-label").textContent = "Console sẵn sàng"; }
+  try {
+    [state.catalog, state.replay] = await Promise.all([json("/api/config"), json("/api/scientific-replay")]);
+    renderCatalog(state.catalog); renderReplayCatalog(state.replay);
+    $("system-dot").className = "status-dot ready"; $("system-label").textContent = "Console sẵn sàng";
+  }
   catch (error) { $("system-dot").className = "status-dot error"; $("system-label").textContent = error.message; }
   $("start-button").addEventListener("click", startRun); $("stop-button").addEventListener("click", stopRun);
   $("clear-events").addEventListener("click", () => { state.events = []; $("event-list").innerHTML = '<div class="empty-event">Đã xóa màn hình; cursor vẫn được giữ.</div>'; });
