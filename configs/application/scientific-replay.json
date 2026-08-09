@@ -2,14 +2,14 @@
   "schema_version": 1,
   "kind": "validation-only-scientific-replay",
   "selection_split": "validation",
-  "selection_rule": "fixed 100th class occurrence; preceding 60 seconds; maximum 50 flows",
+  "selection_rule": "mẫu thứ 100 cố định của lớp; lấy tối đa 50 flow trong 60 giây trước đó",
   "dataset_digest": "c5ab9c02896c08c9f60e8efb9672a2090cbe595e4c344308f5e4dc2b0e51319a",
   "graph_protocol": "rolling-window-v1:duration=60s:max-flows=50:stride=1:lateness=1s",
-  "disclaimer": "Validation-only labeled replay. Expected labels stay in the evaluator and are never sent to the production inference request. This is not live traffic.",
+  "disclaimer": "Replay có nhãn chỉ dùng tập validation. Nhãn kỳ vọng nằm trong bộ đánh giá và không bao giờ được gửi vào request inference production. Đây không phải lưu lượng trực tiếp.",
   "cases": [
     {
       "id": "benign",
-      "display_name": "Benign",
+      "display_name": "Bình thường",
       "sensor_id": "sensor-1-1",
       "client_id": "1-1",
       "expected_class": "Benign",
@@ -41,7 +41,7 @@
     },
     {
       "id": "attack",
-      "display_name": "Attack",
+      "display_name": "Tấn công chung",
       "sensor_id": "sensor-3-1",
       "client_id": "3-1",
       "expected_class": "Attack",
@@ -213,7 +213,7 @@
     },
     {
       "id": "command-control",
-      "display_name": "C&C",
+      "display_name": "Điều khiển và chỉ huy (C&C)",
       "sensor_id": "sensor-34-1",
       "client_id": "34-1",
       "expected_class": "C&C",
@@ -325,7 +325,7 @@
     },
     {
       "id": "heartbeat",
-      "display_name": "C&C-HeartBeat",
+      "display_name": "Nhịp tim C&C",
       "sensor_id": "sensor-36-1",
       "client_id": "36-1",
       "expected_class": "C&C-HeartBeat",
@@ -377,7 +377,7 @@
     },
     {
       "id": "ddos",
-      "display_name": "DDoS",
+      "display_name": "Từ chối dịch vụ phân tán (DDoS)",
       "sensor_id": "sensor-34-1",
       "client_id": "34-1",
       "expected_class": "DDoS",
@@ -1389,7 +1389,7 @@
     },
     {
       "id": "okiru",
-      "display_name": "Okiru",
+      "display_name": "Mã độc Okiru",
       "sensor_id": "sensor-36-1",
       "client_id": "36-1",
       "expected_class": "Okiru",
@@ -1501,7 +1501,7 @@
     },
     {
       "id": "portscan",
-      "display_name": "PartOfAHorizontalPortScan",
+      "display_name": "Quét cổng ngang",
       "sensor_id": "sensor-1-1",
       "client_id": "1-1",
       "expected_class": "PartOfAHorizontalPortScan",

@@ -26,8 +26,16 @@ class DemoConsoleTests(unittest.TestCase):
         replay = (ROOT / "configs/application/scientific-replay.json").read_text()
         self.assertIn('"selection_split": "validation"', replay)
         page = (ROOT / "src/application/demo_console/static/index.html").read_text()
-        self.assertIn("Scientific Replay", page)
+        self.assertIn("Phát lại khoa học", page)
+        self.assertIn('id="alert-banner"', page)
+        self.assertIn('id="detection-chart"', page)
         self.assertIn('id="predicted"', page)
+
+        script = (ROOT / "src/application/demo_console/static/app.js").read_text()
+        self.assertIn('event.predicted_class === "Benign"', script)
+        self.assertIn("state.chartEvents.slice(-80)", script)
+        self.assertIn("event.is_alert", script)
+        self.assertNotIn("scenario_id === \"DDoS\"", script)
 
     def test_parameters_are_server_side_bounded(self) -> None:
         flood = self.catalog.scenario("request-flood")

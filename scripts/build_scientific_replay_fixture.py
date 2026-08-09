@@ -11,13 +11,18 @@ from typing import Any
 
 
 CASES = (
-    ("benign", "Benign", "1-1"),
-    ("attack", "Attack", "3-1"),
-    ("command-control", "C&C", "34-1"),
-    ("heartbeat", "C&C-HeartBeat", "36-1"),
-    ("ddos", "DDoS", "34-1"),
-    ("okiru", "Okiru", "36-1"),
-    ("portscan", "PartOfAHorizontalPortScan", "1-1"),
+    ("benign", "Benign", "Bình thường", "1-1"),
+    ("attack", "Attack", "Tấn công chung", "3-1"),
+    ("command-control", "C&C", "Điều khiển và chỉ huy (C&C)", "34-1"),
+    ("heartbeat", "C&C-HeartBeat", "Nhịp tim C&C", "36-1"),
+    ("ddos", "DDoS", "Từ chối dịch vụ phân tán (DDoS)", "34-1"),
+    ("okiru", "Okiru", "Mã độc Okiru", "36-1"),
+    (
+        "portscan",
+        "PartOfAHorizontalPortScan",
+        "Quét cổng ngang",
+        "1-1",
+    ),
 )
 OCCURRENCE = 100
 ALLOWED = (
@@ -74,7 +79,7 @@ def pseudonymize(rows: list[dict[str, Any]], case_id: str) -> list[dict[str, Any
 def build(replay_root: Path) -> dict[str, Any]:
     manifest = json.loads((replay_root / "manifest.json").read_text(encoding="utf-8"))
     cases: list[dict[str, Any]] = []
-    for case_id, expected_class, client_id in CASES:
+    for case_id, expected_class, display_name, client_id in CASES:
         document = manifest["clients"][client_id]["validation"]
         path = replay_root / document["path"]
         if sha256(path) != document["sha256"]:
@@ -96,7 +101,7 @@ def build(replay_root: Path) -> dict[str, Any]:
         cases.append(
             {
                 "id": case_id,
-                "display_name": expected_class,
+                "display_name": display_name,
                 "sensor_id": f"sensor-{client_id}",
                 "client_id": client_id,
                 "expected_class": expected_class,
@@ -110,12 +115,13 @@ def build(replay_root: Path) -> dict[str, Any]:
         "schema_version": 1,
         "kind": "validation-only-scientific-replay",
         "selection_split": "validation",
-        "selection_rule": "fixed 100th class occurrence; preceding 60 seconds; maximum 50 flows",
+        "selection_rule": "mẫu thứ 100 cố định của lớp; lấy tối đa 50 flow trong 60 giây trước đó",
         "dataset_digest": manifest["derived_dataset_digest"],
         "graph_protocol": "rolling-window-v1:duration=60s:max-flows=50:stride=1:lateness=1s",
         "disclaimer": (
-            "Validation-only labeled replay. Expected labels stay in the evaluator and "
-            "are never sent to the production inference request. This is not live traffic."
+            "Replay có nhãn chỉ dùng tập validation. Nhãn kỳ vọng nằm trong bộ đánh giá "
+            "và không bao giờ được gửi vào request inference production. Đây không phải "
+            "lưu lượng trực tiếp."
         ),
         "cases": cases,
     }

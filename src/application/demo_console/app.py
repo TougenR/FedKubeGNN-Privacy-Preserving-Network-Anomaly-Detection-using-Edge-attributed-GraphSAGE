@@ -79,14 +79,17 @@ async def lifespan(_: FastAPI):
     state.clear()
 
 
-app = FastAPI(title="FedKube Phase 4 Demo Console", lifespan=lifespan)
+app = FastAPI(title="Bảng điều khiển phát hiện FedKube - Giai đoạn 4", lifespan=lifespan)
 
 
 def _ready() -> tuple[Any, ScenarioExecutor]:
     catalog = state.get("catalog")
     executor = state.get("executor")
     if catalog is None or not isinstance(executor, ScenarioExecutor):
-        raise HTTPException(status_code=503, detail=state.get("load_error", "console is not ready"))
+        raise HTTPException(
+            status_code=503,
+            detail=state.get("load_error", "bảng điều khiển chưa sẵn sàng"),
+        )
     return catalog, executor
 
 
@@ -123,7 +126,7 @@ async def run_scientific_replay(case_id: str) -> dict[str, Any]:
     if not isinstance(inference_url, str):
         raise HTTPException(
             status_code=503,
-            detail="scientific replay is not configured on this deployment revision",
+            detail="bản triển khai này chưa được cấu hình phát lại khoa học",
         )
     try:
         case = state["scientific_replay"].case(case_id)
@@ -133,9 +136,9 @@ async def run_scientific_replay(case_id: str) -> dict[str, Any]:
             inference_url=inference_url,
         )
     except KeyError as exc:
-        raise HTTPException(status_code=404, detail="unknown replay case") from exc
+        raise HTTPException(status_code=404, detail="không tìm thấy mẫu phát lại") from exc
     except (ServiceRequestError, ValueError) as exc:
-        raise HTTPException(status_code=502, detail="scientific replay failed") from exc
+        raise HTTPException(status_code=502, detail="phát lại khoa học thất bại") from exc
 
 
 @app.post("/api/runs", status_code=202)

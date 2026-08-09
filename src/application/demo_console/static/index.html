@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="dark">
-    <title>FedKube Detection Lab</title>
+    <title>Phòng lab phát hiện FedKube</title>
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
@@ -13,23 +13,23 @@
     <main>
       <header class="topbar">
         <div>
-          <p class="eyebrow">CENTRALIZED FEDPER · PHASE 4</p>
-          <h1>Detection Lab Console</h1>
-          <p class="subtitle">Phát traffic lab có kiểm soát và theo dõi dự đoán của sáu personalized heads.</p>
+          <p class="eyebrow">FEDPER TẬP TRUNG · GIAI ĐOẠN 4</p>
+          <h1>Bảng điều khiển phát hiện</h1>
+          <p class="subtitle">Phát lưu lượng lab có kiểm soát và theo dõi dự đoán của sáu đầu phân loại cá nhân hóa.</p>
         </div>
         <div class="system-status">
           <span id="system-dot" class="status-dot pending"></span>
-          <div><strong id="system-label">Đang kết nối</strong><small>Central GKE · Internal only</small></div>
+          <div><strong id="system-label">Đang kết nối</strong><small>GKE trung tâm · chỉ truy cập nội bộ</small></div>
         </div>
       </header>
 
-      <section class="notice" id="disclaimer">Đang tải contract khoa học…</section>
+      <section class="notice" id="disclaimer">Đang tải quy ước khoa học…</section>
 
       <div class="workspace">
         <section class="scenario-panel panel">
           <div class="section-heading">
-            <div><span class="step">01</span><h2>Chọn traffic pattern</h2></div>
-            <span class="pill">Lab-owned target</span>
+            <div><span class="step">01</span><h2>Chọn mẫu lưu lượng</h2></div>
+            <span class="pill">Máy đích thuộc phòng lab</span>
           </div>
           <div id="scenario-grid" class="scenario-grid" aria-live="polite"></div>
         </section>
@@ -40,7 +40,7 @@
             <span id="category-pill" class="pill muted">Chưa chọn</span>
           </div>
           <div id="scenario-detail" class="scenario-detail empty-state">
-            Chọn một card để xem cơ chế và giới hạn an toàn.
+            Chọn một kịch bản để xem cơ chế và giới hạn an toàn.
           </div>
           <form id="parameter-form" class="parameter-form"></form>
           <div class="actions">
@@ -48,20 +48,20 @@
             <button id="stop-button" class="secondary" disabled>Dừng</button>
           </div>
           <div class="run-card">
-            <div class="run-head"><span>Execution</span><strong id="run-status">IDLE</strong></div>
+            <div class="run-head"><span>Tiến trình thực thi</span><strong id="run-status">CHỜ</strong></div>
             <div class="progress-track"><span id="progress-bar"></span></div>
             <div class="run-stats">
-              <div><small>Attempted</small><strong id="attempted">0</strong></div>
-              <div><small>Succeeded</small><strong id="succeeded">0</strong></div>
-              <div><small>Failed</small><strong id="failed">0</strong></div>
+              <div><small>Đã thử</small><strong id="attempted">0</strong></div>
+              <div><small>Thành công</small><strong id="succeeded">0</strong></div>
+              <div><small>Thất bại</small><strong id="failed">0</strong></div>
             </div>
             <div class="pipeline-stats">
-              <div><small id="queued-label">Adapter queued</small><strong id="queued">0</strong></div>
-              <div><small id="delivered-label">Adapter delivered</small><strong id="delivered">0</strong></div>
-              <div><small>Collector accepted</small><strong id="collected">0</strong></div>
-              <div><small>Predicted</small><strong id="predicted">0</strong></div>
-              <div><small>Late drop</small><strong id="run-late-dropped">0</strong></div>
-              <div><small>Delivery fail</small><strong id="delivery-failed">0</strong></div>
+              <div><small id="queued-label">Đã xếp hàng</small><strong id="queued">0</strong></div>
+              <div><small id="delivered-label">Đã chuyển giao</small><strong id="delivered">0</strong></div>
+              <div><small>Collector đã nhận</small><strong id="collected">0</strong></div>
+              <div><small>Đã dự đoán</small><strong id="predicted">0</strong></div>
+              <div><small>Loại do đến trễ</small><strong id="run-late-dropped">0</strong></div>
+              <div><small>Lỗi chuyển giao</small><strong id="delivery-failed">0</strong></div>
             </div>
             <code id="run-id">Chưa có run</code>
           </div>
@@ -69,34 +69,62 @@
 
         <section class="monitor-panel panel">
           <div class="section-heading">
-            <div><span class="step">03</span><h2>Live Detection Monitor</h2></div>
-            <span class="live-indicator"><i></i> LIVE</span>
+            <div><span class="step">03</span><h2>Giám sát phát hiện theo thời gian thực</h2></div>
+            <span class="live-indicator"><i></i> TRỰC TIẾP</span>
           </div>
           <div class="metric-grid">
-            <article><small>Predictions</small><strong id="metric-windows">0</strong></article>
-            <article><small>Alerts</small><strong id="metric-alerts">0</strong></article>
-            <article><small>Latency p95</small><strong id="metric-latency">—</strong></article>
-            <article><small>Flow drop</small><strong id="metric-drop">0%</strong></article>
+            <article><small>Số dự đoán</small><strong id="metric-windows">0</strong></article>
+            <article><small>Cảnh báo chính sách</small><strong id="metric-alerts">0</strong></article>
+            <article><small>Độ trễ p95</small><strong id="metric-latency">—</strong></article>
+            <article><small>Tỷ lệ mất flow</small><strong id="metric-drop">0%</strong></article>
+          </div>
+          <div id="alert-banner" class="alert-banner normal" role="status" aria-live="assertive">
+            <span class="alert-icon">✓</span>
+            <div><small>TRẠNG THÁI MODEL</small><strong id="alert-title">Bình thường</strong><p id="alert-detail">Chưa ghi nhận dự đoán tấn công.</p></div>
+          </div>
+          <div class="chart-shell">
+            <div class="chart-title"><div><strong>Biên độ cảnh báo</strong><small>80 dự đoán mới nhất · không lấy nhãn từ kịch bản</small></div><span id="chart-window-count">0 điểm</span></div>
+            <div class="chart-layout">
+              <div class="chart-y-axis" aria-hidden="true"><span>Cao</span><span>Vừa</span><span>Thấp</span><span>Bình thường</span></div>
+              <svg id="detection-chart" viewBox="0 0 1000 220" preserveAspectRatio="none" role="img" aria-label="Biểu đồ mức cảnh báo của các dự đoán model theo thời gian">
+                <defs>
+                  <linearGradient id="chart-area-gradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#ff6b78" stop-opacity="0.32"></stop>
+                    <stop offset="100%" stop-color="#52e5d1" stop-opacity="0.02"></stop>
+                  </linearGradient>
+                </defs>
+                <g class="chart-grid" aria-hidden="true">
+                  <line x1="24" y1="36" x2="980" y2="36"></line>
+                  <line x1="24" y1="84" x2="980" y2="84"></line>
+                  <line x1="24" y1="132" x2="980" y2="132"></line>
+                  <line class="baseline" x1="24" y1="180" x2="980" y2="180"></line>
+                </g>
+                <path id="detection-area" class="detection-area" d="M24 180 L980 180 L980 180 L24 180 Z"></path>
+                <polyline id="detection-line" class="detection-line normal" points="24,180 980,180"></polyline>
+                <g id="detection-points" class="detection-points"></g>
+              </svg>
+            </div>
+            <div class="chart-legend"><span><i class="legend-normal"></i>Bình thường</span><span><i class="legend-detection"></i>Phát hiện dưới ngưỡng</span><span><i class="legend-alert"></i>Cảnh báo chính sách</span></div>
           </div>
           <div class="prediction-focus" id="prediction-focus">
-            <small>MODEL DETECTION</small>
+            <small>DỰ ĐOÁN GẦN NHẤT CỦA MODEL</small>
             <strong>Đang chờ flow…</strong>
-            <span>Traffic pattern và model prediction là hai thông tin độc lập.</span>
+            <span>Kịch bản lưu lượng và dự đoán của model là hai thông tin độc lập.</span>
           </div>
-          <div class="event-header"><h3>Detection timeline</h3><button id="clear-events">Xóa màn hình</button></div>
-          <div id="event-list" class="event-list"><div class="empty-event">Chưa có prediction.</div></div>
+          <div class="event-header"><h3>Dòng thời gian phát hiện</h3><button id="clear-events">Xóa màn hình</button></div>
+          <div id="event-list" class="event-list"><div class="empty-event">Chưa có dự đoán.</div></div>
         </section>
       </div>
 
       <section class="replay-panel panel">
-        <div class="section-heading"><div><span class="step">04</span><h2>Scientific Replay</h2></div><span class="pill">Validation only</span></div>
-        <p id="replay-disclaimer" class="replay-disclaimer">Đang tải validation replay contract…</p>
+        <div class="section-heading"><div><span class="step">04</span><h2>Phát lại khoa học</h2></div><span class="pill">Chỉ dùng tập validation</span></div>
+        <p id="replay-disclaimer" class="replay-disclaimer">Đang tải quy ước phát lại validation…</p>
         <div id="replay-cases" class="replay-cases"></div>
-        <div id="replay-result" class="replay-result empty-state">Chọn một lớp để chạy qua production inference boundary.</div>
+        <div id="replay-result" class="replay-result empty-state">Chọn một lớp để chạy qua endpoint inference production.</div>
       </section>
 
       <section class="classes-panel panel">
-        <div class="section-heading"><div><span class="step">05</span><h2>Bảy lớp đầu ra của model</h2></div><span class="pill muted">Không phải scenario mapping</span></div>
+        <div class="section-heading"><div><span class="step">05</span><h2>Bảy lớp đầu ra của model</h2></div><span class="pill muted">Không ánh xạ từ kịch bản</span></div>
         <div id="class-list" class="class-list"></div>
       </section>
     </main>

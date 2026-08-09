@@ -502,6 +502,42 @@ Live remediation evidence on 2026-08-09:
   hard-coded Benign class. Alert threshold `0.85` and trusted routing were not
   changed.
 
+Vietnamese chart-monitor extension approved on 2026-08-09:
+
+- Make every user-facing console string Vietnamese. Immutable model labels,
+  protocol identifiers, sensor IDs, digests, and API field names remain exact
+  technical contracts, but the UI presents a Vietnamese display name beside
+  them when useful.
+- Render the live monitor with repository-native SVG and no third-party chart
+  dependency. Benign predictions have amplitude zero and therefore form a flat
+  baseline. A non-Benign prediction rises according to the existing alert
+  policy severity (`low=1`, `medium=2`, `high=3`) and is annotated with its
+  Vietnamese class name.
+- Preserve the validation-selected `0.85` alert threshold. A non-Benign result
+  below that threshold is shown in amber as a model detection below the policy
+  threshold; only `is_alert=true` uses the red policy-alert state. The selected
+  traffic scenario never supplies the chart class or amplitude.
+- Keep at most 80 newest predictions in the browser chart. Clearing the monitor
+  is presentation-only and does not reset the collector cursor or server-side
+  evidence.
+
+Local implementation checkpoint on 2026-08-09:
+
+- The console catalog, scenario descriptions, parameter units, scientific
+  replay labels, model-class explanations, execution state, monitoring state,
+  and user-visible API errors are presented in Vietnamese. Exact class labels
+  remain visible only as model-contract identifiers.
+- The wide responsive monitor now includes a native SVG history chart, a
+  normal/detection/policy-alert legend, an accessible live-status banner, and
+  explicit attack-class annotations. Its data path reads only collector model
+  events and never reads the selected scenario when computing amplitude.
+- JavaScript and Python syntax, Ruff, YAML/JSON parsing, `git diff --check`, and
+  the 15 locally runnable application tests pass. The dependency-complete
+  application suite was not rerun locally because this shell lacks
+  `torch_geometric`; its four ML-dependent modules stop during collection.
+  CI/Jenkins image validation and the GKE rollout are intentionally deferred
+  to the next work session, leaving the current cloud revision unchanged.
+
 ## Result
 
 Scientific evaluation, serving-bundle promotion, locked test execution, the
