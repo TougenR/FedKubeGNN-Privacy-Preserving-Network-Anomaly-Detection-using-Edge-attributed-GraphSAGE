@@ -879,8 +879,13 @@ Traffic-profile/VM extension progress:
   a control, SSH/C&C remain blocked pending compatible targets, DDoS remains
   unsupported because the validation fingerprint depends on checksum/history
   evidence, and the three SYN-only candidates are bounded to fixed private IPs.
-- [ ] Freeze the deterministic bootstrap/nearest-reference comparator before
-  interpreting any captured VM flow as class-equivalent.
+- [x] Freeze the deterministic bootstrap/nearest-reference comparator before
+  interpreting any captured VM flow as class-equivalent. It reads only the
+  digest-verified validation replay, uses 2,000 deterministic within-class
+  resamples, checks categorical Jensen-Shannon distance, numeric/topology
+  envelopes, and requires the selected class to be the nearest reference. A
+  real validation Okiru sample passes the frozen implementation; locked test
+  remains unread.
 - [x] Implement the authenticated bounded traffic agent and local contract
   tests. Its request contract accepts only `profile_id`; target/port/event
   authority stays in the versioned server-side catalogs.
@@ -903,7 +908,13 @@ Traffic-profile/VM extension progress:
   free-tier credit. Budget roughly USD 16.15/month plus small Secret Manager,
   NAT/network, and tax/currency effects; stopping the VM removes compute usage
   but retains disk/storage charges.
-- [ ] Record final apply and live evidence.
+- [ ] Record final apply and live evidence. The approved binary plan was
+  applied on 2026-08-10: 17 non-compute resources were created, but GCP rejected
+  the VM because global CPU quota is already `12/12` (Central 4 + Edge 6 +
+  Jenkins 2). A refreshed state-backed plan now shows exactly `1 add, 0 change,
+  0 destroy` for the VM. No traffic-generator instance exists and therefore no
+  new VM compute charge is active. Resume requires either an approved quota
+  increase to 14 or an approved Jenkins/traffic-generator stop-start rotation.
 - [ ] Apply only after the plan checkpoint, then capture live GKE/Zeek/model
   evidence and evaluate fixed profiles without relabeling model output.
 
