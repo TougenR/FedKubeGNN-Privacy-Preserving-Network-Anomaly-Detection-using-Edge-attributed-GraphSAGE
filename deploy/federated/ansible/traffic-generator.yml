@@ -141,8 +141,24 @@
         group: root
         mode: "0644"
         content: |
+          @load base/protocols/ssh
+
           redef tcp_SYN_timeout = 5secs;
           redef tcp_inactivity_timeout = 8secs;
+
+          # The bounded emulator intentionally stops after KEXINIT. Zeek's SSH
+          # analyzer has already confirmed both version banners at this point,
+          # but a later incomplete-key-exchange violation removes the generic
+          # DPD service. Restore only the analyzer-observed SSH service before
+          # conn.log is written; this is not a model label or profile hint.
+          event connection_state_remove(c: connection) &priority=0
+              {
+              if ( c?$ssh )
+                  {
+                  add c$service["ssh"];
+                  c$conn$service=to_lower(join_string_set(c$service, ","));
+                  }
+              }
       notify: Restart traffic services
 
     - name: Install traffic-generator systemd units
