@@ -1,8 +1,8 @@
 image:
   repository: hieunguyen595/fedkube-gnn
   tag: unset
-  digest: sha256:f533ca7b841eb73fca57ac96601990662587ab1e5f27c32292055b06a5347610
-releaseId: cf7a31a45e98549d3e83c1cc4e084343416947b3
+  digest: sha256:348b6b96ebbd13bc8a545f4ed5470ad3d84f263ed0daeb28e700a846d02a11d7
+releaseId: 19c8e780f0fcfb42c7290474bbcc771dcc0d8fd6
 deploymentStrategy: RollingUpdate
 deploymentMaxSurge: 0
 deploymentMaxUnavailable: 1
