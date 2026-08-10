@@ -1245,6 +1245,45 @@ Live attacker/SOC separation evidence on 2026-08-10:
   collector Terraform/cost plan. No new GCP resource was created in this
   release.
 
+Kali-style command visualization checkpoint:
+
+- [x] Add a read-only terminal panel to the Attacker Console. Its command is
+  the real loopback `curl` request used to start the selected fixed profile and
+  updates with the selected event count and interval.
+- [x] Keep command execution server-owned: the browser cannot enter arbitrary
+  commands, targets, ports, payloads, credentials, or model output. The panel
+  exposes only the existing sanitized run lifecycle and delivery counters.
+- [x] Render profile/policy context and live gate, send, completion, stop, and
+  failure transcript lines without changing the traffic generator protocol.
+- [x] Validate the static security boundary, JavaScript syntax, five focused
+  Attacker Console tests, and `git diff --check` locally.
+- [x] Publish commit `1723eb7` through Jenkins/Argo CD, apply the same revision
+  to the attacker VM with Ansible, and prove a live transcript through the
+  forwarded browser surface.
+
+Live terminal evidence on 2026-08-10:
+
+- GitHub webhook delivery succeeded and Jenkins build 103 selected only the
+  application release. The CRITICAL image scan passed, Docker Hub received
+  immutable digest
+  `sha256:d98304dc851e00f6c17f382ded76ffe80f3857416e48f7c5799cc0e8308c6967`,
+  and Jenkins wrote GitOps commit `93f2f3e`. Argo CD reconciled that commit with
+  server-side apply and returned `Synced/Healthy`.
+- Quota-safe rotation restored demo mode: Jenkins is `TERMINATED` and
+  `fedkube-traffic-generator` is `RUNNING`. Ansible completed with
+  `ok=17 changed=2 unreachable=0 failed=0`; only the static console delivery and
+  its service restart changed.
+- The live browser loaded the real command for the selected profile, including
+  the loopback endpoint and selected `events`/`interval_ms`, while exposing no
+  credential or arbitrary command input. A browser-driven Attack run
+  `traffic-cb9bc1c51d0c` produced the full `[exec]`, `[gate]`, `[send]`, and
+  `[done]` transcript. It completed `1/1` sends and `1/1` collector accepts with
+  zero drops, duplicates, and processing failures.
+- The independent SOC surface received the same run as sequence 56 and reported
+  fusion class `Attack` with confidence bucket `0.95-1`. The trusted head stayed
+  `Benign` and `is_alert=false`, which is the existing shadow-policy behavior,
+  not a terminal/UI regression.
+
 ## Result
 
 Scientific evaluation, serving-bundle promotion, locked test execution, the
