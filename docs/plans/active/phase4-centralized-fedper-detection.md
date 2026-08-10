@@ -815,12 +815,79 @@ Session metric correction GKE evidence on 2026-08-10:
   each measured 964 pixels wide, and the prediction history rendered in two
   columns. The backend's multi-head diagnostics remain unchanged.
 
+Scientific traffic-profile and generator-VM extension approved on 2026-08-10:
+
+- Before creating executable traffic profiles, derive a seven-class reference
+  from the exact IoT-23 validation replay under
+  `artifacts/application/replay/exact-gke-r0030`. Verify every validation file
+  against its manifest digest. The source is the deterministic held-out sample
+  reconstructed from six official IoT-23 `conn.log.labeled` files; the locked
+  test split must not influence profile construction or tuning.
+- The reference analysis covers protocol, service, connection state, history,
+  destination port, missingness, duration, bytes, packets, IP bytes, missed
+  bytes, inter-arrival time, 60-second flow density, and source/destination
+  topology. It records support and owning clients so a high-frequency class is
+  not mistaken for a universally reproducible behavior.
+- Executable profiles are fixed-target, versioned, bounded, and fail closed.
+  They never accept an arbitrary hostname, IP, port, URL, packet payload, or
+  shell command. A selected profile is control-plane metadata and never enters
+  the inference request or chooses a head, label, confidence, alert, or chart
+  amplitude.
+- A profile is only a candidate until Zeek-observed output is compared with the
+  validation reference. Acceptance uses a deterministic within-class bootstrap
+  envelope on predefined observable features plus nearest-reference checks;
+  profiles outside that envelope remain visibly non-equivalent. The locked test
+  split may be read exactly once only after the profile and comparison protocol
+  are frozen.
+- Separate model-equivalence from natural-timing equivalence. The stratified
+  validation timeline is authoritative for the model's locked rolling-window
+  view but not the original malware arrival process. Phase 4 may target the
+  former and must label it accordingly; a natural-timing claim requires a new
+  contiguous train-only reconstruction from the digest-pinned sources.
+- Add one private Compute Engine traffic-generator VM in the existing Central
+  subnet with no external address, OS Login/IAP administration, a least-
+  privilege service account, and firewall access restricted to the internal
+  detection gateway. Use the smallest viable E2 shape and a small standard
+  persistent disk; do not resize GKE or create a public attack endpoint.
+- Configure the VM through Ansible with a non-root systemd traffic agent. The
+  web console may request only catalogued bounded profiles through an
+  authenticated internal control path. Register and reset the collector run
+  before release, wait for a quiet Zeek drain between runs, and expose
+  attempted/captured/accepted/predicted/drop/failure counters separately.
+- The current target-side Zeek capture sees the gateway-to-target connection,
+  not the original generator identity. The first implementation may prove the
+  complete model path through the existing internal gateway, but scientific
+  topology evidence requires capture at the ingress boundary with observed
+  source preservation. Validate the actual Zeek source/destination fields on
+  GKE before claiming that boundary is complete.
+- Terraform plan must show only the approved generator VM, service account/IAM,
+  and narrowly scoped firewall/control resources, with no replacement of
+  existing GKE, Jenkins, storage, network, or state resources. Keep the apply
+  behind a separately reviewable plan checkpoint even though the user approved
+  the extension, because exact cost and resource changes must remain visible.
+
+Traffic-profile/VM extension progress:
+
+- [x] Locate the exact digest-verified IoT-23 validation replay and preserve the
+  locked test split.
+- [x] Implement and validate the seven-class reference-profile analysis.
+- [x] Publish the immutable local reference and tracked scientific boundary at
+  `docs/PHASE4_TRAFFIC_PROFILE_ANALYSIS.md`. Reference digest is
+  `1170c604041f572ef17c2cd12b16b5274a086a8d2a90a064c97e2315ff98b170`;
+  12,144 validation rows were analyzed and locked test was not read.
+- [ ] Freeze the executable candidate catalog and bootstrap comparator.
+- [ ] Implement the bounded traffic agent and local contract tests.
+- [ ] Extend Terraform, Ansible, Helm, GitOps, CI, and the compact console.
+- [ ] Produce a no-unintended-change Terraform plan and cost/resource summary.
+- [ ] Apply only after the plan checkpoint, then capture live GKE/Zeek/model
+  evidence and evaluate fixed profiles without relabeling model output.
+
 ## Result
 
 Scientific evaluation, serving-bundle promotion, locked test execution, the
-validation-selected alert policy, internal demo console, GKE stack, and all six
-live scenarios are complete. The model shows no validation-to-test overfitting
-in the locked rolling protocol. The all-decision privacy-reduced sink and the
-six-panel Kibana dashboard are deployed and verified on GKE. Final browser
-screenshots and the explicit disposition of the retained 1 GiB evaluation PVC
-remain, so the plan remains active.
+validation-selected alert policy, internal demo console, GKE stack, and the
+original six in-cluster live scenarios are complete. The model shows no
+validation-to-test overfitting in the locked rolling protocol. The all-decision
+privacy-reduced sink and six-panel Kibana dashboard are deployed and verified
+on GKE. The newly approved scientific traffic-profile analysis and private
+traffic-generator VM remain in progress; no generator VM has been created yet.
