@@ -915,6 +915,10 @@ Traffic-profile/VM extension progress:
   0 destroy` for the VM. No traffic-generator instance exists and therefore no
   new VM compute charge is active. Resume requires either an approved quota
   increase to 14 or an approved Jenkins/traffic-generator stop-start rotation.
+  The user selected rotation on 2026-08-10; no quota-increase request was
+  submitted. `scripts/switch_demo_compute.sh` now enforces mutually exclusive
+  `demo` and `ci` modes and the runbook records webhook/build and in-flight
+  observation caveats.
 - [ ] Apply only after the plan checkpoint, then capture live GKE/Zeek/model
   evidence and evaluate fixed profiles without relabeling model output.
 

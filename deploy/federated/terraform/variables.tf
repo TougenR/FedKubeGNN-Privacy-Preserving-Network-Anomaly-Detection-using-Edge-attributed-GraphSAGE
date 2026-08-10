@@ -52,7 +52,7 @@ variable "jenkins_machine_type" {
 variable "traffic_generator_enabled" {
   type        = bool
   description = "Create the private Phase 4 traffic-generator VM and its scoped controls."
-  default     = false
+  default     = true
 }
 
 variable "traffic_generator_machine_type" {
