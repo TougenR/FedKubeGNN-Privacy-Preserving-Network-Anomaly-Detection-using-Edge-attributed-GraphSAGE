@@ -29,6 +29,18 @@
         <section class="configuration card">
           <div class="section-title"><div><small>FIXED LAB CONFIGURATION</small><h2 id="profile-title">Chưa chọn profile</h2></div><span id="profile-status">—</span></div>
           <div id="profile-detail" class="detail empty">Đang tải catalog…</div>
+          <section class="terminal" aria-label="Terminal minh họa lệnh phát traffic">
+            <div class="terminal-bar">
+              <span class="terminal-controls" aria-hidden="true"><i></i><i></i><i></i></span>
+              <strong>kali@fedkube-attacker: ~/lab</strong>
+              <span class="terminal-mode">READ ONLY</span>
+            </div>
+            <div class="terminal-body">
+              <div class="terminal-prompt">┌──(<b>kali㉿fedkube-attacker</b>)-[<em>~/lab</em>]</div>
+              <div class="terminal-command-line"><span>└─$</span><code id="terminal-command">Đang tải profile…</code></div>
+              <div id="terminal-output" class="terminal-output" aria-live="polite"></div>
+            </div>
+          </section>
           <div class="controls">
             <label>Số event<input id="events" type="number" disabled></label>
             <label>Interval (ms)<input id="interval" type="number" disabled></label>

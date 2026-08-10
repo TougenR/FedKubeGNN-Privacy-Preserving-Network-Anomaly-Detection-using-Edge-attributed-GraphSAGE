@@ -54,8 +54,19 @@ class TrafficConsoleTests(unittest.TestCase):
         page = (ROOT / "src/application/traffic_console/static/index.html").read_text()
         self.assertIn("Attacker Console", page)
         self.assertIn("MÁY PHÁT TRAFFIC", page)
+        self.assertIn("kali㉿fedkube-attacker", page)
+        self.assertIn('id="terminal-command"', page)
+        self.assertIn('id="terminal-output"', page)
         self.assertNotIn('id="predicted"', page)
         self.assertNotIn('id="alert', page)
+        script = (ROOT / "src/application/traffic_console/static/app.js").read_text()
+        self.assertIn("http://127.0.0.1:8090/api/runs/${state.profile.id}", script)
+        self.assertIn("collector gate đang đăng ký", script)
+        self.assertIn("target, port, payload và model output không thể nhập", script)
+        self.assertNotIn("Authorization", script)
+        self.assertNotIn("X-FedKube-Observation-Token", script)
+        styles = (ROOT / "src/application/traffic_console/static/styles.css").read_text()
+        self.assertIn(".terminal{height:178px", styles)
 
     def test_start_registers_before_release_with_server_side_tokens(self) -> None:
         calls: list[tuple[str, dict[str, str] | None]] = []

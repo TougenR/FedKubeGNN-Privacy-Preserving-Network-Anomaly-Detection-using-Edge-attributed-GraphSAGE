@@ -1,4 +1,4 @@
-const state = {catalog: null, profile: null, run: null, busy: false};
+const state = {catalog: null, profile: null, run: null, busy: false, terminalSnapshot: null};
 const $ = (id) => document.getElementById(id);
 
 async function json(url, options = {}) {
@@ -30,6 +30,36 @@ function refreshRate() {
   $("interval").max = String(effectiveMax);
   if (Number($("interval").value) > effectiveMax) $("interval").value = String(effectiveMax);
   $("rate").textContent = `${(1000 / Math.max(1, Number($("interval").value))).toFixed(2)} event/s`;
+  renderTerminalCommand();
+}
+function selectedControls() {
+  return {events: Number($("events").value), interval_ms: Number($("interval").value)};
+}
+function renderTerminalCommand() {
+  if (!state.profile) return;
+  const controls = selectedControls();
+  $("terminal-command").textContent = [
+    "curl --silent --show-error --request POST \u005c",
+    `  http://127.0.0.1:8090/api/runs/${state.profile.id} \u005c`,
+    "  --header 'Content-Type: application/json' \u005c",
+    `  --data '${JSON.stringify(controls)}'`,
+  ].join("\n");
+}
+function appendTerminalLine(kind, message) {
+  const output = $("terminal-output");
+  const line = document.createElement("div");
+  line.className = `terminal-line ${kind}`;
+  line.textContent = message;
+  output.append(line);
+  while (output.children.length > 12) output.firstElementChild.remove();
+  output.scrollTop = output.scrollHeight;
+}
+function resetTerminal(profile) {
+  $("terminal-output").replaceChildren();
+  state.terminalSnapshot = null;
+  appendTerminalLine("info", `[profile] ${profile.reference_class} · mechanism=${profile.mechanism}`);
+  appendTerminalLine("muted", `[policy] fixed target-group=${profile.target_group} · destination=tcp/${profile.destination_port}`);
+  appendTerminalLine("muted", "[boundary] target, port, payload và model output không thể nhập từ terminal");
 }
 function selectProfile(profile) {
   state.profile = profile;
@@ -51,6 +81,7 @@ function selectProfile(profile) {
   const note = document.createElement("p"); note.textContent = observed.note; $("profile-detail").append(note);
   $("events").value = profile.events; $("events").min = profile.controls.events.minimum; $("events").max = profile.controls.events.maximum;
   $("interval").value = profile.interval_ms; $("interval").min = profile.controls.interval_ms.minimum;
+  resetTerminal(profile);
   refreshRate(); updateActions();
 }
 function renderCatalog(catalog) {
@@ -73,6 +104,22 @@ function renderRun(record) {
   $("dropped").textContent = `${collector.late_dropped || 0}/${collector.duplicates || 0}`;
   $("failed").textContent = String(collector.processing_failures || 0);
   $("run-id").textContent = record ? `${record.profile_id} · ${record.run_id}` : "Không có run đang hoạt động";
+  const showRecord = record && (active() || record.profile_id === state.profile?.id);
+  if (showRecord) {
+    const snapshot = [record.run_id, record.status, record.attempted || 0, record.succeeded || 0, collector.accepted || 0, collector.late_dropped || 0, collector.processing_failures || 0].join(":");
+    if (snapshot !== state.terminalSnapshot) {
+      state.terminalSnapshot = snapshot;
+      if (["waiting-for-release", "running"].includes(record.status)) {
+        appendTerminalLine("send", `[send] run=${record.run_id} · sent=${record.succeeded || 0}/${record.attempted || 0} · accepted=${collector.accepted || 0}`);
+      } else if (record.status === "completed") {
+        appendTerminalLine("success", `[done] sent=${record.succeeded || 0}/${record.attempted || 0} · accepted=${collector.accepted || 0} · drop=${collector.late_dropped || 0} · error=${collector.processing_failures || 0}`);
+      } else if (record.status === "cancelled") {
+        appendTerminalLine("warning", `[stop] run=${record.run_id} đã được dừng`);
+      } else if (record.status === "failed") {
+        appendTerminalLine("error", `[error] run=${record.run_id} thất bại`);
+      }
+    }
+  }
   updateActions();
 }
 async function boot() {
@@ -87,14 +134,20 @@ async function boot() {
 }
 async function start() {
   if (!state.profile?.execution_enabled || active()) return; state.busy = true; updateActions();
-  try { renderRun(await json(`/api/runs/${state.profile.id}`, {method: "POST", body: JSON.stringify({events: Number($("events").value), interval_ms: Number($("interval").value)})})); }
-  catch (error) { $("agent-dot").className = "error"; $("agent-label").textContent = error.message; }
+  appendTerminalLine("command", `[exec] ${state.profile.reference_class} · collector gate đang đăng ký`);
+  try {
+    const record = await json(`/api/runs/${state.profile.id}`, {method: "POST", body: JSON.stringify(selectedControls())});
+    appendTerminalLine("success", `[gate] registered · run=${record.run_id} · agent released`);
+    renderRun(record);
+  }
+  catch (error) { appendTerminalLine("error", `[error] ${error.message}`); $("agent-dot").className = "error"; $("agent-label").textContent = error.message; }
   finally { state.busy = false; updateActions(); }
 }
 async function stop() {
   if (!active()) return; state.busy = true; updateActions();
+  appendTerminalLine("warning", `[exec] stop run=${state.run.run_id}`);
   try { const body = await json("/api/runs/current", {method: "DELETE"}); renderRun(body.run || null); }
-  catch (error) { $("agent-dot").className = "error"; $("agent-label").textContent = error.message; }
+  catch (error) { appendTerminalLine("error", `[error] ${error.message}`); $("agent-dot").className = "error"; $("agent-label").textContent = error.message; }
   finally { state.busy = false; updateActions(); }
 }
 async function poll() {
