@@ -1047,6 +1047,38 @@ Dataset-shaped traffic extension progress:
 - [ ] Publish through Jenkins/Argo CD, update the VM through Ansible, and record
   live end-to-end evidence for all three newly executable profiles.
 
+First live extension audit on 2026-08-10:
+
+- Jenkins build 93 succeeded and published application digest
+  `sha256:40d6c917d2547e1a7acbb09376f337a3b801293f72da039e39472bef14b801d4`.
+  The two-revision gate worked: Argo CD first reached Healthy with the emulator
+  disabled, then revision `5a76010` added the sidecar and internal ports 22 and
+  6667 on the existing `10.10.0.5` LoadBalancer. No new cloud resource or
+  public listener was created.
+- Ansible completed with `ok=16 changed=6 unreachable=0 failed=0`; the agent,
+  VM-local Zeek, and shipper are active. The deployed API exposes all seven
+  profiles plus bounded event/interval controls.
+- Attack completed 4/4 sends and 4/4 collector/model predictions with no drop
+  or downstream failure. Fusion predicted Attack at confidence bucket 0.95-1,
+  but Zeek recorded `service=null`; the first emulator's arbitrary post-banner
+  bytes caused the SSH analyzer not to retain the service. Do not accept that
+  fingerprint.
+- C&C completed 3/3 and 3/3 predictions with no failure. Zeek recorded one
+  S0/unknown flow and two IRC flows; fusion predicted C&C on the 2- and 3-flow
+  windows. The IRC flows closed as RSTO because the client left unread server
+  responses; revise to graceful close before final acceptance.
+- DDoS completed 50/50 and 50/50 predictions with no failure. Zeek produced
+  OTH/history A, and all 50 windows were predicted HorizontalPortScan. This is
+  direct evidence that the known checksum artifact materially affects the
+  model; never overwrite the output label. The corrective candidate disables
+  TX/GSO/TSO offload, enables Zeek checksum validation, and intentionally
+  corrupts only catalogued ACK-only DDoS packets to target history C.
+- The corrective SSH candidate uses valid, size-controlled KEXINIT framing:
+  client application bytes target approximately the IoT-23 median 589 and
+  server bytes approximately 1,801, fragmented into bounded packet counts.
+  Twenty-one affected tests, Ruff, Ansible syntax, and diff checks pass. It
+  still requires a second immutable release and live Zeek/model proof.
+
 ## Result
 
 Scientific evaluation, serving-bundle promotion, locked test execution, the

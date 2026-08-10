@@ -98,9 +98,9 @@ profiles:
       services: [unknown]
       connection_states: [OTH]
       note: >-
-        Bounded ACK-only traffic reproduces TCP/80, OTH-like state, no response,
-        and 50-flow density. It cannot reproduce validation history C because
-        live Zeek intentionally uses -C; treat it as a known approximation.
+        Intentionally checksum-invalid ACK-only traffic reproduces TCP/80,
+        OTH, history C, no response, and 50-flow density. The VM disables TX
+        checksum offload so ordinary captured sessions remain checksum-valid.
   - id: okiru
     reference_class: Okiru
     scientific_status: candidate

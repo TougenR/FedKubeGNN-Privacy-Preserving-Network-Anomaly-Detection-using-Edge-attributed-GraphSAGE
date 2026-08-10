@@ -45,6 +45,7 @@ def send_tcp_packet(
     destination_port: int,
     sequence: int,
     flags: int,
+    corrupt_checksum: bool = False,
 ) -> bool:
     """Send one header-only TCP packet; the caller owns fixed-target authority."""
     source_bytes = socket.inet_aton(source)
@@ -66,6 +67,8 @@ def send_tcp_packet(
         "!4s4sBBH", source_bytes, destination_bytes, 0, socket.IPPROTO_TCP, len(tcp)
     )
     tcp_checksum = _checksum(pseudo + tcp)
+    if corrupt_checksum:
+        tcp_checksum ^= 0xFFFF
     tcp = tcp[:16] + struct.pack("!H", tcp_checksum) + tcp[18:]
     total_length = 20 + len(tcp)
     ip_header = struct.pack(
@@ -114,6 +117,70 @@ def _read_line(connection: socket.socket, limit: int = 512) -> bytes:
     return bytes(payload)
 
 
+def _read_exact(connection: socket.socket, size: int) -> bytes:
+    payload = bytearray()
+    while len(payload) < size:
+        value = connection.recv(size - len(payload))
+        if not value:
+            break
+        payload.extend(value)
+    return bytes(payload)
+
+
+def _ssh_string(value: bytes) -> bytes:
+    return struct.pack("!I", len(value)) + value
+
+
+def _ssh_kexinit_packet(total_size: int, marker: bytes) -> bytes:
+    """Build one syntactically valid, size-controlled SSH2 KEXINIT packet."""
+    fields = [
+        b"curve25519-sha256",
+        b"ssh-ed25519",
+        b"aes128-ctr",
+        b"aes128-ctr",
+        b"hmac-sha2-256",
+        b"hmac-sha2-256",
+        b"none",
+        b"none",
+        b"",
+        b"",
+    ]
+
+    def payload(filler: bytes) -> bytes:
+        values = [fields[0] + filler, *fields[1:]]
+        return b"\x14" + marker[:1] * 16 + b"".join(map(_ssh_string, values)) + b"\0" * 5
+
+    base = payload(b"")
+    filler_size = total_size - 9 - len(base)
+    if total_size % 8 or filler_size < 0:
+        raise ValueError("SSH KEXINIT target size is invalid.")
+    filler = b"," + b"x" * (filler_size - 1) if filler_size else b""
+    body = payload(filler)
+    padding = b"\0" * 4
+    packet_length = 1 + len(body) + len(padding)
+    packet = struct.pack("!IB", packet_length, len(padding)) + body + padding
+    if len(packet) != total_size:
+        raise ValueError("SSH KEXINIT packet size drifted.")
+    return packet
+
+
+def _send_chunks(connection: socket.socket, payload: bytes, count: int) -> None:
+    for index in range(count):
+        start = len(payload) * index // count
+        end = len(payload) * (index + 1) // count
+        connection.sendall(payload[start:end])
+        time.sleep(0.2)
+
+
+def _drain_socket(connection: socket.socket) -> None:
+    while True:
+        try:
+            if not connection.recv(1024):
+                return
+        except TimeoutError:
+            return
+
+
 def send_tcp_session(
     *,
     source: str,
@@ -135,23 +202,29 @@ def send_tcp_session(
                 if not banner.startswith(b"SSH-"):
                     return False
                 connection.sendall(b"SSH-2.0-OpenSSH_8.9_FedKube_Lab\r\n")
-                for index in range(12):
-                    block = bytes([65 + index % 26]) * 48
-                    connection.sendall(block)
-                    if not connection.recv(256):
-                        return False
-                    time.sleep(0.2)
-                return True
+                _send_chunks(connection, _ssh_kexinit_packet(552, b"c"), 6)
+                header = _read_exact(connection, 4)
+                if len(header) != 4:
+                    return False
+                packet_length = struct.unpack("!I", header)[0]
+                return len(_read_exact(connection, packet_length)) == packet_length
             if protocol == "irc":
                 connection.sendall(b"NICK fedkube-lab\r\n")
+                if not _read_line(connection):
+                    return False
                 if not complete:
                     time.sleep(3.1)
-                    return True
-                connection.sendall(b"USER fedkube 0 * :IoT23 bounded lab\r\n")
-                connection.sendall(b"PING :fedkube\r\n")
-                response = connection.recv(1024)
-                connection.sendall(b"QUIT :bounded-run-complete\r\n")
-                return bool(b"PONG" in banner + response or response)
+                else:
+                    connection.sendall(b"USER fedkube 0 * :IoT23 bounded lab\r\n")
+                    if not _read_line(connection):
+                        return False
+                    connection.sendall(b"PING :fedkube\r\n")
+                    if b"PONG" not in _read_line(connection):
+                        return False
+                    connection.sendall(b"QUIT :bounded-run-complete\r\n")
+                connection.shutdown(socket.SHUT_WR)
+                _drain_socket(connection)
+                return True
             return False
     except (OSError, TimeoutError):
         return False
@@ -322,6 +395,7 @@ class TrafficExecutor:
             destination_port=profile.destination_port,
             sequence=index + 1,
             flags=flags,
+            corrupt_checksum=profile.mechanism == "ack-only",
         )
 
     async def _execute(self, profile: TrafficProfile) -> None:

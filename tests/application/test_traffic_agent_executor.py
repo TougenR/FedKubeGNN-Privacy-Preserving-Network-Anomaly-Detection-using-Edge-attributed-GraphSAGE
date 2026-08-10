@@ -89,6 +89,7 @@ class TrafficAgentExecutorTests(unittest.IsolatedAsyncioTestCase):
             await asyncio.sleep(0.01)
         self.assertEqual(len(calls), 10)
         self.assertTrue(all(call["flags"] == 0x10 for call in calls))
+        self.assertTrue(all(call["corrupt_checksum"] for call in calls))
         self.assertEqual(executor.current().events, 10)
         self.assertEqual(executor.current().interval_ms, 20)
 
