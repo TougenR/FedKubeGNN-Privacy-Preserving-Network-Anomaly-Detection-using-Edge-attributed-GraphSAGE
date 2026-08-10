@@ -83,7 +83,7 @@
 
           <div class="metric-grid">
             <article><small>Inference phiên</small><strong id="metric-windows">0</strong><span id="metric-windows-source">live 0 · replay 0</span></article>
-            <article><small>Detection đạt ngưỡng</small><strong id="metric-alerts">0</strong><span id="metric-alerts-source">live 0 · replay 0</span></article>
+            <article><small>Policy alert</small><strong id="metric-alerts">0</strong><span id="metric-alerts-source">live 0 · replay 0</span></article>
             <article><small>Latency p95</small><strong id="metric-latency">—</strong><span id="metric-latency-source">live inference p95</span></article>
             <article><small>Flow drop</small><strong id="metric-drop">0%</strong><span id="metric-drop-source">live 0/0 flows</span></article>
           </div>
@@ -95,16 +95,16 @@
 
           <div class="chart-shell">
             <div class="chart-title">
-              <div><strong>Tần suất detection đạt ngưỡng</strong><small>Lấy mẫu mỗi 1 giây · không có detection = trở về Benign</small></div>
-              <span id="chart-window-count">80s · 0 detection/s</span>
+              <div><strong>Tần suất model detection</strong><small>Vàng = fusion phát hiện · đỏ = policy alert · không detection = Benign</small></div>
+              <span id="chart-window-count">80s · 0 detection/s · 0 alert</span>
             </div>
             <div class="chart-layout">
               <div class="chart-y-axis" aria-hidden="true"><span>6+/s</span><span>3–5/s</span><span>1–2/s</span><span>BENIGN</span></div>
               <svg id="detection-chart" viewBox="0 0 1000 220" preserveAspectRatio="none" role="img" aria-label="Biểu đồ dự đoán tấn công theo thời gian">
                 <defs>
                   <linearGradient id="chart-area-gradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#ff667a" stop-opacity="0.34"></stop>
-                    <stop offset="100%" stop-color="#4de2cf" stop-opacity="0.02"></stop>
+                    <stop offset="0%" stop-color="#4de2cf" stop-opacity="0.16"></stop>
+                    <stop offset="100%" stop-color="#4de2cf" stop-opacity="0.01"></stop>
                   </linearGradient>
                 </defs>
                 <g class="chart-grid" aria-hidden="true">
@@ -114,13 +114,15 @@
                   <line class="baseline" x1="24" y1="180" x2="980" y2="180"></line>
                 </g>
                 <path id="detection-area" class="detection-area" d="M24 180 L980 180 L980 180 L24 180 Z"></path>
-                <polyline id="detection-line" class="detection-line normal" points="24,180 980,180"></polyline>
+                <path id="detection-line" class="detection-line normal" d="M24 180 L980 180"></path>
+                <g id="detection-segments" class="detection-segments"></g>
                 <g id="detection-points" class="detection-points"></g>
               </svg>
             </div>
             <div class="chart-legend">
               <span><i class="legend-normal"></i>Benign</span>
-              <span><i class="legend-alert"></i>Detection đạt ngưỡng</span>
+              <span><i class="legend-detection"></i>Model detection</span>
+              <span><i class="legend-alert"></i>Policy alert</span>
             </div>
           </div>
 

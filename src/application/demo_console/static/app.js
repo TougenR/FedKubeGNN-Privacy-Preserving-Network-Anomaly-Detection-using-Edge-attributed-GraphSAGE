@@ -5,7 +5,7 @@ const state = {
   monitorInitialized: false,
   events: [],
   chartSamples: [],
-  pendingDetections: [],
+  pendingSignals: [],
   liveMetrics: null,
   liveBaseline: null,
   replayMetrics: {inferences: 0, detections: 0, latencies: []},
@@ -25,7 +25,7 @@ function emptyChartSample() {
 
 function resetChartSamples() {
   state.chartSamples = Array.from({length: CHART_SAMPLE_LIMIT}, emptyChartSample);
-  state.pendingDetections = [];
+  state.pendingSignals = [];
 }
 
 function metricCounter(metrics, key) {
@@ -455,7 +455,7 @@ async function runScientificReplay() {
 
     const event = replayChartEvent(result, latencyMs);
     state.events = [event, ...state.events].slice(0, 8);
-    if (event.is_alert) state.pendingDetections.push(event);
+    if (event.predicted_class !== "Benign") state.pendingSignals.push(event);
     renderLatest(event);
     renderEventList();
     updateAlertBanner(event);
@@ -475,20 +475,41 @@ function frequencyLevel(count) {
   return 3;
 }
 
+function smoothSegment(previous, current) {
+  const midpoint = (previous.x + current.x) / 2;
+  return `C ${midpoint.toFixed(1)} ${previous.y} ${midpoint.toFixed(1)} ${current.y} ${current.x.toFixed(1)} ${current.y}`;
+}
+
+function smoothChartPath(coordinates) {
+  if (!coordinates.length) return "";
+  return coordinates.slice(1).reduce(
+    (path, current, index) => `${path} ${smoothSegment(coordinates[index], current)}`,
+    `M ${coordinates[0].x.toFixed(1)} ${coordinates[0].y}`
+  );
+}
+
 function sampleAttackSignal() {
-  const detections = state.pendingDetections.splice(0);
+  const detections = state.pendingSignals.splice(0);
   const counts = new Map();
   detections.forEach((event) => {
     counts.set(event.predicted_class, (counts.get(event.predicted_class) || 0) + 1);
   });
   const dominant = [...counts.entries()].sort((left, right) => right[1] - left[1])[0];
+  const dominantEvent = dominant
+    ? [...detections].reverse().find((event) => event.predicted_class === dominant[0])
+    : null;
+  const alertCount = detections.filter((event) => event.is_alert).length;
   const sample = dominant ? {
     attack_count: detections.length,
+    alert_count: alertCount,
     level: frequencyLevel(detections.length),
     predicted_class: dominant[0],
-    is_alert: true,
-    confidence_bucket: detections[detections.length - 1].confidence_bucket,
-    source_type: detections.some((event) => event.source_type === "live") ? "live" : "validation-replay"
+    is_alert: alertCount > 0,
+    confidence_bucket: dominantEvent.confidence_bucket,
+    source_type: detections.some((event) => event.source_type === "live") ? "live" : "validation-replay",
+    alert_decision_source: dominantEvent.alert_decision_source,
+    trusted_predicted_class: dominantEvent.trusted_predicted_class,
+    decision_status: dominantEvent.decision_status
   } : emptyChartSample();
   state.chartSamples = [...state.chartSamples, sample].slice(-CHART_SAMPLE_LIMIT);
   renderChart();
@@ -497,22 +518,20 @@ function sampleAttackSignal() {
 
 function updateAlertBanner(event) {
   const banner = $("alert-banner");
-  if (!event || event.predicted_class === "Benign" || event.decision_status === "below-threshold") {
+  if (!event || event.predicted_class === "Benign") {
     banner.className = "alert-banner normal";
     banner.querySelector(".alert-icon").textContent = "✓";
     $("alert-title").textContent = "Benign";
-    if (event?.decision_status === "below-threshold") {
-      $("alert-detail").textContent = `Dự đoán thô ${event.predicted_class} ${event.confidence_bucket}, dưới ngưỡng cảnh báo.`;
-    } else {
-      $("alert-detail").textContent = event ? "Không có detection đạt ngưỡng trong giây hiện tại." : "Đang chờ dự đoán mới.";
-    }
+    $("alert-detail").textContent = event ? "Không có model detection trong giây hiện tại." : "Đang chờ dự đoán mới.";
     return;
   }
   banner.className = `alert-banner ${event.is_alert ? "danger" : "detection"}`;
   banner.querySelector(".alert-icon").textContent = "!";
   $("alert-title").textContent = event.predicted_class;
   if (event.source_type === "validation-replay") {
-    $("alert-detail").textContent = `Validation replay đạt ngưỡng; ${event.attack_count || 1} detection/s, không phải live policy alert.`;
+    $("alert-detail").textContent = event.is_alert
+      ? `Validation replay đạt ngưỡng; ${event.attack_count || 1} detection/s, không phải live policy alert.`
+      : `Validation replay phát hiện ${event.predicted_class}, nhưng chưa đạt ngưỡng policy.`;
   } else if (event.is_alert) {
     $("alert-detail").textContent = `${event.attack_count || 1} detection/s đã đạt ngưỡng policy.`;
   } else if (event.alert_decision_source === "trusted-shadow") {
@@ -525,31 +544,53 @@ function updateAlertBanner(event) {
 function renderChart() {
   const samples = state.chartSamples.slice(-CHART_SAMPLE_LIMIT);
   const coordinates = samples.map((sample, index) => ({
+    index,
     x: 24 + (index / Math.max(1, CHART_SAMPLE_LIMIT - 1)) * 956,
     y: 180 - sample.level * 48,
     sample
   }));
-  $("detection-line").setAttribute("points", coordinates.map((point) => `${point.x.toFixed(1)},${point.y}`).join(" "));
+  const smoothPath = smoothChartPath(coordinates);
+  $("detection-line").setAttribute("d", smoothPath);
   const hasDetection = samples.some((sample) => sample.attack_count > 0);
-  $("detection-line").setAttribute("class", `detection-line ${hasDetection ? "danger" : "normal"}`);
+  $("detection-line").setAttribute("class", "detection-line normal");
   const last = coordinates[coordinates.length - 1];
-  $("detection-area").setAttribute("d", `M ${coordinates.map((point) => `${point.x.toFixed(1)} ${point.y}`).join(" L ")} L ${last.x.toFixed(1)} 180 L 24 180 Z`);
-  $("detection-area").classList.toggle("active", hasDetection);
+  $("detection-area").setAttribute("d", `${smoothPath} L ${last.x.toFixed(1)} 180 L 24 180 Z`);
+  $("detection-area").setAttribute("class", `detection-area ${hasDetection ? "signal" : "normal"}`);
+  $("detection-segments").replaceChildren();
+  coordinates.slice(1).forEach((point, index) => {
+    const previous = coordinates[index];
+    const signal = point.sample.attack_count > 0 ? point.sample : previous.sample;
+    if (signal.attack_count === 0) return;
+    const segment = document.createElementNS(SVG_NS, "path");
+    segment.setAttribute("d", `M ${previous.x.toFixed(1)} ${previous.y} ${smoothSegment(previous, point)}`);
+    segment.setAttribute("class", `chart-segment ${signal.is_alert ? "danger" : "detection"}`);
+    $("detection-segments").append(segment);
+  });
   $("detection-points").replaceChildren();
 
   const attackPoints = coordinates.filter((point) => point.sample.attack_count > 0);
-  attackPoints.forEach((point, index) => {
+  const labelPoints = new Set(
+    attackPoints.filter((point) => {
+      const next = coordinates[point.index + 1];
+      return !next
+        || next.sample.attack_count === 0
+        || next.sample.predicted_class !== point.sample.predicted_class
+        || next.sample.is_alert !== point.sample.is_alert;
+    }).slice(-3)
+  );
+  attackPoints.forEach((point) => {
     const group = document.createElementNS(SVG_NS, "g");
-    group.setAttribute("class", "chart-point danger");
+    group.setAttribute("class", `chart-point ${point.sample.is_alert ? "danger" : "detection"}`);
     const circle = document.createElementNS(SVG_NS, "circle");
     circle.setAttribute("cx", point.x.toFixed(1));
     circle.setAttribute("cy", point.y);
-    circle.setAttribute("r", "6");
+    circle.setAttribute("r", point.sample.is_alert ? "5.5" : "5");
     const tooltip = document.createElementNS(SVG_NS, "title");
-    tooltip.textContent = `${point.sample.predicted_class} · ${point.sample.attack_count} detection/s`;
+    const signalKind = point.sample.is_alert ? "policy alert" : "model detection";
+    tooltip.textContent = `${point.sample.predicted_class} · ${point.sample.attack_count}/s · ${signalKind}`;
     circle.append(tooltip);
     group.append(circle);
-    if (index >= attackPoints.length - 3) {
+    if (labelPoints.has(point)) {
       const label = document.createElementNS(SVG_NS, "text");
       label.setAttribute("x", Math.min(910, Math.max(45, point.x)).toFixed(1));
       label.setAttribute("y", Math.max(20, point.y - 12));
@@ -559,7 +600,7 @@ function renderChart() {
     $("detection-points").append(group);
   });
   const current = samples[samples.length - 1];
-  $("chart-window-count").textContent = `80s · ${current.attack_count} detection/s`;
+  $("chart-window-count").textContent = `80s · ${current.attack_count} detection/s · ${current.alert_count || 0} alert`;
 }
 
 function renderLatest(event) {
@@ -607,7 +648,7 @@ async function pollMonitor() {
       state.cursor = body.next_cursor;
       const fresh = body.events.map((event) => ({...event, source_type: "live"}));
       if (!initialSnapshot) {
-        state.pendingDetections.push(...fresh.filter((event) => event.is_alert));
+        state.pendingSignals.push(...fresh.filter((event) => event.predicted_class !== "Benign"));
       }
       state.events = [...fresh.slice().reverse(), ...state.events].slice(0, 8);
       const latest = fresh[fresh.length - 1];

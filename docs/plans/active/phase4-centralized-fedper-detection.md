@@ -1107,6 +1107,18 @@ Final corrected live extension audit on 2026-08-10:
   two-minute maximum schedule; the UI displays derived events/second. Targets,
   ports, payloads, labels, sensors, model heads, and routes remain immutable.
 
+Monitor chart refinement approved on 2026-08-10:
+
+- Preserve the alert policy and add every non-Benign model decision to the
+  one-second chart buffer. A shadow/below-policy detection is amber and a
+  policy-qualified `is_alert=true` decision is red; Benign remains the cyan
+  baseline. This is a presentation change only and must not promote a fusion
+  decision into an alert.
+- Replace rigid polyline transitions with bounded cubic Bézier segments. Keep
+  the class label only at the end of the latest detection groups so burst runs
+  remain readable, and use a smaller chart annotation font while increasing
+  the primary status, metric, legend, and prediction text.
+
 ## Result
 
 Scientific evaluation, serving-bundle promotion, locked test execution, the
