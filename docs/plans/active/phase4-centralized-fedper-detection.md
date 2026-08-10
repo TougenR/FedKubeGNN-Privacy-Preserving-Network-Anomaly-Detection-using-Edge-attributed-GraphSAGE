@@ -790,6 +790,31 @@ Session metric and prediction-panel correction approved on 2026-08-10:
   full bottom width for a longer latest-prediction history. This is a display
   change only and does not alter routing, fusion, or alert policy.
 
+Session metric correction GKE evidence on 2026-08-10:
+
+- Application commit `be448119c6e678f3f9deb4e4d3265865a2fe36d2` passed the
+  focused console and live-remediation tests (13 total), JavaScript syntax,
+  Ruff, Helm lint/template, and `git diff --check`. GitHub Actions run
+  `31351132677` passed Python, security, and infrastructure.
+- Jenkins produced environment-only commit
+  `1f5e63aa2207e206c8da0b322bb2f2c57dcd899c`, pinning immutable application
+  digest
+  `sha256:52dc8a503f142b222fd6c390ad045779ee0cad7b3dab4ade25bda5305674e902`.
+  An explicit Argo CD core sync rolled out that revision; the detection
+  Application reports `Synced/Healthy`, and all long-running application pods
+  are ready with zero restarts.
+- Firefox WebDriver BiDi exercised the deployed GKE console through its local
+  port-forward. Initial session counters were `0/0`. A Benign validation replay
+  changed inference to `1` with source `live 0 · replay 1` while qualified
+  detections remained `0`. Attack changed inference to `2` and qualified
+  detections to `1`, with source `live 0 · replay 1`; replay round-trip p95 was
+  populated. Clear reset both session counters and latency to their initial
+  state.
+- The deployed DOM contains neither the former head grid nor its heading. At
+  the tested desktop viewport, Latest Prediction and its parent bottom monitor
+  each measured 964 pixels wide, and the prediction history rendered in two
+  columns. The backend's multi-head diagnostics remain unchanged.
+
 ## Result
 
 Scientific evaluation, serving-bundle promotion, locked test execution, the
