@@ -23,10 +23,10 @@ demoTarget:
     requests: {cpu: 1m, memory: 64Mi}
     limits: {cpu: 250m, memory: 256Mi}
 zeek:
-  enabled: true
-  # Capture both directions of pod-originated demo connections while excluding
-  # kubelet probes SNATed through the first reserved Pod-range address.
-  captureFilter: tcp and not host 10.40.0.1 and ((src net 10.40.0.0/14 and dst port 8080) or (dst net 10.40.0.0/14 and src port 8080))
+  # VM-local Zeek now preserves the original generator-side topology. Keeping
+  # the former target-side capture enabled would duplicate every live flow.
+  enabled: false
+  captureFilter: ""
   sensorId: sensor-34-1
   resources:
     requests: {cpu: 5m, memory: 256Mi}
@@ -40,8 +40,17 @@ demoConsole:
   resources:
     requests: {cpu: 1m, memory: 64Mi}
     limits: {cpu: 500m, memory: 256Mi}
+trafficGenerator:
+  enabled: true
+  agentUrl: http://10.10.0.20:8091
+  sensorId: sensor-34-1
+  agentTokenSecretName: fedkube-detection-traffic-agent-token
+  observationTokenSecretName: fedkube-detection-traffic-observation-token
 gateway:
   enabled: true
+  observationPort:
+    enabled: true
+    port: 8082
   resources:
     requests: {cpu: 1m, memory: 32Mi}
     limits: {cpu: 250m, memory: 128Mi}

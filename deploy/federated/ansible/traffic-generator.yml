@@ -18,6 +18,19 @@
       (dst host 10.10.0.5 and dst port 80))) or ((dst host 10.10.0.20) and
       (src host 10.10.0.5 and src port 80)))
   tasks:
+    - name: Keep Ubuntu package retrieval inside the HTTPS-only egress policy
+      ansible.builtin.replace:
+        path: /etc/apt/sources.list.d/ubuntu.sources
+        regexp: '^(URIs:\s+)http://'
+        replace: '\1https://'
+      register: traffic_apt_sources
+
+    - name: Refresh APT metadata over the enforced HTTPS sources
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+        force_apt_get: true
+
     - name: Install constrained runtime dependencies
       ansible.builtin.apt:
         name:
@@ -27,7 +40,7 @@
           - python3
           - python3-venv
         state: present
-        update_cache: true
+        update_cache: false
 
     - name: Create the non-root traffic-agent account
       ansible.builtin.user:
@@ -47,17 +60,34 @@
       loop:
         - {path: /opt/fedkube, owner: root, group: root, mode: "0755"}
         - {path: /opt/fedkube/src, owner: root, group: root, mode: "0755"}
+        - {path: /opt/fedkube/src/application/api, owner: root, group: root, mode: "0755"}
+        - {path: /opt/fedkube/src/application/collection, owner: root, group: root, mode: "0755"}
+        - {path: /opt/fedkube/src/application/traffic_agent, owner: root, group: root, mode: "0755"}
         - {path: /opt/fedkube/configs/application, owner: root, group: root, mode: "0755"}
         - {path: /etc/fedkube, owner: root, group: root, mode: "0755"}
         - {path: /var/lib/fedkube/zeek, owner: root, group: "{{ traffic_agent_user }}", mode: "0750"}
 
-    - name: Install the application source used by the agent and shipper
+    - name: Install the minimal application modules used by the agent and shipper
       ansible.builtin.copy:
-        src: "{{ playbook_dir }}/../../../src/"
-        dest: /opt/fedkube/src/
+        src: "{{ playbook_dir }}/../../../src/{{ item }}"
+        dest: "/opt/fedkube/src/{{ item }}"
         owner: root
         group: root
         mode: preserve
+      loop:
+        - __init__.py
+        - application/__init__.py
+        - application/api/__init__.py
+        - application/api/schema.py
+        - application/collection/__init__.py
+        - application/collection/delivery.py
+        - application/collection/transport.py
+        - application/collection/zeek_reader.py
+        - application/collection/zeek_shipper.py
+        - application/traffic_agent/__init__.py
+        - application/traffic_agent/app.py
+        - application/traffic_agent/catalog.py
+        - application/traffic_agent/executor.py
       notify: Restart traffic services
 
     - name: Install the immutable scientific profile catalog
@@ -150,4 +180,3 @@
         - fedkube-zeek
         - fedkube-zeek-shipper
         - fedkube-traffic-agent
-
