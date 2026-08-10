@@ -26,9 +26,11 @@ class TrafficAgentApiTests(unittest.TestCase):
                 require_token(authorization)
             self.assertEqual(raised.exception.status_code, 401)
 
-    def test_start_contract_accepts_only_profile_id(self) -> None:
+    def test_start_contract_accepts_only_profile_and_bounded_controls(self) -> None:
         self.assertEqual(
-            StartTrafficRun.model_validate({"profile_id": "okiru"}).profile_id,
+            StartTrafficRun.model_validate(
+                {"profile_id": "okiru", "events": 10, "interval_ms": 500}
+            ).profile_id,
             "okiru",
         )
         with self.assertRaises(ValidationError):
@@ -36,7 +38,8 @@ class TrafficAgentApiTests(unittest.TestCase):
                 {
                     "profile_id": "okiru",
                     "target": "8.8.8.8",
-                    "parameters": {"events": 1000000},
+                    "events": 10,
+                    "interval_ms": 500,
                 }
             )
 

@@ -40,6 +40,26 @@ class ExpectedObservables(BaseModel):
     note: str = Field(min_length=1, max_length=500)
 
 
+class IntegerControl(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    minimum: int = Field(ge=1)
+    maximum: int = Field(ge=1)
+
+    @model_validator(mode="after")
+    def ordered(self) -> "IntegerControl":
+        if self.minimum > self.maximum:
+            raise ValueError("Traffic control minimum cannot exceed maximum.")
+        return self
+
+
+class TrafficControls(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    events: IntegerControl
+    interval_ms: IntegerControl
+
+
 class TrafficProfile(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -52,6 +72,7 @@ class TrafficProfile(BaseModel):
     destination_port: int = Field(ge=1, le=65535)
     events: int = Field(ge=1, le=50)
     interval_ms: int = Field(ge=4, le=60000)
+    controls: TrafficControls
     expected_observables: ExpectedObservables
 
     @model_validator(mode="after")
@@ -66,7 +87,43 @@ class TrafficProfile(BaseModel):
             raise ValueError("Round-robin profiles require at least two events.")
         if (self.events - 1) * self.interval_ms > 120000:
             raise ValueError("Traffic profile runtime cannot exceed two minutes.")
+        if not self.controls.events.minimum <= self.events <= self.controls.events.maximum:
+            raise ValueError("Default event count must be inside its control bounds.")
+        if not (
+            self.controls.interval_ms.minimum
+            <= self.interval_ms
+            <= self.controls.interval_ms.maximum
+        ):
+            raise ValueError("Default interval must be inside its control bounds.")
         return self
+
+    def resolve_run_controls(
+        self,
+        *,
+        events: int | None = None,
+        interval_ms: int | None = None,
+    ) -> tuple[int, int]:
+        selected_events = self.events if events is None else events
+        selected_interval = self.interval_ms if interval_ms is None else interval_ms
+        if not self.controls.events.minimum <= selected_events <= self.controls.events.maximum:
+            raise ValueError(
+                f"events must be between {self.controls.events.minimum} and "
+                f"{self.controls.events.maximum}"
+            )
+        if not (
+            self.controls.interval_ms.minimum
+            <= selected_interval
+            <= self.controls.interval_ms.maximum
+        ):
+            raise ValueError(
+                f"interval_ms must be between {self.controls.interval_ms.minimum} and "
+                f"{self.controls.interval_ms.maximum}"
+            )
+        if self.mechanism.endswith("round-robin") and selected_events < 2:
+            raise ValueError("Round-robin profiles require at least two events.")
+        if (selected_events - 1) * selected_interval > 120000:
+            raise ValueError("Selected traffic schedule cannot exceed two minutes.")
+        return selected_events, selected_interval
 
 
 class TrafficProfileCatalog(BaseModel):

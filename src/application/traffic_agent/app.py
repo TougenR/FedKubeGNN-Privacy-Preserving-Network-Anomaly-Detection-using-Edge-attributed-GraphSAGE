@@ -26,6 +26,8 @@ class StartTrafficRun(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     profile_id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{0,63}$")
+    events: int | None = Field(default=None, ge=1, le=50)
+    interval_ms: int | None = Field(default=None, ge=4, le=60000)
 
 
 state: dict[str, Any] = {}
@@ -105,13 +107,21 @@ async def profiles() -> dict[str, Any]:
 async def start_run(request: StartTrafficRun) -> dict[str, Any]:
     executor = _ready()
     try:
-        return (await executor.start(request.profile_id)).public()
+        return (
+            await executor.start(
+                request.profile_id,
+                events=request.events,
+                interval_ms=request.interval_ms,
+            )
+        ).public()
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="unknown traffic profile") from exc
     except TrafficProfileDisabledError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except TrafficRunConflictError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @app.post(

@@ -40,6 +40,13 @@ class StartRunRequest(BaseModel):
     parameters: dict[str, Any]
 
 
+class StartTrafficRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    events: int
+    interval_ms: int
+
+
 state: dict[str, Any] = {}
 
 
@@ -199,7 +206,10 @@ async def traffic_profiles() -> dict[str, Any]:
 
 
 @app.post("/api/traffic-runs/{profile_id}", status_code=202)
-async def start_traffic_run(profile_id: str) -> dict[str, Any]:
+async def start_traffic_run(
+    profile_id: str,
+    request: StartTrafficRequest | None = None,
+) -> dict[str, Any]:
     _ready()
     url, headers, sensor_id = _traffic_agent()
     run_id: str | None = None
@@ -207,7 +217,10 @@ async def start_traffic_run(profile_id: str) -> dict[str, Any]:
         record = await asyncio.to_thread(
             post_json,
             f"{url}/v1/runs",
-            {"profile_id": profile_id},
+            {
+                "profile_id": profile_id,
+                **(request.model_dump() if request is not None else {}),
+            },
             headers=headers,
         )
         run_id = str(record["run_id"])

@@ -70,6 +70,9 @@ class DemoConsoleTests(unittest.TestCase):
         self.assertIn("item.sample_characteristics", script)
         self.assertIn("function renderTrafficCatalog(catalog)", script)
         self.assertIn('json(`/api/traffic-runs/${profile.id}`', script)
+        self.assertIn("selectedTrafficControls()", script)
+        self.assertIn('["traffic-events"', script)
+        self.assertIn('["traffic-interval"', script)
         self.assertIn('json("/api/traffic-runs/current", {method: "DELETE"})', script)
         self.assertNotIn("traffic.target", script)
 

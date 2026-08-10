@@ -111,6 +111,16 @@ function updateTrafficActions() {
   document.querySelectorAll(".traffic-profile-button").forEach((button) => {
     button.disabled = state.trafficBusy || trafficRunActive();
   });
+  document.querySelectorAll(".traffic-control-input").forEach((input) => {
+    input.disabled = state.trafficBusy || trafficRunActive();
+  });
+}
+
+function selectedTrafficControls() {
+  return {
+    events: Number($("traffic-events")?.value || state.selectedTrafficProfile?.events || 1),
+    interval_ms: Number($("traffic-interval")?.value || state.selectedTrafficProfile?.interval_ms || 1000)
+  };
 }
 
 function selectTrafficProfile(profile) {
@@ -150,7 +160,46 @@ function selectTrafficProfile(profile) {
   const note = document.createElement("small");
   note.className = "profile-limitation";
   note.textContent = observables.note || "Profile cố định; không dùng làm ground truth cho model.";
-  detail.append(heading, meta, note);
+  const controls = document.createElement("div");
+  controls.className = "traffic-controls";
+  const limits = profile.controls || {};
+  [
+    ["traffic-events", "Số flow / event", profile.events, limits.events],
+    ["traffic-interval", "Interval (ms)", profile.interval_ms, limits.interval_ms]
+  ].forEach(([id, label, value, bounds]) => {
+    const wrapper = document.createElement("label");
+    wrapper.textContent = label;
+    const input = document.createElement("input");
+    input.id = id;
+    input.className = "traffic-control-input";
+    input.type = "number";
+    input.value = String(value);
+    input.min = String(bounds?.minimum ?? 1);
+    input.max = String(bounds?.maximum ?? 60000);
+    input.step = "1";
+    wrapper.append(input);
+    controls.append(wrapper);
+  });
+  const rate = document.createElement("span");
+  rate.id = "traffic-derived-rate";
+  const refreshRate = () => {
+    const eventsInput = $("traffic-events");
+    const intervalInput = $("traffic-interval");
+    const events = Number(eventsInput?.value || profile.events);
+    const catalogMax = Number(limits.interval_ms?.maximum ?? 60000);
+    const scheduleMax = events > 1 ? Math.floor(120000 / (events - 1)) : catalogMax;
+    const effectiveMax = Math.min(catalogMax, scheduleMax);
+    if (intervalInput) {
+      intervalInput.max = String(effectiveMax);
+      if (Number(intervalInput.value) > effectiveMax) intervalInput.value = String(effectiveMax);
+    }
+    const selected = selectedTrafficControls();
+    rate.textContent = `Tần suất: ${(1000 / Math.max(1, selected.interval_ms)).toFixed(2)} event/s · interval tối đa ${effectiveMax}ms`;
+  };
+  controls.querySelectorAll("input").forEach((input) => input.addEventListener("input", refreshRate));
+  refreshRate();
+  controls.append(rate);
+  detail.append(heading, meta, controls, note);
   updateTrafficActions();
 }
 
@@ -238,7 +287,10 @@ async function startTrafficRun() {
   state.trafficBusy = true;
   updateTrafficActions();
   try {
-    const record = await json(`/api/traffic-runs/${profile.id}`, {method: "POST"});
+    const record = await json(`/api/traffic-runs/${profile.id}`, {
+      method: "POST",
+      body: JSON.stringify(selectedTrafficControls())
+    });
     renderTrafficRun(record);
     $("traffic-agent-dot").className = "status-dot ready";
     $("traffic-agent-label").textContent = "Traffic agent đang phát";

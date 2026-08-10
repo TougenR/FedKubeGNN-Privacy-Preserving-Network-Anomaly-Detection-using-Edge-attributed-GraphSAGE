@@ -16,6 +16,9 @@ profiles:
     destination_port: 80
     events: 2
     interval_ms: 30000
+    controls:
+      events: {minimum: 1, maximum: 10}
+      interval_ms: {minimum: 1000, maximum: 60000}
     expected_observables:
       protocols: [tcp]
       services: [http]
@@ -25,32 +28,42 @@ profiles:
         and is predominantly UDP in the validation reference.
   - id: attack-ssh
     reference_class: Attack
-    scientific_status: blocked-target-not-ready
-    execution_enabled: false
+    scientific_status: candidate
+    execution_enabled: true
     mechanism: ssh-session
     target_group: ssh-emulator
     destination_port: 22
     events: 4
     interval_ms: 15000
+    controls:
+      events: {minimum: 1, maximum: 12}
+      interval_ms: {minimum: 1000, maximum: 60000}
     expected_observables:
       protocols: [tcp]
       services: [ssh]
       connection_states: [SF]
-      note: A digest-pinned SSH emulator and key are required before execution.
+      note: >-
+        Bounded SSH identification and bidirectional exchanges approximate the
+        validation packet/byte shape; comparator evidence remains authoritative.
   - id: command-control
     reference_class: C&C
-    scientific_status: blocked-target-not-ready
-    execution_enabled: false
+    scientific_status: candidate
+    execution_enabled: true
     mechanism: irc-mixed
     target_group: irc-emulator
     destination_port: 6667
     events: 3
     interval_ms: 20000
+    controls:
+      events: {minimum: 3, maximum: 30}
+      interval_ms: {minimum: 500, maximum: 60000}
     expected_observables:
       protocols: [tcp]
       services: [irc, unknown]
       connection_states: [S0, S3, SF]
-      note: The reference requires a controlled incomplete/completed mixture.
+      note: >-
+        Deterministic SYN-only, partial, and completed IRC-like sessions model
+        the validation mixture; they do not reproduce natural malware timing.
   - id: command-control-heartbeat
     reference_class: C&C-HeartBeat
     scientific_status: candidate
@@ -60,6 +73,9 @@ profiles:
     destination_port: 57722
     events: 2
     interval_ms: 30000
+    controls:
+      events: {minimum: 1, maximum: 20}
+      interval_ms: {minimum: 1000, maximum: 60000}
     expected_observables:
       protocols: [tcp]
       services: [unknown]
@@ -67,20 +83,24 @@ profiles:
       note: One SYN-only flow per event with no response is required.
   - id: ddos
     reference_class: DDoS
-    scientific_status: unsupported-dataset-artifact
-    execution_enabled: false
+    scientific_status: candidate
+    execution_enabled: true
     mechanism: ack-only
     target_group: single-blackhole
     destination_port: 80
     events: 50
     interval_ms: 4
+    controls:
+      events: {minimum: 10, maximum: 50}
+      interval_ms: {minimum: 4, maximum: 1000}
     expected_observables:
       protocols: [tcp]
       services: [unknown]
       connection_states: [OTH]
       note: >-
-        Validation is dominated by Zeek history C/checksum evidence. Live Zeek
-        intentionally ignores invalid checksums, so this fingerprint is blocked.
+        Bounded ACK-only traffic reproduces TCP/80, OTH-like state, no response,
+        and 50-flow density. It cannot reproduce validation history C because
+        live Zeek intentionally uses -C; treat it as a known approximation.
   - id: okiru
     reference_class: Okiru
     scientific_status: candidate
@@ -90,6 +110,9 @@ profiles:
     destination_port: 37215
     events: 2
     interval_ms: 30000
+    controls:
+      events: {minimum: 2, maximum: 20}
+      interval_ms: {minimum: 1000, maximum: 60000}
     expected_observables:
       protocols: [tcp]
       services: [unknown]
@@ -104,6 +127,9 @@ profiles:
     destination_port: 22
     events: 3
     interval_ms: 20000
+    controls:
+      events: {minimum: 2, maximum: 30}
+      interval_ms: {minimum: 500, maximum: 60000}
     expected_observables:
       protocols: [tcp]
       services: [unknown]

@@ -102,6 +102,61 @@ def send_http_get(endpoint: str) -> bool:
         return False
 
 
+def _read_line(connection: socket.socket, limit: int = 512) -> bytes:
+    payload = bytearray()
+    while len(payload) < limit:
+        value = connection.recv(1)
+        if not value:
+            break
+        payload.extend(value)
+        if value == b"\n":
+            break
+    return bytes(payload)
+
+
+def send_tcp_session(
+    *,
+    source: str,
+    destination: str,
+    destination_port: int,
+    protocol: str,
+    complete: bool = True,
+) -> bool:
+    """Run one bounded protocol exchange against a catalogued private target."""
+    try:
+        with socket.create_connection(
+            (destination, destination_port),
+            timeout=8,
+            source_address=(source, 0),
+        ) as connection:
+            connection.settimeout(5)
+            banner = _read_line(connection)
+            if protocol == "ssh":
+                if not banner.startswith(b"SSH-"):
+                    return False
+                connection.sendall(b"SSH-2.0-OpenSSH_8.9_FedKube_Lab\r\n")
+                for index in range(12):
+                    block = bytes([65 + index % 26]) * 48
+                    connection.sendall(block)
+                    if not connection.recv(256):
+                        return False
+                    time.sleep(0.2)
+                return True
+            if protocol == "irc":
+                connection.sendall(b"NICK fedkube-lab\r\n")
+                if not complete:
+                    time.sleep(3.1)
+                    return True
+                connection.sendall(b"USER fedkube 0 * :IoT23 bounded lab\r\n")
+                connection.sendall(b"PING :fedkube\r\n")
+                response = connection.recv(1024)
+                connection.sendall(b"QUIT :bounded-run-complete\r\n")
+                return bool(b"PONG" in banner + response or response)
+            return False
+    except (OSError, TimeoutError):
+        return False
+
+
 def _endpoint_host(endpoint: str) -> str:
     parsed = urlparse(endpoint)
     value = parsed.hostname if parsed.scheme else endpoint
@@ -115,6 +170,8 @@ class TrafficRunRecord:
     reference_class: str
     reference_digest: str
     scientific_status: str
+    events: int
+    interval_ms: int
     status: str
     started_at: float
     released_at: float | None = None
@@ -136,6 +193,7 @@ class TrafficExecutor:
         targets: TrafficTargetCatalog,
         packet_sender: Callable[..., bool] = send_tcp_packet,
         http_sender: Callable[[str], bool] = send_http_get,
+        session_sender: Callable[..., bool] = send_tcp_session,
         release_timeout_seconds: float = 30.0,
         interval_scale: float = 1.0,
     ) -> None:
@@ -155,6 +213,7 @@ class TrafficExecutor:
         self.targets = targets
         self.packet_sender = packet_sender
         self.http_sender = http_sender
+        self.session_sender = session_sender
         self.release_timeout_seconds = release_timeout_seconds
         self.interval_scale = interval_scale
         self._record: TrafficRunRecord | None = None
@@ -163,12 +222,22 @@ class TrafficExecutor:
         self._cancel = asyncio.Event()
         self._lock = asyncio.Lock()
 
-    async def start(self, profile_id: str) -> TrafficRunRecord:
+    async def start(
+        self,
+        profile_id: str,
+        *,
+        events: int | None = None,
+        interval_ms: int | None = None,
+    ) -> TrafficRunRecord:
         profile = self.catalog.profile(profile_id)
         if not profile.execution_enabled:
             raise TrafficProfileDisabledError(
                 f"Profile '{profile.id}' is {profile.scientific_status}."
             )
+        selected_events, selected_interval = profile.resolve_run_controls(
+            events=events,
+            interval_ms=interval_ms,
+        )
         async with self._lock:
             if self._task is not None and not self._task.done():
                 raise TrafficRunConflictError("Another traffic run is active.")
@@ -180,6 +249,8 @@ class TrafficExecutor:
                 reference_class=profile.reference_class,
                 reference_digest=self.catalog.reference_digest,
                 scientific_status=profile.scientific_status,
+                events=selected_events,
+                interval_ms=selected_interval,
                 status="waiting-for-release",
                 started_at=time.time(),
             )
@@ -212,10 +283,38 @@ class TrafficExecutor:
         except TimeoutError:
             pass
 
-    async def _send(self, profile: TrafficProfile, endpoint: str, index: int) -> bool:
+    async def _send(
+        self,
+        profile: TrafficProfile,
+        endpoints: list[str],
+        index: int,
+    ) -> bool:
+        endpoint = endpoints[index % len(endpoints)]
         if profile.mechanism == "http-get":
             return await asyncio.to_thread(self.http_sender, endpoint)
+        if profile.mechanism == "ssh-session":
+            return await asyncio.to_thread(
+                self.session_sender,
+                source=self.targets.source_ipv4,
+                destination=_endpoint_host(endpoint),
+                destination_port=profile.destination_port,
+                protocol="ssh",
+            )
+        if profile.mechanism == "irc-mixed":
+            mode = index % 3
+            if mode:
+                return await asyncio.to_thread(
+                    self.session_sender,
+                    source=self.targets.source_ipv4,
+                    destination=_endpoint_host(endpoints[-1]),
+                    destination_port=profile.destination_port,
+                    protocol="irc",
+                    complete=mode == 2,
+                )
+            endpoint = endpoints[0]
         flags = 0x02 if profile.mechanism.startswith("syn-only") else 0x10
+        if profile.mechanism == "irc-mixed":
+            flags = 0x02
         return await asyncio.to_thread(
             self.packet_sender,
             source=self.targets.source_ipv4,
@@ -229,18 +328,17 @@ class TrafficExecutor:
         assert self._record is not None
         endpoints = self.targets.groups[profile.target_group].endpoints
         try:
-            for index in range(profile.events):
+            for index in range(self._record.events):
                 if self._cancel.is_set():
                     break
-                endpoint = endpoints[index % len(endpoints)]
                 self._record.attempted += 1
-                if await self._send(profile, endpoint, index):
+                if await self._send(profile, endpoints, index):
                     self._record.succeeded += 1
                 else:
                     self._record.failed += 1
-                if index + 1 < profile.events:
+                if index + 1 < self._record.events:
                     await self._wait_interval(
-                        profile.interval_ms / 1000 * self.interval_scale
+                        self._record.interval_ms / 1000 * self.interval_scale
                     )
             self._record.status = "cancelled" if self._cancel.is_set() else "completed"
         except Exception as exc:

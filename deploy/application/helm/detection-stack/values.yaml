@@ -64,6 +64,13 @@ trafficGenerator:
   agentTokenSecretKey: token
   observationTokenSecretName: ""
   observationTokenSecretKey: token
+  emulator:
+    enabled: true
+    sshContainerPort: 10022
+    ircContainerPort: 16667
+    resources:
+      requests: {cpu: 1m, memory: 24Mi}
+      limits: {cpu: 100m, memory: 64Mi}
 
 gateway:
   enabled: false

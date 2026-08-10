@@ -111,6 +111,10 @@ spec:
         - ipBlock: {cidr: 10.10.0.20/32}
       ports:
         - {protocol: TCP, port: {{ .Values.gateway.observationPort.port }}}
+        {{- if .Values.trafficGenerator.emulator.enabled }}
+        - {protocol: TCP, port: {{ .Values.trafficGenerator.emulator.sshContainerPort }}}
+        - {protocol: TCP, port: {{ .Values.trafficGenerator.emulator.ircContainerPort }}}
+        {{- end }}
 {{- end }}
 {{- if .Values.evaluation.enabled }}
 ---

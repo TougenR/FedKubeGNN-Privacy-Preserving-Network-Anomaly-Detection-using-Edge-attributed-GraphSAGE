@@ -15,8 +15,9 @@
     traffic_zeek_interface: ens4
     traffic_zeek_filter: >-
       tcp and (((src host 10.10.0.20) and ((dst net 10.20.0.0/24) or
-      (dst host 10.10.0.5 and dst port 80))) or ((dst host 10.10.0.20) and
-      (src host 10.10.0.5 and src port 80)))
+      (dst host 10.10.0.5 and (dst port 80 or dst port 22 or dst port 6667))))
+      or ((dst host 10.10.0.20) and (src host 10.10.0.5 and
+      (src port 80 or src port 22 or src port 6667))))
   tasks:
     - name: Keep Ubuntu package retrieval inside the HTTPS-only egress policy
       ansible.builtin.replace:
@@ -140,6 +141,7 @@
         mode: "0644"
         content: |
           redef tcp_SYN_timeout = 5secs;
+          redef tcp_inactivity_timeout = 8secs;
       notify: Restart traffic services
 
     - name: Install traffic-generator systemd units

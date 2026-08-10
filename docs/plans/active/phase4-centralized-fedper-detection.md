@@ -1004,6 +1004,49 @@ Traffic-controller UI GKE evidence on 2026-08-10:
   downstream failure; the fusion prediction was C&C-HeartBeat. The stop control
   therefore interrupts a live bounded run without bypassing the model path.
 
+Dataset-shaped Attack/C&C/DDoS traffic extension approved on 2026-08-10:
+
+- Reuse the existing internal gateway address and LoadBalancer. Add fixed
+  protocol-emulator listeners behind TCP/22 and TCP/6667; do not add another
+  load balancer, public endpoint, arbitrary target, Terraform resource, or
+  external traffic destination.
+- Attack uses a bounded SSH identification plus request/response exchange so
+  VM-local Zeek can record a completed TCP/22 `ssh` connection. C&C uses a
+  deterministic mixture of SYN-only traffic to the existing private blackhole
+  and bounded IRC-like sessions through TCP/6667. Neither selected profile nor
+  requested controls enter inference or select a model head/class.
+- DDoS emits a bounded ACK-only TCP/80 burst to the fixed private blackhole so
+  Zeek records OTH-like flows and the rolling window reaches the dataset's
+  50-flow view. It remains a known live approximation: the validation class is
+  dominated by history `C`, while the production Zeek command intentionally
+  uses `-C` for checksum-offload correctness. UI and reports must not describe
+  it as a class-equivalent malware reproduction.
+- Every profile exposes only `events` and `interval_ms` controls. Their
+  per-profile min/max bounds live in the signed catalog, the server enforces a
+  two-minute maximum scheduled duration, and requests still cannot supply a
+  target, port, payload, command, sensor, head, or label. The UI also displays
+  the derived event rate.
+- Validation requires contract/unit tests, real Zeek `conn.log` evidence for
+  Attack/C&C/DDoS, collector accepted/predicted counters, and observed model
+  output. Deployment remains GitOps-only; Jenkins builds the immutable image,
+  Ansible updates the private VM agent, and Argo CD alone changes GKE.
+
+Dataset-shaped traffic extension progress:
+
+- [x] Reconfirm the digest-pinned validation fingerprints without reading the
+  locked test split.
+- [x] Implement bounded profile controls and SSH/IRC generators.
+- [x] Add the private gateway protocol emulator and validate Helm output. Use a
+  two-revision rollout: publish the new image with the GKE emulator gate off,
+  then enable the sidecar/listeners only after that digest is Healthy.
+- [x] Run focused local validation: 21 affected tests, Ruff, JavaScript syntax,
+  Helm lint, disabled/enabled Helm renders, Ansible syntax, and diff checks pass.
+  Host-wide application collection remains unavailable because the host lacks
+  `torch_geometric`; the dependency-complete Jenkins image remains the release
+  boundary.
+- [ ] Publish through Jenkins/Argo CD, update the VM through Ansible, and record
+  live end-to-end evidence for all three newly executable profiles.
+
 ## Result
 
 Scientific evaluation, serving-bundle promotion, locked test execution, the

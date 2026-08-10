@@ -80,6 +80,27 @@ spec:
             readOnlyRootFilesystem: true
             runAsNonRoot: true
             capabilities: {drop: [ALL]}
+        {{- if and .Values.trafficGenerator.enabled .Values.trafficGenerator.emulator.enabled }}
+        - name: protocol-emulator
+          image: {{ include "detection-stack.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: [python, -m, src.application.demo_target.protocol_emulator]
+          args:
+            - --ssh-port={{ .Values.trafficGenerator.emulator.sshContainerPort }}
+            - --irc-port={{ .Values.trafficGenerator.emulator.ircContainerPort }}
+          ports:
+            - {name: ssh-emulator, containerPort: {{ .Values.trafficGenerator.emulator.sshContainerPort }}}
+            - {name: irc-emulator, containerPort: {{ .Values.trafficGenerator.emulator.ircContainerPort }}}
+          readinessProbe:
+            tcpSocket: {port: ssh-emulator}
+          resources: {{- toYaml .Values.trafficGenerator.emulator.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 49999
+            capabilities: {drop: [ALL]}
+        {{- end }}
       volumes:
         - name: config
           configMap: {name: {{ include "detection-stack.fullname" . }}-gateway}
@@ -102,6 +123,10 @@ spec:
   selector: {app.kubernetes.io/name: detection-gateway}
   ports:
     - {name: http, port: 80, targetPort: http}
+    {{- if and .Values.trafficGenerator.enabled .Values.trafficGenerator.emulator.enabled }}
+    - {name: ssh-emulator, port: 22, targetPort: ssh-emulator}
+    - {name: irc-emulator, port: 6667, targetPort: irc-emulator}
+    {{- end }}
     {{- if .Values.gateway.observationPort.enabled }}
     - {name: observation, port: {{ .Values.gateway.observationPort.port }}, targetPort: observation}
     {{- end }}

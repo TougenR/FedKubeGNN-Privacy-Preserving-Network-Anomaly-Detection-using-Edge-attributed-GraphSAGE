@@ -6,10 +6,11 @@ groups:
       - http://10.10.0.5/target/
   ssh-emulator:
     endpoints:
-      - 10.20.0.30
+      - 10.10.0.5
   irc-emulator:
     endpoints:
-      - 10.20.0.31
+      - 10.20.0.20
+      - 10.10.0.5
   single-blackhole:
     endpoints:
       - 10.20.0.20
