@@ -226,6 +226,14 @@ async def run_metrics(run_id: str) -> dict[str, Any]:
     }
 
 
+def _require_observation_token(supplied: str | None) -> None:
+    expected = app_state.get("observation_token")
+    if not isinstance(expected, str) or not hmac.compare_digest(
+        supplied or "", expected
+    ):
+        raise HTTPException(status_code=401, detail="invalid observation token")
+
+
 @app.post("/runs/register")
 async def register_run(registration: LabRunRegistration) -> dict[str, str]:
     """Associate subsequent label-free Zeek flows with the one active lab run."""
@@ -250,6 +258,24 @@ async def register_run(registration: LabRunRegistration) -> dict[str, str]:
     }
 
 
+@app.post("/private/runs/register")
+async def private_register_run(
+    registration: LabRunRegistration,
+    x_fedkube_observation_token: str | None = Header(default=None),
+) -> dict[str, str]:
+    _require_observation_token(x_fedkube_observation_token)
+    return await register_run(registration)
+
+
+@app.get("/private/runs/{run_id}/metrics")
+async def private_run_metrics(
+    run_id: str,
+    x_fedkube_observation_token: str | None = Header(default=None),
+) -> dict[str, Any]:
+    _require_observation_token(x_fedkube_observation_token)
+    return await run_metrics(run_id)
+
+
 @app.post("/observe")
 async def observe(
     observation: CollectorObservation,
@@ -257,10 +283,8 @@ async def observe(
 ) -> dict[str, Any]:
     _ready()
     expected_token = app_state.get("observation_token")
-    if isinstance(expected_token, str) and not hmac.compare_digest(
-        x_fedkube_observation_token or "", expected_token
-    ):
-        raise HTTPException(status_code=401, detail="invalid observation token")
+    if isinstance(expected_token, str):
+        _require_observation_token(x_fedkube_observation_token)
     active = app_state.setdefault("active_runs", {}).get(observation.sensor_id, {})
     resolved_run_id = observation.run_id or active.get("run_id")
     run_values = (

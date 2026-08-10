@@ -58,10 +58,7 @@ demoConsole:
 
 trafficGenerator:
   enabled: false
-  agentUrl: http://10.10.0.20:8091
   sensorId: sensor-34-1
-  agentTokenSecretName: ""
-  agentTokenSecretKey: token
   observationTokenSecretName: ""
   observationTokenSecretKey: token
   emulator:
@@ -160,7 +157,6 @@ externalSecrets:
   enabled: false
   clusterSecretStore: gcp-secret-manager
   entityHashSecretId: fedkube-detection-entity-hash
-  trafficAgentSecretId: fedkube-traffic-agent-token
   trafficObservationSecretId: fedkube-traffic-observation-token
 
 evaluation:

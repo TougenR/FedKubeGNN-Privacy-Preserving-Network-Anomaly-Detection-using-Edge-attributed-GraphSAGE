@@ -1,0 +1,34 @@
+[Unit]
+Description=FedKube loopback-only Attacker Console
+After=network-online.target fedkube-traffic-secrets.service fedkube-traffic-agent.service
+Requires=fedkube-traffic-secrets.service fedkube-traffic-agent.service
+
+[Service]
+Type=simple
+User={{ traffic_agent_user }}
+Group={{ traffic_agent_user }}
+WorkingDirectory={{ traffic_agent_root }}
+Environment=PYTHONPATH={{ traffic_agent_root }}
+Environment=TRAFFIC_AGENT_URL=http://{{ traffic_agent_bind }}:{{ traffic_agent_port }}
+Environment=TRAFFIC_AGENT_TOKEN_FILE=/run/fedkube-secrets/agent-token
+Environment=COLLECTOR_CONTROL_URL={{ traffic_control_url }}
+Environment=OBSERVATION_TOKEN_FILE=/run/fedkube-secrets/observation-token
+Environment=TRAFFIC_SENSOR_ID={{ traffic_sensor_id }}
+Environment=GENERATOR_NAME=fedkube-traffic-generator
+Environment=GENERATOR_SOURCE_IPV4={{ traffic_agent_bind }}
+Environment=GENERATOR_ZONE=asia-southeast1-b
+Environment=TARGET_NAME=fedkube-detection-gateway
+Environment=TARGET_IPV4=10.10.0.5
+ExecStart={{ traffic_agent_venv }}/bin/uvicorn src.application.traffic_console.app:app --host {{ traffic_console_bind }} --port {{ traffic_console_port }}
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=yes
+PrivateDevices=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

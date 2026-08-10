@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>FedKube Attacker Console</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <div class="brand"><span class="mark">TX</span><div><small>FEDKUBE LAB</small><h1>Attacker Console</h1></div></div>
+        <div class="status"><i id="agent-dot"></i><span><strong id="agent-label">Đang kết nối</strong><small>SSH/IAP loopback session</small></span></div>
+      </header>
+
+      <section class="topology card">
+        <article><small>MÁY PHÁT TRAFFIC</small><strong id="generator-name">—</strong><span id="generator-address">—</span></article>
+        <div class="wire"><span></span><i></i><i></i><i></i><b>PRIVATE VPC</b></div>
+        <article class="target"><small>MỤC TIÊU LAB</small><strong id="target-name">—</strong><span id="target-address">—</span></article>
+      </section>
+
+      <div class="workspace">
+        <section class="catalog card">
+          <div class="section-title"><div><small>TRAFFIC PROFILE</small><h2>Chọn kịch bản</h2></div><span>7 model classes</span></div>
+          <div id="profiles" class="profiles"></div>
+        </section>
+
+        <section class="configuration card">
+          <div class="section-title"><div><small>FIXED LAB CONFIGURATION</small><h2 id="profile-title">Chưa chọn profile</h2></div><span id="profile-status">—</span></div>
+          <div id="profile-detail" class="detail empty">Đang tải catalog…</div>
+          <div class="controls">
+            <label>Số event<input id="events" type="number" disabled></label>
+            <label>Interval (ms)<input id="interval" type="number" disabled></label>
+            <div><small>TẦN SUẤT DỰ KIẾN</small><strong id="rate">—</strong></div>
+          </div>
+          <div class="actions"><button id="start" disabled>Bắt đầu phát traffic</button><button id="stop" disabled>Dừng traffic</button></div>
+        </section>
+
+        <section class="run card">
+          <div class="section-title"><div><small>GENERATOR TELEMETRY</small><h2>Traffic run</h2></div><span id="run-status">Chưa chạy</span></div>
+          <div class="counters">
+            <article><small>Đã gửi</small><strong id="sent">0/0</strong></article>
+            <article><small>Collector nhận</small><strong id="received">0/0</strong></article>
+            <article><small>Drop / trùng</small><strong id="dropped">0/0</strong></article>
+            <article><small>Lỗi pipeline</small><strong id="failed">0</strong></article>
+          </div>
+          <div class="run-line"><span id="run-id">Không có run đang hoạt động</span><span id="sensor-id">sensor —</span></div>
+          <p class="boundary">Console này chỉ điều khiển máy phát và xem delivery counters. Kết quả phân tích chỉ hiển thị ở SOC Console độc lập.</p>
+        </section>
+      </div>
+    </main>
+    <script src="/app.js" defer></script>
+  </body>
+</html>

@@ -11,6 +11,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pandas as pd
+from fastapi import HTTPException
 
 from src.application.alerting.event import DetectionEvent, entity_hash, numeric_bucket
 from src.application.alerting.policy import AlertPolicy
@@ -26,6 +27,8 @@ from src.application.collection.app import (
     app_state as collector_state,
     _load_policy,
     observe,
+    private_register_run,
+    private_run_metrics,
     register_run,
 )
 from src.application.graph_window.buffer import (
@@ -330,6 +333,30 @@ class CollectionWindowAlertingTests(unittest.TestCase):
         )
         self.assertNotIn("sensor-34-1", collector_state["buffers"])
         self.assertNotIn("sensor-34-1", collector_state["flow_runs"])
+
+    def test_private_run_control_requires_observation_token(self) -> None:
+        collector_state.update(
+            {
+                "window_config": object(),
+                "observation_token": "o" * 32,
+                "buffers": {},
+                "flow_runs": defaultdict(dict),
+                "run_metrics": defaultdict(dict),
+                "active_runs": {},
+            }
+        )
+        registration = LabRunRegistration(
+            run_id="traffic-a1",
+            scenario_id="attack",
+            sensor_id="sensor-34-1",
+        )
+        with self.assertRaises(HTTPException) as missing:
+            asyncio.run(private_register_run(registration, None))
+        self.assertEqual(missing.exception.status_code, 401)
+        result = asyncio.run(private_register_run(registration, "o" * 32))
+        self.assertEqual(result["status"], "registered")
+        metrics = asyncio.run(private_run_metrics("traffic-a1", "o" * 32))
+        self.assertEqual(metrics["run_id"], "traffic-a1")
 
     def test_elasticsearch_sink_sends_only_validated_document(self) -> None:
         captured = {}

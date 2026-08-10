@@ -5,14 +5,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from fastapi import HTTPException
-
-from src.application.collection.transport import ServiceRequestError
 from src.application.demo_console.app import (
     current_run,
-    start_traffic_run,
     state as console_state,
-    stop_traffic_run,
 )
 
 from src.application.scenario_runner.catalog import EXPECTED_SCENARIOS, load_catalog
@@ -36,17 +31,17 @@ class DemoConsoleTests(unittest.TestCase):
         replay = (ROOT / "configs/application/scientific-replay.json").read_text()
         self.assertIn('"selection_split": "validation"', replay)
         page = (ROOT / "src/application/demo_console/static/index.html").read_text()
-        self.assertIn("Kiểm thử &amp; phát traffic", page)
+        self.assertIn("Kiểm thử model", page)
         self.assertIn('id="alert-banner"', page)
         self.assertIn('id="detection-chart"', page)
         self.assertIn('id="detection-segments"', page)
         self.assertIn('id="run-replay-button"', page)
         self.assertIn('id="metric-windows-source"', page)
         self.assertIn('id="metric-alerts-source"', page)
-        self.assertIn('id="traffic-pane"', page)
-        self.assertIn('id="traffic-profiles"', page)
-        self.assertIn('id="start-traffic-button"', page)
-        self.assertIn('id="stop-traffic-button"', page)
+        self.assertNotIn('id="traffic-pane"', page)
+        self.assertNotIn('id="traffic-profiles"', page)
+        self.assertNotIn('id="start-traffic-button"', page)
+        self.assertNotIn('id="stop-traffic-button"', page)
         self.assertIn("Model detection", page)
         self.assertIn("Policy alert", page)
         self.assertNotIn('id="head-grid"', page)
@@ -78,12 +73,8 @@ class DemoConsoleTests(unittest.TestCase):
         self.assertNotIn("scenario_id === \"DDoS\"", script)
         self.assertIn("item.profile.indicators", script)
         self.assertIn("item.sample_characteristics", script)
-        self.assertIn("function renderTrafficCatalog(catalog)", script)
-        self.assertIn('json(`/api/traffic-runs/${profile.id}`', script)
-        self.assertIn("selectedTrafficControls()", script)
-        self.assertIn('["traffic-events"', script)
-        self.assertIn('["traffic-interval"', script)
-        self.assertIn('json("/api/traffic-runs/current", {method: "DELETE"})', script)
+        self.assertNotIn("renderTrafficCatalog", script)
+        self.assertNotIn("/api/traffic-runs", script)
         self.assertNotIn("traffic.target", script)
 
         styles = (ROOT / "src/application/demo_console/static/styles.css").read_text()
@@ -152,35 +143,6 @@ class DemoConsoleTests(unittest.TestCase):
 
         asyncio.run(exercise())
 
-    def test_stop_traffic_run_forwards_only_to_authenticated_current_run(self) -> None:
-        async def exercise() -> None:
-            console_state.update(
-                {
-                    "traffic_agent_url": "http://traffic-agent",
-                    "traffic_agent_token": "b" * 32,
-                    "traffic_sensor_id": "sensor-34-1",
-                }
-            )
-            with (
-                patch(
-                    "src.application.demo_console.app._ready",
-                    return_value=(object(), object()),
-                ),
-                patch(
-                    "src.application.demo_console.app.delete_json",
-                    return_value={"run": {"status": "cancelled"}},
-                ) as delete,
-            ):
-                response = await stop_traffic_run()
-            self.assertEqual(response["run"]["status"], "cancelled")
-            delete.assert_called_once_with(
-                "http://traffic-agent/v1/runs/current",
-                headers={"Authorization": f"Bearer {'b' * 32}"},
-            )
-            console_state.clear()
-
-        asyncio.run(exercise())
-
     def test_gated_run_does_not_emit_traffic_before_registration(self) -> None:
         async def exercise() -> None:
             executor = ScenarioExecutor(
@@ -242,45 +204,6 @@ class DemoConsoleTests(unittest.TestCase):
             console_state.clear()
 
         asyncio.run(exercise())
-
-    def test_traffic_agent_is_cancelled_when_collector_registration_fails(self) -> None:
-        async def exercise() -> None:
-            console_state.update(
-                {
-                    "traffic_agent_url": "http://traffic-agent",
-                    "traffic_agent_token": "a" * 32,
-                    "traffic_sensor_id": "sensor-34-1",
-                    "collector_url": "http://collector",
-                }
-            )
-            with (
-                patch(
-                    "src.application.demo_console.app._ready",
-                    return_value=(object(), object()),
-                ),
-                patch(
-                    "src.application.demo_console.app.post_json",
-                    side_effect=[
-                        {"run_id": "traffic-deadbeef"},
-                        ServiceRequestError("registration failed"),
-                    ],
-                ),
-                patch(
-                    "src.application.demo_console.app.delete_json",
-                    return_value={"run": {"status": "cancelled"}},
-                ) as cancel,
-            ):
-                with self.assertRaises(HTTPException) as raised:
-                    await start_traffic_run("okiru")
-            self.assertEqual(raised.exception.status_code, 502)
-            cancel.assert_called_once_with(
-                "http://traffic-agent/v1/runs/current",
-                headers={"Authorization": f"Bearer {'a' * 32}"},
-            )
-            console_state.clear()
-
-        asyncio.run(exercise())
-
 
 if __name__ == "__main__":
     unittest.main()

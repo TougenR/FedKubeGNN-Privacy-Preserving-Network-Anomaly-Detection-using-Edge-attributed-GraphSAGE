@@ -42,9 +42,7 @@ demoConsole:
     limits: {cpu: 500m, memory: 256Mi}
 trafficGenerator:
   enabled: true
-  agentUrl: http://10.10.0.20:8091
   sensorId: sensor-34-1
-  agentTokenSecretName: fedkube-detection-traffic-agent-token
   observationTokenSecretName: fedkube-detection-traffic-observation-token
   # The fixed-target protocol emulator reuses the existing internal gateway;
   # no public listener or additional LoadBalancer is created.

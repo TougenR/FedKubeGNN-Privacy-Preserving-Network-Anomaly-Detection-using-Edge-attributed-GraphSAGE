@@ -67,8 +67,8 @@
 {{- if and .Values.trafficGenerator.enabled (not .Values.externalSecrets.enabled) }}
 {{- fail "trafficGenerator requires External Secrets" }}
 {{- end }}
-{{- if and .Values.trafficGenerator.enabled (or (not .Values.trafficGenerator.agentTokenSecretName) (not .Values.trafficGenerator.observationTokenSecretName)) }}
-{{- fail "trafficGenerator token Secret names are required" }}
+{{- if and .Values.trafficGenerator.enabled (not .Values.trafficGenerator.observationTokenSecretName) }}
+{{- fail "trafficGenerator observation-token Secret name is required" }}
 {{- end }}
 {{- if and .Values.zeek.enabled (not (regexMatch "^zeek/zeek@sha256:[0-9a-f]{64}$" .Values.zeek.image)) }}
 {{- fail "zeek.image must be an immutable zeek/zeek digest" }}

@@ -87,20 +87,6 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ include "detection-stack.fullname" . }}-traffic-agent-egress
-spec:
-  podSelector:
-    matchLabels: {app.kubernetes.io/name: demo-console}
-  policyTypes: [Egress]
-  egress:
-    - to:
-        - ipBlock: {cidr: 10.10.0.20/32}
-      ports:
-        - {protocol: TCP, port: 8091}
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
   name: {{ include "detection-stack.fullname" . }}-traffic-observation-ingress
 spec:
   podSelector:

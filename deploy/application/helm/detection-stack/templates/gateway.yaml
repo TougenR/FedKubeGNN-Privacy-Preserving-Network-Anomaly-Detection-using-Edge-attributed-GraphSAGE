@@ -34,6 +34,17 @@ data:
         proxy_set_header Content-Type application/json;
       }
 
+      location = /runs/register {
+        proxy_pass http://{{ include "detection-stack.fullname" . }}-collector:8082/private/runs/register;
+        proxy_set_header X-FedKube-Observation-Token $http_x_fedkube_observation_token;
+        proxy_set_header Content-Type application/json;
+      }
+
+      location ~ ^/runs/([a-z0-9-]+)/metrics$ {
+        proxy_pass http://{{ include "detection-stack.fullname" . }}-collector:8082/private/runs/$1/metrics;
+        proxy_set_header X-FedKube-Observation-Token $http_x_fedkube_observation_token;
+      }
+
       location / {
         return 404;
       }

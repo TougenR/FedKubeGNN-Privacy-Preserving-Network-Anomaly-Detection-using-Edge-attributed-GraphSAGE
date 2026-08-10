@@ -9,6 +9,9 @@
     traffic_agent_bind: 10.10.0.20
     traffic_agent_port: 8091
     traffic_collector_url: http://10.10.0.5:8082/observe
+    traffic_console_bind: 127.0.0.1
+    traffic_console_port: 8090
+    traffic_control_url: http://10.10.0.5:8082
     traffic_sensor_id: sensor-34-1
     traffic_gcp_project: fedlearning-20260729-hn
     traffic_zeek_image: zeek/zeek@sha256:c7dfad9ab8296b2994d113222e77a22ebc9c8963b2b1200b798484ac923bc94f
@@ -65,6 +68,8 @@
         - {path: /opt/fedkube/src/application/api, owner: root, group: root, mode: "0755"}
         - {path: /opt/fedkube/src/application/collection, owner: root, group: root, mode: "0755"}
         - {path: /opt/fedkube/src/application/traffic_agent, owner: root, group: root, mode: "0755"}
+        - {path: /opt/fedkube/src/application/traffic_console, owner: root, group: root, mode: "0755"}
+        - {path: /opt/fedkube/src/application/traffic_console/static, owner: root, group: root, mode: "0755"}
         - {path: /opt/fedkube/configs/application, owner: root, group: root, mode: "0755"}
         - {path: /etc/fedkube, owner: root, group: root, mode: "0755"}
         - {path: /var/lib/fedkube/zeek, owner: root, group: "{{ traffic_agent_user }}", mode: "0750"}
@@ -90,6 +95,17 @@
         - application/traffic_agent/app.py
         - application/traffic_agent/catalog.py
         - application/traffic_agent/executor.py
+        - application/traffic_console/__init__.py
+        - application/traffic_console/app.py
+      notify: Restart traffic services
+
+    - name: Install the Attacker Console static assets
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../../src/application/traffic_console/static/"
+        dest: /opt/fedkube/src/application/traffic_console/static/
+        owner: root
+        group: root
+        mode: "0644"
       notify: Restart traffic services
 
     - name: Install the immutable scientific profile catalog
@@ -171,6 +187,7 @@
       loop:
         - {src: fedkube-traffic-secrets.service.j2, dest: fedkube-traffic-secrets.service}
         - {src: fedkube-traffic-agent.service.j2, dest: fedkube-traffic-agent.service}
+        - {src: fedkube-traffic-console.service.j2, dest: fedkube-traffic-console.service}
         - {src: fedkube-zeek.service.j2, dest: fedkube-zeek.service}
         - {src: fedkube-zeek-shipper.service.j2, dest: fedkube-zeek-shipper.service}
       notify: Restart traffic services
@@ -187,6 +204,7 @@
         - fedkube-zeek
         - fedkube-zeek-shipper
         - fedkube-traffic-agent
+        - fedkube-traffic-console
 
   handlers:
     - name: Restart traffic services
@@ -199,3 +217,4 @@
         - fedkube-zeek
         - fedkube-zeek-shipper
         - fedkube-traffic-agent
+        - fedkube-traffic-console

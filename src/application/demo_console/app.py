@@ -14,7 +14,6 @@ from pydantic import BaseModel, ConfigDict
 
 from src.application.collection.transport import (
     ServiceRequestError,
-    delete_json,
     get_json,
     post_json,
 )
@@ -38,13 +37,6 @@ class StartRunRequest(BaseModel):
 
     scenario_id: str
     parameters: dict[str, Any]
-
-
-class StartTrafficRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    events: int
-    interval_ms: int
 
 
 state: dict[str, Any] = {}
@@ -90,20 +82,6 @@ async def lifespan(_: FastAPI):
             target_url=target_url,
             scan_urls=scan_urls_from_json(os.environ["DEMO_SCAN_URLS"]),
         )
-        traffic_agent_url = os.environ.get("TRAFFIC_AGENT_URL")
-        if traffic_agent_url:
-            token = (
-                Path(os.environ["TRAFFIC_AGENT_TOKEN_FILE"])
-                .read_text(encoding="utf-8")
-                .strip()
-            )
-            if len(token) < 32:
-                raise ValueError(
-                    "Traffic-agent token must contain at least 32 characters."
-                )
-            state["traffic_agent_url"] = traffic_agent_url.rstrip("/")
-            state["traffic_agent_token"] = token
-            state["traffic_sensor_id"] = os.environ["TRAFFIC_SENSOR_ID"]
     except (KeyError, OSError, ValueError) as exc:
         state["load_error"] = str(exc)
     yield
@@ -180,112 +158,6 @@ async def run_scientific_replay(case_id: str) -> dict[str, Any]:
         raise HTTPException(
             status_code=502, detail="phát lại khoa học thất bại"
         ) from exc
-
-
-def _traffic_agent() -> tuple[str, dict[str, str], str]:
-    url = state.get("traffic_agent_url")
-    token = state.get("traffic_agent_token")
-    sensor_id = state.get("traffic_sensor_id")
-    if not all(isinstance(value, str) for value in (url, token, sensor_id)):
-        raise HTTPException(
-            status_code=503, detail="máy phát traffic chưa được cấu hình"
-        )
-    return url, {"Authorization": f"Bearer {token}"}, sensor_id
-
-
-@app.get("/api/traffic-profiles")
-async def traffic_profiles() -> dict[str, Any]:
-    _ready()
-    url, headers, _ = _traffic_agent()
-    try:
-        return await asyncio.to_thread(get_json, f"{url}/v1/profiles", headers=headers)
-    except ServiceRequestError as exc:
-        raise HTTPException(
-            status_code=502, detail="traffic agent unavailable"
-        ) from exc
-
-
-@app.post("/api/traffic-runs/{profile_id}", status_code=202)
-async def start_traffic_run(
-    profile_id: str,
-    request: StartTrafficRequest | None = None,
-) -> dict[str, Any]:
-    _ready()
-    url, headers, sensor_id = _traffic_agent()
-    run_id: str | None = None
-    try:
-        record = await asyncio.to_thread(
-            post_json,
-            f"{url}/v1/runs",
-            {
-                "profile_id": profile_id,
-                **(request.model_dump() if request is not None else {}),
-            },
-            headers=headers,
-        )
-        run_id = str(record["run_id"])
-        await asyncio.to_thread(
-            post_json,
-            f"{state['collector_url']}/runs/register",
-            {
-                "run_id": run_id,
-                "scenario_id": profile_id,
-                "sensor_id": sensor_id,
-            },
-        )
-        released = await asyncio.to_thread(
-            post_json,
-            f"{url}/v1/runs/{run_id}/release",
-            {},
-            headers=headers,
-        )
-        return released
-    except (KeyError, ServiceRequestError) as exc:
-        if run_id is not None:
-            try:
-                await asyncio.to_thread(
-                    delete_json,
-                    f"{url}/v1/runs/current",
-                    headers=headers,
-                )
-            except ServiceRequestError:
-                pass
-        raise HTTPException(status_code=502, detail="traffic run failed") from exc
-
-
-@app.get("/api/traffic-runs/current")
-async def current_traffic_run() -> dict[str, Any]:
-    _ready()
-    url, headers, _ = _traffic_agent()
-    try:
-        body = await asyncio.to_thread(
-            get_json, f"{url}/v1/runs/current", headers=headers
-        )
-        record = body.get("run")
-        if not isinstance(record, dict):
-            return {"run": None}
-        metrics = await asyncio.to_thread(
-            get_json, f"{state['collector_url']}/runs/{record['run_id']}/metrics"
-        )
-        return {"run": {**record, "pipeline": {"collector": metrics}}}
-    except (KeyError, ServiceRequestError) as exc:
-        raise HTTPException(
-            status_code=502, detail="traffic run status unavailable"
-        ) from exc
-
-
-@app.delete("/api/traffic-runs/current")
-async def stop_traffic_run() -> dict[str, Any]:
-    _ready()
-    url, headers, _ = _traffic_agent()
-    try:
-        return await asyncio.to_thread(
-            delete_json,
-            f"{url}/v1/runs/current",
-            headers=headers,
-        )
-    except ServiceRequestError as exc:
-        raise HTTPException(status_code=502, detail="traffic run stop failed") from exc
 
 
 @app.post("/api/runs", status_code=202)

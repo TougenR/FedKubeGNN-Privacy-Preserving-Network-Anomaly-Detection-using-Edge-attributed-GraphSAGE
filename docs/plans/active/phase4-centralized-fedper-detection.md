@@ -1142,6 +1142,71 @@ Monitor chart refinement evidence on 2026-08-10:
   for a stable observation count after VM rotation before treating a new run as
   isolated evidence.
 
+Attacker/defender separation approved on 2026-08-10:
+
+- Run a dedicated Attacker Console on the traffic-generator VM, bound only to
+  `127.0.0.1:8090` and reached through an SSH/IAP local tunnel. Its backend may
+  read the existing VM token files and orchestrate the authenticated agent and
+  collector run boundary; neither token is sent to the browser. The page shows
+  generator identity, fixed target, selected profile, bounded controls, and
+  send/delivery counters, but no model prediction or alert.
+- Remove the live traffic-generator controls from the GKE SOC Console. The SOC
+  surface remains the independent read-only live model monitor; validation
+  replay can remain visibly separated as scientific evaluation rather than an
+  attacker control.
+- Move Zeek capture and its shipper from the generator VM to the GKE gateway
+  Pod so the sensor is on the victim ingress boundary. Set the Internal
+  LoadBalancer Service to `externalTrafficPolicy: Local`, capture before NGINX
+  terminates/proxies the connection, and accept this topology only after live
+  `conn.log` proves `id.orig_h=10.10.0.20` for all relevant ports.
+- Keep the agent run gated until the collector registration succeeds. Expose
+  only the required registration/metrics endpoints on the existing private
+  observation listener, protected by the current observation token and source
+  NetworkPolicy. Do not expose monitor/model output to the attacker console.
+- Disable and stop VM-local Zeek/shipper only after gateway capture passes, so
+  a rollback can re-enable the two existing units. Avoid simultaneous shippers
+  to prevent duplicate flows.
+- If gateway-side capture cannot preserve the generator source, stop before
+  creating new cloud resources. Packet Mirroring requires a separately
+  reviewed Terraform/cost plan and remains an unimplemented fallback.
+
+Attacker/defender separation progress:
+
+- [x] Audit the actual packet path before moving capture. Benign/Attack and the
+  IRC half of C&C traverse `10.10.0.5`, but DDoS, C&C-HeartBeat, Okiru,
+  HorizontalPortScan, and the blackhole half of C&C terminate at
+  `10.20.0.20-22` and never enter the GKE gateway. A gateway-only Zeek cutover
+  would therefore silently remove coverage for most attack profiles. Keep the
+  VM-local sensor/shipper as the continuity boundary while the UI/control
+  separation is delivered; do not run a second shipper and create duplicates.
+- [x] Implement the loopback-only Attacker Console and focused contract tests.
+- [x] Remove traffic control from the SOC Console and retain monitoring proof.
+- [x] Add the token-protected private run-control proxy and Helm validation.
+- [ ] Prepare, but do not apply, a separately reviewable Packet Mirroring sensor
+  Terraform/cost plan. Gateway-side capture is not a valid full-profile
+  replacement because the fixed blackhole destinations bypass it.
+- [x] Update Ansible to deploy the Attacker Console and disable VM capture only
+  after a future independent-sensor cutover checkpoint. This UI release must
+  keep the existing VM capture active.
+- [ ] Publish through Jenkins/Argo CD, apply Ansible, prove the two browser
+  surfaces are separated, run at least one clean end-to-end attack, and record
+  rollback/evidence.
+
+Local separation proof on 2026-08-10:
+
+- Eleven focused SOC/Attacker Console tests pass on the host. Twenty-five
+  affected tests and the complete 72-test application suite pass inside the
+  dependency-complete application container.
+- JavaScript syntax, Ruff, Python compile, application Helm lint/template,
+  Ansible syntax, and `git diff --check` pass. The rendered GKE manifest has
+  only the observation token, contains the token-protected private run-control
+  proxy, and no longer contains `TRAFFIC_AGENT_URL`, the traffic-agent Secret,
+  or the SOC-to-agent egress policy.
+- The Attacker Console API returns generator/target identity and sanitized
+  delivery counters only. Both credentials remain server-side; the agent run
+  remains gated until collector registration succeeds and is cancelled if
+  registration fails.
+
 ## Result
 
 Scientific evaluation, serving-bundle promotion, locked test execution, the

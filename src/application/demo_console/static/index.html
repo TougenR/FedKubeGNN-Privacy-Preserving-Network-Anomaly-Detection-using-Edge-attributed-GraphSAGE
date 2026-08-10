@@ -23,16 +23,11 @@
       <div class="dashboard-grid">
         <aside class="class-panel panel">
           <div class="panel-heading">
-            <div><span class="section-kicker">CONTROL CENTER</span><h1>Kiểm thử &amp; phát traffic</h1></div>
+            <div><span class="section-kicker">SCIENTIFIC EVALUATION</span><h1>Kiểm thử model</h1></div>
             <span id="control-mode-badge" class="validation-badge">VALIDATION</span>
           </div>
 
-          <div class="control-tabs" role="tablist" aria-label="Chế độ điều khiển">
-            <button id="replay-tab" class="control-tab active" type="button" role="tab" aria-selected="true" aria-controls="replay-pane">Model replay</button>
-            <button id="traffic-tab" class="control-tab" type="button" role="tab" aria-selected="false" aria-controls="traffic-pane">Traffic generator</button>
-          </div>
-
-          <section id="replay-pane" class="control-pane replay-pane active" role="tabpanel" aria-labelledby="replay-tab">
+          <section id="replay-pane" class="control-pane replay-pane">
             <div id="replay-cases" class="class-selector" aria-label="Các class của model"></div>
 
             <section id="class-detail" class="class-detail empty-state">
@@ -48,30 +43,6 @@
             </section>
 
             <p id="replay-disclaimer" class="boundary-note">Đang tải quy ước validation…</p>
-          </section>
-
-          <section id="traffic-pane" class="control-pane traffic-pane" role="tabpanel" aria-labelledby="traffic-tab" hidden>
-            <div class="traffic-agent-strip">
-              <span><i id="traffic-agent-dot" class="status-dot pending"></i><strong id="traffic-agent-label">Đang kết nối agent</strong></span>
-              <button id="traffic-refresh-button" type="button">Làm mới</button>
-            </div>
-
-            <div id="traffic-profiles" class="traffic-profile-selector" aria-label="Các profile traffic"></div>
-
-            <section id="traffic-detail" class="traffic-detail empty-state">
-              Chọn một profile để xem cấu hình cố định.
-            </section>
-
-            <div class="traffic-actions">
-              <button id="start-traffic-button" class="primary-action" type="button" disabled>Bắt đầu phát traffic</button>
-              <button id="stop-traffic-button" class="stop-action" type="button" disabled>Dừng traffic</button>
-            </div>
-
-            <section id="traffic-run-status" class="traffic-run-status empty-state" aria-live="polite">
-              Chưa có traffic run.
-            </section>
-
-            <p class="boundary-note">Profile là cấu hình cố định trong repository; UI không thể thay đổi target, port, số event hoặc nhãn dự đoán.</p>
           </section>
         </aside>
 
