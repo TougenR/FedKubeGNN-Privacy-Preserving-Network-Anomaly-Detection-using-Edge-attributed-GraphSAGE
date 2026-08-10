@@ -82,6 +82,13 @@ def _seed(reference_digest: str, profile_id: str) -> int:
     return int.from_bytes(value[:8], "big", signed=False)
 
 
+def _validate_dataset_digest(
+    manifest: Mapping[str, Any], catalog_dataset_digest: str
+) -> None:
+    if manifest.get("derived_dataset_digest") != catalog_dataset_digest:
+        raise TrafficProfileComparisonError("Catalog/replay dataset digest mismatch.")
+
+
 def compare_candidate_frame(
     *,
     candidate: pd.DataFrame,
@@ -256,8 +263,7 @@ def compare_candidate_file(
     catalog = load_profile_catalog(catalog_path)
     profile = catalog.profile(profile_id)
     frames, manifest = _load_validation_frames(replay_root)
-    if manifest.get("source_dataset_digest") != catalog.dataset_digest:
-        raise TrafficProfileComparisonError("Catalog/replay dataset digest mismatch.")
+    _validate_dataset_digest(manifest, catalog.dataset_digest)
     union = pd.concat(
         [frame.assign(client_id=client_id) for client_id, frame in frames.items()],
         ignore_index=True,

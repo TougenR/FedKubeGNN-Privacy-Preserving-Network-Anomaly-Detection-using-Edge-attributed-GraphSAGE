@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict
 
 from src.application.collection.transport import (
     ServiceRequestError,
+    delete_json,
     get_json,
     post_json,
 )
@@ -230,9 +231,8 @@ async def start_traffic_run(profile_id: str) -> dict[str, Any]:
         if run_id is not None:
             try:
                 await asyncio.to_thread(
-                    post_json,
-                    f"{url}/v1/runs/{run_id}/release",
-                    {},
+                    delete_json,
+                    f"{url}/v1/runs/current",
                     headers=headers,
                 )
             except ServiceRequestError:

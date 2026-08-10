@@ -5,7 +5,14 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from src.application.demo_console.app import current_run, state as console_state
+from fastapi import HTTPException
+
+from src.application.collection.transport import ServiceRequestError
+from src.application.demo_console.app import (
+    current_run,
+    start_traffic_run,
+    state as console_state,
+)
 
 from src.application.scenario_runner.catalog import EXPECTED_SCENARIOS, load_catalog
 from src.application.scenario_runner.executor import (
@@ -181,6 +188,44 @@ class DemoConsoleTests(unittest.TestCase):
                 response = await current_run()
             self.assertFalse(response["run"]["pipeline"]["delivery"]["available"])
             await executor.stop()
+            console_state.clear()
+
+        asyncio.run(exercise())
+
+    def test_traffic_agent_is_cancelled_when_collector_registration_fails(self) -> None:
+        async def exercise() -> None:
+            console_state.update(
+                {
+                    "traffic_agent_url": "http://traffic-agent",
+                    "traffic_agent_token": "a" * 32,
+                    "traffic_sensor_id": "sensor-34-1",
+                    "collector_url": "http://collector",
+                }
+            )
+            with (
+                patch(
+                    "src.application.demo_console.app._ready",
+                    return_value=(object(), object()),
+                ),
+                patch(
+                    "src.application.demo_console.app.post_json",
+                    side_effect=[
+                        {"run_id": "traffic-deadbeef"},
+                        ServiceRequestError("registration failed"),
+                    ],
+                ),
+                patch(
+                    "src.application.demo_console.app.delete_json",
+                    return_value={"run": {"status": "cancelled"}},
+                ) as cancel,
+            ):
+                with self.assertRaises(HTTPException) as raised:
+                    await start_traffic_run("okiru")
+            self.assertEqual(raised.exception.status_code, 502)
+            cancel.assert_called_once_with(
+                "http://traffic-agent/v1/runs/current",
+                headers={"Authorization": f"Bearer {'a' * 32}"},
+            )
             console_state.clear()
 
         asyncio.run(exercise())

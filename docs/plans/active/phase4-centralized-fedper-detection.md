@@ -908,19 +908,52 @@ Traffic-profile/VM extension progress:
   free-tier credit. Budget roughly USD 16.15/month plus small Secret Manager,
   NAT/network, and tax/currency effects; stopping the VM removes compute usage
   but retains disk/storage charges.
-- [ ] Record final apply and live evidence. The approved binary plan was
+- [x] Record final apply and live evidence. The approved binary plan was
   applied on 2026-08-10: 17 non-compute resources were created, but GCP rejected
   the VM because global CPU quota is already `12/12` (Central 4 + Edge 6 +
   Jenkins 2). A refreshed state-backed plan now shows exactly `1 add, 0 change,
-  0 destroy` for the VM. No traffic-generator instance exists and therefore no
-  new VM compute charge is active. Resume requires either an approved quota
-  increase to 14 or an approved Jenkins/traffic-generator stop-start rotation.
-  The user selected rotation on 2026-08-10; no quota-increase request was
-  submitted. `scripts/switch_demo_compute.sh` now enforces mutually exclusive
-  `demo` and `ci` modes and the runbook records webhook/build and in-flight
-  observation caveats.
-- [ ] Apply only after the plan checkpoint, then capture live GKE/Zeek/model
+  0 destroy` for the VM. The user selected rotation on 2026-08-10; no
+  quota-increase request was submitted. Jenkins was stopped, the reviewed
+  one-add plan created private `e2-small` instance
+  `fedkube-traffic-generator` at `10.10.0.20`, and Ansible configured the
+  bounded agent, VM-local Zeek, and authenticated shipper. After live evidence,
+  `scripts/switch_demo_compute.sh ci` stopped the generator before restarting
+  Jenkins, preserving the `12/12` CPU ceiling.
+- [x] Apply only after the plan checkpoint, then capture live GKE/Zeek/model
   evidence and evaluate fixed profiles without relabeling model output.
+
+Live private-generator evidence on 2026-08-10:
+
+- Argo CD alone synchronized revisions `91734c9` and `2004f30`; the detection
+  Application is `Synced/Healthy`. Both Secret Manager-backed ExternalSecrets
+  are ready, the internal gateway retains `10.10.0.5`, port `8082` is dedicated
+  to authenticated observations, and the former target-side Zeek sidecars were
+  removed to prevent duplicate flow capture. A one-time Argo-scoped Deployment
+  replace repaired legacy apply ownership without replacing the Service or
+  changing its address.
+- `command-control-heartbeat`, `okiru`, and `horizontal-port-scan` completed
+  respectively `2/2`, `2/2`, and `3/3` attempted/successful sends. Collector
+  counters exactly matched each run, every accepted flow produced a prediction,
+  and all runs recorded zero late drops, duplicates, inference failures, and
+  alert-sink failures. Multi-head fusion predicted the three intended classes;
+  the trusted `34-1` shadow decision differed for heartbeat and Okiru.
+- The frozen 2,000-sample validation comparator selected the intended class as
+  nearest for all three candidate profiles but rejected every candidate from
+  the reference envelope. Live Zeek encoded `service`, missing duration/byte
+  fields, and in one case IP-byte totals differently from the IoT-23 reference.
+  These runs remain reproducible detection demonstrations, not class-equivalent
+  malware traffic. The locked test split was not read.
+- The two-flow benign control completed with no pipeline errors but fusion
+  classified both windows as `Attack` at confidence bucket `0.95-1`; trusted
+  head `34-1` classified both as `Benign`. Keep `trusted-shadow`: promoting
+  fusion alerts would create a 100% false-alert rate on this bounded control.
+- Real replay exposed and locally corrected two fail-closed defects: the
+  comparator now binds the catalog to `derived_dataset_digest` rather than the
+  unrelated source digest, and collector-registration failure now cancels the
+  gated agent run with `DELETE /v1/runs/current` instead of releasing traffic.
+  Seventeen focused host tests pass. The host cannot collect PyG-dependent
+  tests, while the dependency-complete application-image boundary passes all
+  63 application tests plus eight subtests; CI remains the release proof.
 
 ## Result
 
@@ -929,5 +962,9 @@ validation-selected alert policy, internal demo console, GKE stack, and the
 original six in-cluster live scenarios are complete. The model shows no
 validation-to-test overfitting in the locked rolling protocol. The all-decision
 privacy-reduced sink and six-panel Kibana dashboard are deployed and verified
-on GKE. The newly approved scientific traffic-profile analysis and private
-traffic-generator VM remain in progress; no generator VM has been created yet.
+on GKE. The private traffic-generator extension is deployed and has completed
+the four controlled runs above. Its executable attack candidates remain
+scientifically non-equivalent to the IoT-23 validation reference, and the
+fusion policy remains shadow-only because the live benign control is a proven
+false positive. The generator VM is stopped and Jenkins is running at this
+checkpoint under the approved quota-safe rotation policy.

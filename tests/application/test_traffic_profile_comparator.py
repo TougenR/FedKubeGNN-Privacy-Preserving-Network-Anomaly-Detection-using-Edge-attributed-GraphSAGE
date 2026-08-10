@@ -6,6 +6,7 @@ import pandas as pd
 
 from src.application.evaluation.traffic_profile_comparator import (
     TrafficProfileComparisonError,
+    _validate_dataset_digest,
     compare_candidate_frame,
 )
 
@@ -91,6 +92,15 @@ class TrafficProfileComparatorTests(unittest.TestCase):
                 scientific_status="candidate",
                 bootstrap_iterations=100,
             )
+
+    def test_catalog_is_bound_to_derived_training_dataset_digest(self) -> None:
+        manifest = {
+            "source_dataset_digest": "source-digest",
+            "derived_dataset_digest": "derived-digest",
+        }
+        _validate_dataset_digest(manifest, "derived-digest")
+        with self.assertRaises(TrafficProfileComparisonError):
+            _validate_dataset_digest(manifest, "source-digest")
 
 
 if __name__ == "__main__":

@@ -66,3 +66,28 @@ def get_json(
     if not isinstance(payload, dict):
         raise ServiceRequestError("Service response must be a JSON object.")
     return payload
+
+
+def delete_json(
+    url: str,
+    *,
+    headers: Mapping[str, str] | None = None,
+    timeout_seconds: float = 10.0,
+    opener: Callable[..., Any] = urlopen,
+) -> dict[str, Any]:
+    request_headers = {"Accept": "application/json"}
+    if headers:
+        request_headers.update(headers)
+    request = Request(url, headers=request_headers, method="DELETE")
+    try:
+        with opener(request, timeout=timeout_seconds) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+            if int(response.status) < 200 or int(response.status) >= 300:
+                raise ServiceRequestError(f"Service returned HTTP {response.status}.")
+    except HTTPError as exc:
+        raise ServiceRequestError(f"Service returned HTTP {exc.code}.") from exc
+    except (URLError, OSError, json.JSONDecodeError) as exc:
+        raise ServiceRequestError("Service request failed.") from exc
+    if not isinstance(payload, dict):
+        raise ServiceRequestError("Service response must be a JSON object.")
+    return payload
