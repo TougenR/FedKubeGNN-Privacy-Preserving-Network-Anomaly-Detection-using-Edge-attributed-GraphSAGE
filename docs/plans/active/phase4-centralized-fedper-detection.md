@@ -1119,6 +1119,29 @@ Monitor chart refinement approved on 2026-08-10:
   remain readable, and use a smaller chart annotation font while increasing
   the primary status, metric, legend, and prediction text.
 
+Monitor chart refinement evidence on 2026-08-10:
+
+- Nineteen focused catalog/agent/API/console tests, JavaScript syntax, Ruff,
+  and `git diff --check` pass. Jenkins build 99 passed the application image
+  import and CRITICAL vulnerability scan and published immutable digest
+  `sha256:f533ca7b841eb73fca57ac96601990662587ab1e5f27c32292055b06a5347610`.
+  Argo CD alone deployed revision `68b417e`; the detection Application is
+  `Synced/Healthy` and all seven Deployments are ready.
+- A 1440 x 900 headless browser render of the deployed console remains within
+  the single-screen layout. It contains the Benign/model-detection/policy-alert
+  legend, larger primary copy, a smooth cyan baseline, and the deployed
+  JavaScript contains the amber/red Bézier segment renderer.
+- After the restarted Zeek/shipper reached a stable observation count, a clean
+  one-event Attack run completed 1/1 send, receive, accept, and prediction with
+  zero drop or downstream failure. Fusion returned `Attack` in confidence
+  bucket `0.95-1`, trusted head returned `Benign`, and `is_alert=false`; this is
+  the exact live event now admitted to the amber chart path without changing
+  the policy decision.
+- The first post-boot probe was excluded because the shipper drained old DDoS
+  observations while the run was being registered. Demo operation must wait
+  for a stable observation count after VM rotation before treating a new run as
+  isolated evidence.
+
 ## Result
 
 Scientific evaluation, serving-bundle promotion, locked test execution, the
