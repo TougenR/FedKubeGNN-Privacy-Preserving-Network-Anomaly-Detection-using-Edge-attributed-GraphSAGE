@@ -22,6 +22,23 @@ data:
         proxy_set_header X-Forwarded-Proto $scheme;
       }
     }
+    {{- if .Values.gateway.observationPort.enabled }}
+    server {
+      listen {{ .Values.gateway.observationPort.port }};
+      server_tokens off;
+      client_max_body_size 64k;
+
+      location = /observe {
+        proxy_pass http://{{ include "detection-stack.fullname" . }}-collector:8082/observe;
+        proxy_set_header X-FedKube-Observation-Token $http_x_fedkube_observation_token;
+        proxy_set_header Content-Type application/json;
+      }
+
+      location / {
+        return 404;
+      }
+    }
+    {{- end }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -46,7 +63,11 @@ spec:
       containers:
         - name: nginx
           image: {{ .Values.gateway.image | quote }}
-          ports: [{name: http, containerPort: 8080}]
+          ports:
+            - {name: http, containerPort: 8080}
+            {{- if .Values.gateway.observationPort.enabled }}
+            - {name: observation, containerPort: {{ .Values.gateway.observationPort.port }}}
+            {{- end }}
           readinessProbe:
             httpGet: {path: /health/ready, port: http}
           resources: {{- toYaml .Values.gateway.resources | nindent 12 }}
@@ -79,5 +100,9 @@ spec:
   loadBalancerIP: {{ . | quote }}
   {{- end }}
   selector: {app.kubernetes.io/name: detection-gateway}
-  ports: [{name: http, port: 80, targetPort: http}]
+  ports:
+    - {name: http, port: 80, targetPort: http}
+    {{- if .Values.gateway.observationPort.enabled }}
+    - {name: observation, port: {{ .Values.gateway.observationPort.port }}, targetPort: observation}
+    {{- end }}
 {{- end }}

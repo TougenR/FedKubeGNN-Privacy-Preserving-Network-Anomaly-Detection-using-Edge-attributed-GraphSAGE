@@ -8,3 +8,6 @@ output "edge_cluster" { value = google_container_cluster.fedkube["edge_01"].name
 output "flower_internal_ip" { value = google_compute_address.flower_internal.address }
 output "elastic_internal_ip" { value = google_compute_address.elastic_internal.address }
 output "jenkins_public_ip" { value = google_compute_address.jenkins.address }
+output "traffic_generator_internal_ip" {
+  value = var.traffic_generator_enabled ? google_compute_address.traffic_generator[0].address : null
+}

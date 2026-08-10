@@ -1,0 +1,30 @@
+[Unit]
+Description=FedKube bounded scientific traffic agent
+After=network-online.target fedkube-traffic-secrets.service
+Requires=fedkube-traffic-secrets.service
+
+[Service]
+Type=simple
+User={{ traffic_agent_user }}
+Group={{ traffic_agent_user }}
+WorkingDirectory={{ traffic_agent_root }}
+Environment=PYTHONPATH={{ traffic_agent_root }}
+Environment=TRAFFIC_PROFILE_CONFIG={{ traffic_agent_root }}/configs/application/scientific-traffic-profiles.yaml
+Environment=TRAFFIC_TARGET_CONFIG={{ traffic_agent_root }}/configs/application/traffic-targets.gcp.yaml
+Environment=TRAFFIC_AGENT_TOKEN_FILE=/run/fedkube-secrets/agent-token
+ExecStart={{ traffic_agent_venv }}/bin/uvicorn src.application.traffic_agent.app:app --host {{ traffic_agent_bind }} --port {{ traffic_agent_port }}
+Restart=on-failure
+RestartSec=3
+AmbientCapabilities=CAP_NET_RAW
+CapabilityBoundingSet=CAP_NET_RAW
+NoNewPrivileges=yes
+PrivateDevices=no
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target
+

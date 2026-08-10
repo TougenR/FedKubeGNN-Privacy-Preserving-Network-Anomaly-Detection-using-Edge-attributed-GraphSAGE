@@ -1,0 +1,111 @@
+schema_version: 1
+kind: fixed-scientific-traffic-candidates
+reference_digest: 1170c604041f572ef17c2cd12b16b5274a086a8d2a90a064c97e2315ff98b170
+dataset_digest: c5ab9c02896c08c9f60e8efb9672a2090cbe595e4c344308f5e4dc2b0e51319a
+graph_protocol: rolling-window-v1:duration=60s:max-flows=50:stride=1:lateness=1s
+claim_boundary: >-
+  Profiles target the model's validation rolling view. They do not establish
+  natural malware timing, supply inference ground truth, or choose a FedPer head.
+profiles:
+  - id: benign-control
+    reference_class: Benign
+    scientific_status: control-not-class-equivalent
+    execution_enabled: true
+    mechanism: http-get
+    target_group: gateway-http
+    destination_port: 80
+    events: 2
+    interval_ms: 30000
+    expected_observables:
+      protocols: [tcp]
+      services: [http]
+      connection_states: [SF]
+      note: >-
+        A reproducible false-alert control only. IoT-23 Benign is heterogeneous
+        and is predominantly UDP in the validation reference.
+  - id: attack-ssh
+    reference_class: Attack
+    scientific_status: blocked-target-not-ready
+    execution_enabled: false
+    mechanism: ssh-session
+    target_group: ssh-emulator
+    destination_port: 22
+    events: 4
+    interval_ms: 15000
+    expected_observables:
+      protocols: [tcp]
+      services: [ssh]
+      connection_states: [SF]
+      note: A digest-pinned SSH emulator and key are required before execution.
+  - id: command-control
+    reference_class: C&C
+    scientific_status: blocked-target-not-ready
+    execution_enabled: false
+    mechanism: irc-mixed
+    target_group: irc-emulator
+    destination_port: 6667
+    events: 3
+    interval_ms: 20000
+    expected_observables:
+      protocols: [tcp]
+      services: [irc, unknown]
+      connection_states: [S0, S3, SF]
+      note: The reference requires a controlled incomplete/completed mixture.
+  - id: command-control-heartbeat
+    reference_class: C&C-HeartBeat
+    scientific_status: candidate
+    execution_enabled: true
+    mechanism: syn-only
+    target_group: single-blackhole
+    destination_port: 57722
+    events: 2
+    interval_ms: 30000
+    expected_observables:
+      protocols: [tcp]
+      services: [unknown]
+      connection_states: [S0]
+      note: One SYN-only flow per event with no response is required.
+  - id: ddos
+    reference_class: DDoS
+    scientific_status: unsupported-dataset-artifact
+    execution_enabled: false
+    mechanism: ack-only
+    target_group: single-blackhole
+    destination_port: 80
+    events: 50
+    interval_ms: 4
+    expected_observables:
+      protocols: [tcp]
+      services: [unknown]
+      connection_states: [OTH]
+      note: >-
+        Validation is dominated by Zeek history C/checksum evidence. Live Zeek
+        intentionally ignores invalid checksums, so this fingerprint is blocked.
+  - id: okiru
+    reference_class: Okiru
+    scientific_status: candidate
+    execution_enabled: true
+    mechanism: syn-only-round-robin
+    target_group: multi-blackhole
+    destination_port: 37215
+    events: 2
+    interval_ms: 30000
+    expected_observables:
+      protocols: [tcp]
+      services: [unknown]
+      connection_states: [S0]
+      note: Events must use different fixed private destinations.
+  - id: horizontal-port-scan
+    reference_class: PartOfAHorizontalPortScan
+    scientific_status: candidate
+    execution_enabled: true
+    mechanism: syn-only-round-robin
+    target_group: multi-blackhole
+    destination_port: 22
+    events: 3
+    interval_ms: 20000
+    expected_observables:
+      protocols: [tcp]
+      services: [unknown]
+      connection_states: [S0]
+      note: Same destination port across several fixed private destinations.

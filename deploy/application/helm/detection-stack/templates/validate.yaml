@@ -52,6 +52,24 @@
 {{- if and .Values.zeek.enabled (not .Values.zeek.sensorId) }}
 {{- fail "zeek.sensorId is required when Zeek capture is enabled" }}
 {{- end }}
+{{- if and .Values.trafficGenerator.enabled .Values.zeek.enabled }}
+{{- fail "VM trafficGenerator and in-pod Zeek capture are mutually exclusive" }}
+{{- end }}
+{{- if and .Values.trafficGenerator.enabled (not .Values.gateway.enabled) }}
+{{- fail "trafficGenerator requires the internal gateway" }}
+{{- end }}
+{{- if and .Values.trafficGenerator.enabled (not .Values.gateway.observationPort.enabled) }}
+{{- fail "trafficGenerator requires gateway.observationPort.enabled" }}
+{{- end }}
+{{- if and .Values.trafficGenerator.enabled (not .Values.collector.enabled) }}
+{{- fail "trafficGenerator requires the collector" }}
+{{- end }}
+{{- if and .Values.trafficGenerator.enabled (not .Values.externalSecrets.enabled) }}
+{{- fail "trafficGenerator requires External Secrets" }}
+{{- end }}
+{{- if and .Values.trafficGenerator.enabled (or (not .Values.trafficGenerator.agentTokenSecretName) (not .Values.trafficGenerator.observationTokenSecretName)) }}
+{{- fail "trafficGenerator token Secret names are required" }}
+{{- end }}
 {{- if and .Values.zeek.enabled (not (regexMatch "^zeek/zeek@sha256:[0-9a-f]{64}$" .Values.zeek.image)) }}
 {{- fail "zeek.image must be an immutable zeek/zeek digest" }}
 {{- end }}

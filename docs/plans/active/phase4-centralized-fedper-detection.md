@@ -875,10 +875,35 @@ Traffic-profile/VM extension progress:
   `docs/PHASE4_TRAFFIC_PROFILE_ANALYSIS.md`. Reference digest is
   `1170c604041f572ef17c2cd12b16b5274a086a8d2a90a064c97e2315ff98b170`;
   12,144 validation rows were analyzed and locked test was not read.
-- [ ] Freeze the executable candidate catalog and bootstrap comparator.
-- [ ] Implement the bounded traffic agent and local contract tests.
-- [ ] Extend Terraform, Ansible, Helm, GitOps, CI, and the compact console.
-- [ ] Produce a no-unintended-change Terraform plan and cost/resource summary.
+- [x] Freeze the seven-class executable candidate catalog. Benign is explicitly
+  a control, SSH/C&C remain blocked pending compatible targets, DDoS remains
+  unsupported because the validation fingerprint depends on checksum/history
+  evidence, and the three SYN-only candidates are bounded to fixed private IPs.
+- [ ] Freeze the deterministic bootstrap/nearest-reference comparator before
+  interpreting any captured VM flow as class-equivalent.
+- [x] Implement the authenticated bounded traffic agent and local contract
+  tests. Its request contract accepts only `profile_id`; target/port/event
+  authority stays in the versioned server-side catalogs.
+- [x] Extend Terraform, Ansible, Helm, CI, the collector authentication boundary,
+  and compact-console backend. Keep the GKE environment flag disabled until the
+  Secret Manager versions and VM services are healthy, so Argo CD does not
+  consume an intermediate state.
+- [x] Produce a refreshed remote-state Terraform plan at
+  `artifacts/federated/terraform/phase4-traffic-generator-plan.txt`: exactly
+  `18 add, 0 change, 0 destroy`. The additions are one private `e2-small` VM
+  with 20 GiB standard disk, one service account, four internal addresses, six
+  firewall rules, two Secret Manager containers, and four secret-level IAM
+  bindings. Private egress is restricted to the six fixed lab endpoints.
+- [x] Record the current price estimate. The 2026-08-09 Singapore Cloud Billing
+  catalog rates used for the conservative calculation are USD 0.02690931 per
+  E2 core-hour and USD 0.003786237 per GiB-hour. At the documented `e2-small`
+  allocation (0.5 fractional vCPU, 2 GiB), compute is approximately USD 0.02103
+  per hour / USD 15.35 per 730-hour month. A 20 GiB standard disk at USD
+  0.000054795 per GiB-hour is approximately USD 0.80/month before any account
+  free-tier credit. Budget roughly USD 16.15/month plus small Secret Manager,
+  NAT/network, and tax/currency effects; stopping the VM removes compute usage
+  but retains disk/storage charges.
+- [ ] Record final apply and live evidence.
 - [ ] Apply only after the plan checkpoint, then capture live GKE/Zeek/model
   evidence and evaluate fixed profiles without relabeling model output.
 

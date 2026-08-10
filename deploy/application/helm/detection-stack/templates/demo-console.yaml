@@ -50,6 +50,14 @@ spec:
                 (printf "http://%s-target:8083" (include "detection-stack.fullname" .))
                 (printf "http://%s-target:8084" (include "detection-stack.fullname" .))
                 (printf "http://%s-target:8085" (include "detection-stack.fullname" .)) | toJson | quote }}
+            {{- if .Values.trafficGenerator.enabled }}
+            - name: TRAFFIC_AGENT_URL
+              value: {{ .Values.trafficGenerator.agentUrl | quote }}
+            - name: TRAFFIC_SENSOR_ID
+              value: {{ .Values.trafficGenerator.sensorId | quote }}
+            - name: TRAFFIC_AGENT_TOKEN_FILE
+              value: /var/run/fedkube/traffic-agent/token
+            {{- end }}
           ports: [{name: http, containerPort: 8090}]
           readinessProbe:
             httpGet: {path: /health/ready, port: http}
@@ -62,6 +70,18 @@ spec:
             runAsNonRoot: true
             runAsUser: 49999
             capabilities: {drop: [ALL]}
+          {{- if .Values.trafficGenerator.enabled }}
+          volumeMounts:
+            - {name: traffic-agent-token, mountPath: /var/run/fedkube/traffic-agent, readOnly: true}
+          {{- end }}
+      {{- if .Values.trafficGenerator.enabled }}
+      volumes:
+        - name: traffic-agent-token
+          secret:
+            secretName: {{ .Values.trafficGenerator.agentTokenSecretName }}
+            items:
+              - {key: {{ .Values.trafficGenerator.agentTokenSecretKey }}, path: token}
+      {{- end }}
 ---
 apiVersion: v1
 kind: Service

@@ -1,0 +1,24 @@
+[Unit]
+Description=Ship label-free Zeek flows to the FedKube collector
+After=network-online.target fedkube-traffic-secrets.service fedkube-zeek.service
+Requires=fedkube-traffic-secrets.service fedkube-zeek.service
+
+[Service]
+Type=simple
+User={{ traffic_agent_user }}
+Group={{ traffic_agent_user }}
+WorkingDirectory={{ traffic_agent_root }}
+Environment=PYTHONPATH={{ traffic_agent_root }}
+ExecStart={{ traffic_agent_venv }}/bin/python -m src.application.collection.zeek_shipper --path=/var/lib/fedkube/zeek/conn.log --collector-url={{ traffic_collector_url }} --sensor-id={{ traffic_sensor_id }} --queue-size=1000 --token-file=/run/fedkube-secrets/observation-token
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=yes
+PrivateDevices=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+[Install]
+WantedBy=multi-user.target
+

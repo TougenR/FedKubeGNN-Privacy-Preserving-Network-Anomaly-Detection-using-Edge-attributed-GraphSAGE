@@ -96,6 +96,31 @@ class LiveRemediationTests(unittest.TestCase):
 
         asyncio.run(exercise())
 
+    def test_delivery_queue_keeps_observation_token_out_of_document(self) -> None:
+        async def exercise() -> None:
+            captured = {}
+
+            def sender(_url, document, *, headers):
+                captured["document"] = document
+                captured["headers"] = headers
+                return {"accepted": True}
+
+            dispatcher = ObservationDispatcher(
+                endpoint="http://collector/observe",
+                headers={"X-FedKube-Observation-Token": "s" * 32},
+                sender=sender,
+            )
+            await dispatcher.start()
+            self.assertTrue(dispatcher.enqueue({"flow": {}}, run_id=None))
+            await dispatcher.stop()
+            self.assertEqual(captured["document"], {"flow": {}})
+            self.assertEqual(
+                captured["headers"]["X-FedKube-Observation-Token"], "s" * 32
+            )
+            self.assertNotIn("token", str(captured["document"]).lower())
+
+        asyncio.run(exercise())
+
     def test_scientific_replay_is_validation_only_and_label_free_on_wire(self) -> None:
         catalog = load_scientific_replay(REPLAY)
         policy = load_replay_alert_policy(FUSION_POLICY)
@@ -106,9 +131,7 @@ class LiveRemediationTests(unittest.TestCase):
             {item["profile"]["class_name"] for item in public["cases"]},
             {case.expected_class for case in catalog.cases},
         )
-        self.assertEqual(
-            public["cases"][4]["sample_characteristics"]["flow_count"], 50
-        )
+        self.assertEqual(public["cases"][4]["sample_characteristics"]["flow_count"], 50)
         captured = {}
         case = catalog.case("ddos")
 
@@ -151,7 +174,9 @@ class LiveRemediationTests(unittest.TestCase):
             self.assertNotIn("detailed-label", flow)
             self.assertNotRegex(flow["id.orig_h"], r"^\d+\.\d+\.\d+\.\d+$")
 
-    def test_benign_raw_false_classification_stays_visible_but_is_not_alert(self) -> None:
+    def test_benign_raw_false_classification_stays_visible_but_is_not_alert(
+        self,
+    ) -> None:
         catalog = load_scientific_replay(REPLAY)
         policy = load_replay_alert_policy(FUSION_POLICY)
         case = catalog.case("benign")
@@ -199,7 +224,9 @@ class LiveRemediationTests(unittest.TestCase):
                 sender=lambda _url, _document: {"fusion_policy_digest": "bad"},
             )
 
-    def test_zeek_normalizer_preserves_missing_numeric_values_and_forbids_labels(self) -> None:
+    def test_zeek_normalizer_preserves_missing_numeric_values_and_forbids_labels(
+        self,
+    ) -> None:
         record = {
             "ts": 1.0,
             "uid": "C1",

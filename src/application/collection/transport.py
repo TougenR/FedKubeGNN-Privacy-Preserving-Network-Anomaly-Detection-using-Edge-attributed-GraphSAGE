@@ -16,13 +16,17 @@ def post_json(
     url: str,
     document: Mapping[str, Any],
     *,
+    headers: Mapping[str, str] | None = None,
     timeout_seconds: float = 10.0,
     opener: Callable[..., Any] = urlopen,
 ) -> dict[str, Any]:
+    request_headers = {"Content-Type": "application/json"}
+    if headers:
+        request_headers.update(headers)
     request = Request(
         url,
         data=json.dumps(document, separators=(",", ":")).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
+        headers=request_headers,
         method="POST",
     )
     try:
@@ -42,10 +46,14 @@ def post_json(
 def get_json(
     url: str,
     *,
+    headers: Mapping[str, str] | None = None,
     timeout_seconds: float = 10.0,
     opener: Callable[..., Any] = urlopen,
 ) -> dict[str, Any]:
-    request = Request(url, headers={"Accept": "application/json"}, method="GET")
+    request_headers = {"Accept": "application/json"}
+    if headers:
+        request_headers.update(headers)
+    request = Request(url, headers=request_headers, method="GET")
     try:
         with opener(request, timeout=timeout_seconds) as response:
             payload = json.loads(response.read().decode("utf-8"))

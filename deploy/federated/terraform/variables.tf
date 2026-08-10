@@ -49,6 +49,28 @@ variable "jenkins_machine_type" {
   default = "e2-standard-2"
 }
 
+variable "traffic_generator_enabled" {
+  type        = bool
+  description = "Create the private Phase 4 traffic-generator VM and its scoped controls."
+  default     = false
+}
+
+variable "traffic_generator_machine_type" {
+  type        = string
+  description = "Smallest shape with enough memory for Zeek, shipper, and traffic agent."
+  default     = "e2-small"
+}
+
+variable "traffic_generator_ip" {
+  type        = string
+  description = "Fixed RFC1918 address in the existing Central subnet."
+  default     = "10.10.0.20"
+  validation {
+    condition     = can(cidrhost("${var.traffic_generator_ip}/32", 0)) && can(regex("^10\\.10\\.([0-9]|1[0-5])\\.([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$", var.traffic_generator_ip))
+    error_message = "traffic_generator_ip must be an IPv4 address in the 10.10.0.0/20 Central subnet."
+  }
+}
+
 variable "admin_source_ranges" {
   type        = list(string)
   description = "CIDRs allowed to SSH to Jenkins. Use the operator's current /32."

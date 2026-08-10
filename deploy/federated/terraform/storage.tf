@@ -21,12 +21,15 @@ resource "google_storage_bucket" "models" {
 }
 
 locals {
-  secret_ids = toset([
+  secret_ids = toset(concat([
     "fedkube-flower-ca",
     "fedkube-flower-cert",
     "fedkube-flower-key",
     "fedkube-elastic-password",
-  ])
+    ], var.traffic_generator_enabled ? [
+    "fedkube-traffic-agent-token",
+    "fedkube-traffic-observation-token",
+  ] : []))
 }
 
 resource "google_secret_manager_secret" "runtime" {

@@ -35,11 +35,7 @@ async def follow_rotating_file(
                     position = 0
                 await asyncio.sleep(poll_seconds)
                 continue
-            if (
-                handle is None
-                or inode != current.st_ino
-                or current.st_size < position
-            ):
+            if handle is None or inode != current.st_ino or current.st_size < position:
                 if handle is not None:
                     handle.close()
                 handle = path.open("r", encoding="utf-8")
@@ -91,13 +87,21 @@ async def ship(
     sensor_id: str,
     poll_seconds: float,
     queue_size: int,
+    token_file: Path | None = None,
 ) -> None:
+    headers = None
+    if token_file is not None:
+        token = token_file.read_text(encoding="utf-8").strip()
+        if len(token) < 32:
+            raise ValueError("Observation token must contain at least 32 characters.")
+        headers = {"X-FedKube-Observation-Token": token}
     dispatcher = ObservationDispatcher(
         endpoint=collector_url,
         queue_size=queue_size,
         workers=1,
         retry_attempts=5,
         retry_backoff_seconds=0.5,
+        headers=headers,
     )
     await dispatcher.start()
     try:
@@ -131,6 +135,7 @@ def main() -> None:
     parser.add_argument("--sensor-id", required=True)
     parser.add_argument("--poll-seconds", type=float, default=0.2)
     parser.add_argument("--queue-size", type=int, default=1000)
+    parser.add_argument("--token-file", type=Path)
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO)
     asyncio.run(
@@ -140,6 +145,7 @@ def main() -> None:
             sensor_id=args.sensor_id,
             poll_seconds=args.poll_seconds,
             queue_size=args.queue_size,
+            token_file=args.token_file,
         )
     )
 

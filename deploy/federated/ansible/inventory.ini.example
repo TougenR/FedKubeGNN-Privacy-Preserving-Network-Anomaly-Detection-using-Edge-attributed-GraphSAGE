@@ -1,2 +1,5 @@
 [jenkins]
 fedkube-jenkins ansible_host=203.0.113.10 ansible_user=ubuntu
+
+[traffic_generator]
+fedkube-traffic-generator ansible_host=10.10.0.20 ansible_user=CHANGE_ME

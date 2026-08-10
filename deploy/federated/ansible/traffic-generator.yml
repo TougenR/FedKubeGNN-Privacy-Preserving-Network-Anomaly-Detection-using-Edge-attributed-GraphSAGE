@@ -1,0 +1,153 @@
+---
+- name: Configure the private Phase 4 traffic generator
+  hosts: traffic_generator
+  become: true
+  vars:
+    traffic_agent_root: /opt/fedkube
+    traffic_agent_user: fedkube-agent
+    traffic_agent_venv: /opt/fedkube/venv
+    traffic_agent_bind: 10.10.0.20
+    traffic_agent_port: 8091
+    traffic_collector_url: http://10.10.0.5:8082/observe
+    traffic_sensor_id: sensor-34-1
+    traffic_gcp_project: fedlearning-20260729-hn
+    traffic_zeek_image: zeek/zeek@sha256:c7dfad9ab8296b2994d113222e77a22ebc9c8963b2b1200b798484ac923bc94f
+    traffic_zeek_interface: ens4
+    traffic_zeek_filter: >-
+      tcp and (((src host 10.10.0.20) and ((dst net 10.20.0.0/24) or
+      (dst host 10.10.0.5 and dst port 80))) or ((dst host 10.10.0.20) and
+      (src host 10.10.0.5 and src port 80)))
+  tasks:
+    - name: Install constrained runtime dependencies
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - docker.io
+          - python3
+          - python3-venv
+        state: present
+        update_cache: true
+
+    - name: Create the non-root traffic-agent account
+      ansible.builtin.user:
+        name: "{{ traffic_agent_user }}"
+        system: true
+        create_home: false
+        home: /nonexistent
+        shell: /usr/sbin/nologin
+
+    - name: Create traffic-generator directories
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - {path: /opt/fedkube, owner: root, group: root, mode: "0755"}
+        - {path: /opt/fedkube/src, owner: root, group: root, mode: "0755"}
+        - {path: /opt/fedkube/configs/application, owner: root, group: root, mode: "0755"}
+        - {path: /etc/fedkube, owner: root, group: root, mode: "0755"}
+        - {path: /var/lib/fedkube/zeek, owner: root, group: "{{ traffic_agent_user }}", mode: "0750"}
+
+    - name: Install the application source used by the agent and shipper
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../../src/"
+        dest: /opt/fedkube/src/
+        owner: root
+        group: root
+        mode: preserve
+      notify: Restart traffic services
+
+    - name: Install the immutable scientific profile catalog
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../../configs/application/scientific-traffic-profiles.yaml"
+        dest: /opt/fedkube/configs/application/scientific-traffic-profiles.yaml
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Restart traffic services
+
+    - name: Install the fixed private GCP target catalog
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../../configs/application/traffic-targets.gcp.yaml"
+        dest: /opt/fedkube/configs/application/traffic-targets.gcp.yaml
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Restart traffic services
+
+    - name: Create the traffic-agent virtual environment
+      ansible.builtin.command:
+        cmd: python3 -m venv "{{ traffic_agent_venv }}"
+        creates: "{{ traffic_agent_venv }}/bin/python"
+
+    - name: Install minimal Python runtime packages
+      ansible.builtin.pip:
+        name:
+          - fastapi==0.116.1
+          - pydantic==2.11.7
+          - PyYAML==6.0.2
+          - uvicorn==0.35.0
+        virtualenv: "{{ traffic_agent_venv }}"
+      notify: Restart traffic services
+
+    - name: Install Secret Manager identity bootstrap
+      ansible.builtin.template:
+        src: fetch-traffic-secrets.sh.j2
+        dest: /usr/local/sbin/fedkube-fetch-traffic-secrets
+        owner: root
+        group: root
+        mode: "0700"
+      notify: Restart traffic services
+
+    - name: Configure Zeek connection expiry for bounded SYN profiles
+      ansible.builtin.copy:
+        dest: /etc/fedkube/traffic.zeek
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          redef tcp_SYN_timeout = 5secs;
+      notify: Restart traffic services
+
+    - name: Install traffic-generator systemd units
+      ansible.builtin.template:
+        src: "{{ item.src }}"
+        dest: "/etc/systemd/system/{{ item.dest }}"
+        owner: root
+        group: root
+        mode: "0644"
+      loop:
+        - {src: fedkube-traffic-secrets.service.j2, dest: fedkube-traffic-secrets.service}
+        - {src: fedkube-traffic-agent.service.j2, dest: fedkube-traffic-agent.service}
+        - {src: fedkube-zeek.service.j2, dest: fedkube-zeek.service}
+        - {src: fedkube-zeek-shipper.service.j2, dest: fedkube-zeek-shipper.service}
+      notify: Restart traffic services
+
+    - name: Enable traffic-generator services
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        enabled: true
+        state: started
+        daemon_reload: true
+      loop:
+        - docker
+        - fedkube-traffic-secrets
+        - fedkube-zeek
+        - fedkube-zeek-shipper
+        - fedkube-traffic-agent
+
+  handlers:
+    - name: Restart traffic services
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: restarted
+        daemon_reload: true
+      loop:
+        - fedkube-traffic-secrets
+        - fedkube-zeek
+        - fedkube-zeek-shipper
+        - fedkube-traffic-agent
+

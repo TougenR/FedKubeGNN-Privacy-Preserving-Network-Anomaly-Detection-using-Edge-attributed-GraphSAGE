@@ -64,6 +64,7 @@ jobs:
           pip install ansible-core==2.19.3
           cp deploy/federated/ansible/inventory.ini.example deploy/federated/ansible/inventory.ini
           ansible-playbook -i deploy/federated/ansible/inventory.ini deploy/federated/ansible/site.yml --syntax-check
+          ansible-playbook -i deploy/federated/ansible/inventory.ini deploy/federated/ansible/traffic-generator.yml --syntax-check
 
   security:
     runs-on: ubuntu-latest

@@ -56,6 +56,15 @@ demoConsole:
     requests: {cpu: 25m, memory: 64Mi}
     limits: {cpu: 250m, memory: 256Mi}
 
+trafficGenerator:
+  enabled: false
+  agentUrl: http://10.10.0.20:8091
+  sensorId: sensor-34-1
+  agentTokenSecretName: ""
+  agentTokenSecretKey: token
+  observationTokenSecretName: ""
+  observationTokenSecretKey: token
+
 gateway:
   enabled: false
   image: nginxinc/nginx-unprivileged:1.29.1-alpine
@@ -65,6 +74,9 @@ gateway:
     annotations:
       networking.gke.io/load-balancer-type: Internal
       networking.gke.io/internal-load-balancer-allow-global-access: "true"
+  observationPort:
+    enabled: false
+    port: 8082
   resources:
     requests: {cpu: 25m, memory: 32Mi}
     limits: {cpu: 100m, memory: 128Mi}
@@ -141,6 +153,8 @@ externalSecrets:
   enabled: false
   clusterSecretStore: gcp-secret-manager
   entityHashSecretId: fedkube-detection-entity-hash
+  trafficAgentSecretId: fedkube-traffic-agent-token
+  trafficObservationSecretId: fedkube-traffic-observation-token
 
 evaluation:
   enabled: false

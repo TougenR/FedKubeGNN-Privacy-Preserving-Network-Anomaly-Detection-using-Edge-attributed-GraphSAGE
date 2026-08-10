@@ -36,16 +36,20 @@ class ObservationDispatcher:
         workers: int = 1,
         retry_attempts: int = 3,
         retry_backoff_seconds: float = 0.25,
+        headers: Mapping[str, str] | None = None,
         sender: Callable[..., dict[str, Any]] = post_json,
     ) -> None:
         if queue_size < 1 or workers < 1 or retry_attempts < 1:
-            raise ValueError("Queue size, workers, and retry attempts must be positive.")
+            raise ValueError(
+                "Queue size, workers, and retry attempts must be positive."
+            )
         if retry_backoff_seconds < 0:
             raise ValueError("Retry backoff cannot be negative.")
         self.endpoint = endpoint
         self.workers = workers
         self.retry_attempts = retry_attempts
         self.retry_backoff_seconds = retry_backoff_seconds
+        self.headers = dict(headers) if headers else None
         self.sender = sender
         self.queue: asyncio.Queue[DeliveryItem | None] = asyncio.Queue(queue_size)
         self.total = DeliveryCounters()
@@ -113,7 +117,15 @@ class ObservationDispatcher:
     async def _deliver(self, item: DeliveryItem) -> None:
         for attempt in range(1, self.retry_attempts + 1):
             try:
-                await asyncio.to_thread(self.sender, self.endpoint, item.document)
+                if self.headers is None:
+                    await asyncio.to_thread(self.sender, self.endpoint, item.document)
+                else:
+                    await asyncio.to_thread(
+                        self.sender,
+                        self.endpoint,
+                        item.document,
+                        headers=self.headers,
+                    )
                 self._increment("delivered", item.run_id)
                 return
             except ServiceRequestError:

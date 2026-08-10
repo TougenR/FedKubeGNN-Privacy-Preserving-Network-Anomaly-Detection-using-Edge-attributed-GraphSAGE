@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import hmac
 import json
 import os
 import time
@@ -12,7 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.application.alerting.event import numeric_bucket
@@ -28,12 +29,8 @@ class CollectorObservation(BaseModel):
 
     sensor_id: str
     source: Literal["zeek-json-v1", "ingress-adapter-v1"]
-    run_id: str | None = Field(
-        default=None, pattern=r"^[a-z0-9][a-z0-9-]{0,63}$"
-    )
-    scenario_id: str | None = Field(
-        default=None, pattern=r"^[a-z0-9][a-z0-9-]{0,63}$"
-    )
+    run_id: str | None = Field(default=None, pattern=r"^[a-z0-9][a-z0-9-]{0,63}$")
+    scenario_id: str | None = Field(default=None, pattern=r"^[a-z0-9][a-z0-9-]{0,63}$")
     flow: ProductionFlow
 
 
@@ -106,7 +103,9 @@ async def lifespan(_: FastAPI):
         if app_state["policy"] is not None:
             app_state["entity_key"] = os.environ["ENTITY_HASH_KEY"].encode("utf-8")
             if not app_state["alert_router_url"]:
-                raise ValueError("ALERT_ROUTER_URL is required when alerting is enabled.")
+                raise ValueError(
+                    "ALERT_ROUTER_URL is required when alerting is enabled."
+                )
         app_state["buffers"] = {}
         app_state["inference_latency_ms"] = []
         app_state["observations"] = 0
@@ -131,6 +130,14 @@ async def lifespan(_: FastAPI):
         app_state["flow_runs"] = defaultdict(dict)
         app_state["completed_uids"] = deque(maxlen=5000)
         app_state["active_runs"] = {}
+        token_path = os.environ.get("OBSERVATION_TOKEN_FILE")
+        if token_path:
+            token = Path(token_path).read_text(encoding="utf-8").strip()
+            if len(token) < 32:
+                raise ValueError(
+                    "Observation token must contain at least 32 characters."
+                )
+            app_state["observation_token"] = token
     except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
         app_state["load_error"] = str(exc)
     yield
@@ -175,6 +182,7 @@ async def metrics() -> dict[str, Any]:
         if not latency:
             return None
         return latency[round((len(latency) - 1) * fraction)]
+
     dropped = sum(buffer.late_drop_count for buffer in buffers)
     evicted = sum(buffer.capacity_drop_count for buffer in buffers)
     return {
@@ -194,9 +202,7 @@ async def monitor_events(after: int = 0, limit: int = 100) -> dict[str, Any]:
     if after < 0 or not 1 <= limit <= 200:
         raise HTTPException(status_code=422, detail="invalid monitor cursor or limit")
     selected = [
-        event
-        for event in app_state["monitor_events"]
-        if int(event["sequence"]) > after
+        event for event in app_state["monitor_events"] if int(event["sequence"]) > after
     ][:limit]
     metric_values = await metrics()
     return {
@@ -245,8 +251,16 @@ async def register_run(registration: LabRunRegistration) -> dict[str, str]:
 
 
 @app.post("/observe")
-async def observe(observation: CollectorObservation) -> dict[str, Any]:
+async def observe(
+    observation: CollectorObservation,
+    x_fedkube_observation_token: str | None = Header(default=None),
+) -> dict[str, Any]:
     _ready()
+    expected_token = app_state.get("observation_token")
+    if isinstance(expected_token, str) and not hmac.compare_digest(
+        x_fedkube_observation_token or "", expected_token
+    ):
+        raise HTTPException(status_code=401, detail="invalid observation token")
     active = app_state.setdefault("active_runs", {}).get(observation.sensor_id, {})
     resolved_run_id = observation.run_id or active.get("run_id")
     run_values = (
@@ -331,9 +345,7 @@ async def observe(observation: CollectorObservation) -> dict[str, Any]:
                     **prediction["trusted_prediction"],
                     "trusted_prediction": prediction["trusted_prediction"],
                     "fused_predicted_label": prediction["predicted_label"],
-                    "head_disagreement_count": prediction[
-                        "head_disagreement_count"
-                    ],
+                    "head_disagreement_count": prediction["head_disagreement_count"],
                     "alert_decision_source": "trusted-shadow",
                 }
             else:
@@ -375,9 +387,7 @@ async def observe(observation: CollectorObservation) -> dict[str, Any]:
     for index in snapshot.emission_indices:
         source_flow = snapshot.flows[index]
         emitted_uid = str(source_flow.get("uid", "-"))
-        emitted_run = app_state["flow_runs"][snapshot.sensor_id].pop(
-            emitted_uid, None
-        )
+        emitted_run = app_state["flow_runs"][snapshot.sensor_id].pop(emitted_uid, None)
         if emitted_run is not None:
             app_state["run_metrics"][emitted_run]["predicted"] += 1
         if emitted_uid != "-":
@@ -415,13 +425,9 @@ async def observe(observation: CollectorObservation) -> dict[str, Any]:
             "model_digest": str(response["model_digest"]),
             "head_digest": str(response["head_digest"]),
             "schema_digest": str(response["schema_digest"]),
-            "decision_mode": str(
-                response.get("decision_mode", "trusted-head-v1")
-            ),
+            "decision_mode": str(response.get("decision_mode", "trusted-head-v1")),
             "fusion_policy_digest": response.get("fusion_policy_digest"),
-            "alert_decision_source": app_state.get(
-                "alert_decision_source", "fusion"
-            ),
+            "alert_decision_source": app_state.get("alert_decision_source", "fusion"),
             "trusted_predicted_class": str(
                 prediction.get("trusted_prediction", {}).get(
                     "predicted_label", predicted_class

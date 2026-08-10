@@ -1,0 +1,16 @@
+[Unit]
+Description=FedKube traffic-generator Zeek capture
+After=docker.service network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+ExecStartPre=-/usr/bin/docker rm -f fedkube-traffic-zeek
+ExecStart=/usr/bin/docker run --name fedkube-traffic-zeek --rm --network host --read-only --cap-drop ALL --cap-add NET_RAW --cap-add NET_ADMIN --security-opt no-new-privileges --mount type=bind,src=/var/lib/fedkube/zeek,dst=/zeek-logs --mount type=bind,src=/etc/fedkube/traffic.zeek,dst=/traffic.zeek,readonly --tmpfs /tmp:rw,noexec,nosuid,size=64m --workdir /zeek-logs {{ traffic_zeek_image }} zeek -C -i {{ traffic_zeek_interface }} -f "{{ traffic_zeek_filter }}" LogAscii::use_json=T /traffic.zeek local
+ExecStop=/usr/bin/docker stop -t 10 fedkube-traffic-zeek
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+

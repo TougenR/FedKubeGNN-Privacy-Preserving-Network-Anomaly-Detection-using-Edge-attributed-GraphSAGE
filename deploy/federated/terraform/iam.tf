@@ -1,5 +1,5 @@
 locals {
-  service_accounts = {
+  service_accounts = merge({
     gke_central      = "fedkube-gke-central"
     gke_edge         = "fedkube-gke-edge-01"
     workload_central = "fedkube-central"
@@ -7,7 +7,39 @@ locals {
     external_central = "external-secrets-central"
     external_edge    = "external-secrets-edge-01"
     jenkins          = "fedkube-jenkins"
-  }
+    }, var.traffic_generator_enabled ? {
+    traffic_generator = "fedkube-traffic-generator"
+  } : {})
+}
+
+locals {
+  traffic_generator_secret_access = var.traffic_generator_enabled ? {
+    "agent-external-central" = {
+      account = "external_central"
+      secret  = "fedkube-traffic-agent-token"
+    }
+    "agent-generator" = {
+      account = "traffic_generator"
+      secret  = "fedkube-traffic-agent-token"
+    }
+    "observation-external-central" = {
+      account = "external_central"
+      secret  = "fedkube-traffic-observation-token"
+    }
+    "observation-generator" = {
+      account = "traffic_generator"
+      secret  = "fedkube-traffic-observation-token"
+    }
+  } : {}
+}
+
+resource "google_secret_manager_secret_iam_member" "traffic_generator_token" {
+  for_each = local.traffic_generator_secret_access
+
+  project   = var.project_id
+  secret_id = google_secret_manager_secret.runtime[each.value.secret].secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.accounts[each.value.account].email}"
 }
 
 resource "google_service_account" "accounts" {

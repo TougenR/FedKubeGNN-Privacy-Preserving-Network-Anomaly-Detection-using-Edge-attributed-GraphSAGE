@@ -40,6 +40,10 @@ spec:
               value: /app/configs/application/multi-head-fusion-policy.json
             - name: MONITOR_BUFFER_SIZE
               value: {{ .Values.collector.monitorBufferSize | quote }}
+            {{- if .Values.trafficGenerator.enabled }}
+            - name: OBSERVATION_TOKEN_FILE
+              value: /var/run/fedkube/observation/token
+            {{- end }}
             - name: ALERT_POLICY_ENABLED
               value: {{ .Values.collector.alertPolicy.enabled | quote }}
             - name: ALERT_DECISION_SOURCE
@@ -75,9 +79,19 @@ spec:
             capabilities: {drop: [ALL]}
           volumeMounts:
             - {name: tmp, mountPath: /tmp}
+            {{- if .Values.trafficGenerator.enabled }}
+            - {name: observation-token, mountPath: /var/run/fedkube/observation, readOnly: true}
+            {{- end }}
       volumes:
         - name: tmp
           emptyDir: {sizeLimit: 256Mi}
+        {{- if .Values.trafficGenerator.enabled }}
+        - name: observation-token
+          secret:
+            secretName: {{ .Values.trafficGenerator.observationTokenSecretName }}
+            items:
+              - {key: {{ .Values.trafficGenerator.observationTokenSecretKey }}, path: token}
+        {{- end }}
 ---
 apiVersion: v1
 kind: Service
