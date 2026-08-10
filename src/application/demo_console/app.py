@@ -261,6 +261,20 @@ async def current_traffic_run() -> dict[str, Any]:
         ) from exc
 
 
+@app.delete("/api/traffic-runs/current")
+async def stop_traffic_run() -> dict[str, Any]:
+    _ready()
+    url, headers, _ = _traffic_agent()
+    try:
+        return await asyncio.to_thread(
+            delete_json,
+            f"{url}/v1/runs/current",
+            headers=headers,
+        )
+    except ServiceRequestError as exc:
+        raise HTTPException(status_code=502, detail="traffic run stop failed") from exc
+
+
 @app.post("/api/runs", status_code=202)
 async def start_run(request: StartRunRequest) -> dict[str, Any]:
     _, executor = _ready()

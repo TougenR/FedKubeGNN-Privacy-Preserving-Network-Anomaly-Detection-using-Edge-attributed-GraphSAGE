@@ -31,7 +31,7 @@ spec:
             - name: COLLECTOR_URL
               value: http://{{ include "detection-stack.fullname" . }}-collector:8082
             - name: OBSERVATION_MODE
-              value: {{ ternary "zeek" "ingress-adapter" .Values.zeek.enabled | quote }}
+              value: {{ ternary "zeek" "ingress-adapter" (or .Values.zeek.enabled .Values.trafficGenerator.enabled) | quote }}
             - name: INFERENCE_URL
               value: http://{{ include "detection-stack.fullname" . }}-inference:8000/predict
             - name: SCIENTIFIC_REPLAY_CONFIG

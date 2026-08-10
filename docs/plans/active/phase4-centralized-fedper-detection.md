@@ -961,6 +961,27 @@ Live private-generator evidence on 2026-08-10:
   resulting revision `74c43ba`; all six application Deployments are ready with
   zero restarts and the detection Application reports `Synced/Healthy`.
 
+Traffic-controller UI extension approved on 2026-08-10:
+
+- Preserve the one-viewport monitor and replace the single left control surface
+  with two tabs: validation-only Model replay and live Traffic generator. The
+  traffic tab exposes all seven fixed profiles, including the scientific status
+  and fixed mechanism/target group/port/event interval/expected observables.
+  Blocked profiles remain inspectable but cannot be started.
+- UI start requests contain only `profile_id`. Repository catalogs remain the
+  authority for target, port, event count, timing, and scientific boundary. The
+  run panel polls attempted/successful sends and collector receive/accept/
+  prediction/drop/failure counters. Stop calls the authenticated agent's fixed
+  current-run cancellation endpoint; it cannot identify an arbitrary process
+  or target.
+- Correct the console observation label to `zeek` when capture is VM-local, not
+  only when the legacy target-side Zeek container is enabled. Local validation
+  passes 14 focused control tests, all 64 application tests plus eight subtests,
+  JavaScript syntax, Ruff, Helm lint/template, and `git diff --check`.
+- [ ] Publish the immutable application image, deploy only through Argo CD, and
+  exercise profile selection, start, live counters, stop, and the one-screen
+  layout against the GKE traffic-generator VM.
+
 ## Result
 
 Scientific evaluation, serving-bundle promotion, locked test execution, the

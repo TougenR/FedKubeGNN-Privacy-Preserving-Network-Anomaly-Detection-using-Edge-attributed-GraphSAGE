@@ -12,6 +12,7 @@ from src.application.demo_console.app import (
     current_run,
     start_traffic_run,
     state as console_state,
+    stop_traffic_run,
 )
 
 from src.application.scenario_runner.catalog import EXPECTED_SCENARIOS, load_catalog
@@ -35,12 +36,16 @@ class DemoConsoleTests(unittest.TestCase):
         replay = (ROOT / "configs/application/scientific-replay.json").read_text()
         self.assertIn('"selection_split": "validation"', replay)
         page = (ROOT / "src/application/demo_console/static/index.html").read_text()
-        self.assertIn("Chọn class kiểm thử", page)
+        self.assertIn("Kiểm thử &amp; phát traffic", page)
         self.assertIn('id="alert-banner"', page)
         self.assertIn('id="detection-chart"', page)
         self.assertIn('id="run-replay-button"', page)
         self.assertIn('id="metric-windows-source"', page)
         self.assertIn('id="metric-alerts-source"', page)
+        self.assertIn('id="traffic-pane"', page)
+        self.assertIn('id="traffic-profiles"', page)
+        self.assertIn('id="start-traffic-button"', page)
+        self.assertIn('id="stop-traffic-button"', page)
         self.assertIn("Detection đạt ngưỡng", page)
         self.assertNotIn('id="head-grid"', page)
         self.assertNotIn("FEDPER HEADS", page)
@@ -63,6 +68,10 @@ class DemoConsoleTests(unittest.TestCase):
         self.assertNotIn("scenario_id === \"DDoS\"", script)
         self.assertIn("item.profile.indicators", script)
         self.assertIn("item.sample_characteristics", script)
+        self.assertIn("function renderTrafficCatalog(catalog)", script)
+        self.assertIn('json(`/api/traffic-runs/${profile.id}`', script)
+        self.assertIn('json("/api/traffic-runs/current", {method: "DELETE"})', script)
+        self.assertNotIn("traffic.target", script)
 
         styles = (ROOT / "src/application/demo_console/static/styles.css").read_text()
         self.assertIn("height: 100dvh", styles)
@@ -127,6 +136,35 @@ class DemoConsoleTests(unittest.TestCase):
                     )
                 gate.set()
                 await executor.stop()
+
+        asyncio.run(exercise())
+
+    def test_stop_traffic_run_forwards_only_to_authenticated_current_run(self) -> None:
+        async def exercise() -> None:
+            console_state.update(
+                {
+                    "traffic_agent_url": "http://traffic-agent",
+                    "traffic_agent_token": "b" * 32,
+                    "traffic_sensor_id": "sensor-34-1",
+                }
+            )
+            with (
+                patch(
+                    "src.application.demo_console.app._ready",
+                    return_value=(object(), object()),
+                ),
+                patch(
+                    "src.application.demo_console.app.delete_json",
+                    return_value={"run": {"status": "cancelled"}},
+                ) as delete,
+            ):
+                response = await stop_traffic_run()
+            self.assertEqual(response["run"]["status"], "cancelled")
+            delete.assert_called_once_with(
+                "http://traffic-agent/v1/runs/current",
+                headers={"Authorization": f"Bearer {'b' * 32}"},
+            )
+            console_state.clear()
 
         asyncio.run(exercise())
 
