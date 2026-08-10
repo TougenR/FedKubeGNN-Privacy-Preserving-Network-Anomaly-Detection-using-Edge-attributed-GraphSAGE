@@ -954,6 +954,12 @@ Live private-generator evidence on 2026-08-10:
   Seventeen focused host tests pass. The host cannot collect PyG-dependent
   tests, while the dependency-complete application-image boundary passes all
   63 application tests plus eight subtests; CI remains the release proof.
+- Jenkins build 88 honored the application-only gate, passed its image import
+  and CRITICAL vulnerability scan, then published immutable digest
+  `sha256:e5e0cd09f880bb02293260291a8cc078b160b52811e84e8feb00e1ebfa58379a`.
+  Build 89 passed the environment-only loop guard. Argo CD alone deployed the
+  resulting revision `74c43ba`; all six application Deployments are ready with
+  zero restarts and the detection Application reports `Synced/Healthy`.
 
 ## Result
 
