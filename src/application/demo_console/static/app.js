@@ -5,7 +5,10 @@ const state = {
   monitorInitialized: false,
   events: [],
   chartSamples: [],
-  pendingDetections: []
+  pendingDetections: [],
+  liveMetrics: null,
+  liveBaseline: null,
+  replayMetrics: {inferences: 0, detections: 0, latencies: []}
 };
 
 const $ = (id) => document.getElementById(id);
@@ -19,6 +22,37 @@ function emptyChartSample() {
 function resetChartSamples() {
   state.chartSamples = Array.from({length: CHART_SAMPLE_LIMIT}, emptyChartSample);
   state.pendingDetections = [];
+}
+
+function metricCounter(metrics, key) {
+  return Number(metrics?.[key] || 0);
+}
+
+function percentile95(values) {
+  if (!values.length) return null;
+  const ordered = [...values].sort((left, right) => left - right);
+  return ordered[Math.round((ordered.length - 1) * 0.95)];
+}
+
+function renderMetrics() {
+  const live = state.liveMetrics || {};
+  const baseline = state.liveBaseline || {};
+  const liveWindows = Math.max(0, metricCounter(live, "windows") - metricCounter(baseline, "windows"));
+  const liveAlerts = Math.max(0, metricCounter(live, "events") - metricCounter(baseline, "events"));
+  const liveObservations = Math.max(0, metricCounter(live, "observations") - metricCounter(baseline, "observations"));
+  const liveDrops = Math.max(0, metricCounter(live, "dropped_flows") - metricCounter(baseline, "dropped_flows"));
+  const replayLatency = percentile95(state.replayMetrics.latencies);
+  const liveLatency = live.inference_latency_ms_p95 == null ? null : Number(live.inference_latency_ms_p95);
+  const displayedLatency = replayLatency ?? liveLatency;
+
+  $("metric-windows").textContent = liveWindows + state.replayMetrics.inferences;
+  $("metric-windows-source").textContent = `live ${liveWindows} · replay ${state.replayMetrics.inferences}`;
+  $("metric-alerts").textContent = liveAlerts + state.replayMetrics.detections;
+  $("metric-alerts-source").textContent = `live ${liveAlerts} · replay ${state.replayMetrics.detections}`;
+  $("metric-latency").textContent = displayedLatency == null ? "—" : `${displayedLatency.toFixed(1)} ms`;
+  $("metric-latency-source").textContent = replayLatency == null ? "live inference p95" : "replay round-trip p95";
+  $("metric-drop").textContent = `${(liveDrops / Math.max(1, liveObservations) * 100).toFixed(2)}%`;
+  $("metric-drop-source").textContent = `live ${liveDrops}/${liveObservations} flows`;
 }
 
 async function json(url, options = {}) {
@@ -94,7 +128,7 @@ function confidenceBucket(value) {
   return `${(Number(value) * 100).toFixed(1)}%`;
 }
 
-function replayChartEvent(result) {
+function replayChartEvent(result, latencyMs) {
   return {
     predicted_class: result.predicted_class,
     trusted_predicted_class: result.predicted_class,
@@ -104,7 +138,7 @@ function replayChartEvent(result) {
     decision_status: result.decision_status,
     alert_threshold: result.alert_threshold,
     confidence_bucket: confidenceBucket(result.confidence),
-    inference_latency_ms: "replay",
+    inference_latency_ms: latencyMs,
     source_type: "validation-replay",
     alert_decision_source: "validation-replay",
     head_disagreement_count: 0,
@@ -121,7 +155,13 @@ async function runScientificReplay() {
   $("replay-result").className = "replay-result";
   $("replay-result").textContent = `Running ${item.expected_class}…`;
   try {
+    const started = performance.now();
     const result = await json(`/api/scientific-replay/${item.id}`, {method: "POST"});
+    const latencyMs = performance.now() - started;
+    state.replayMetrics.inferences += 1;
+    state.replayMetrics.detections += result.is_alert ? 1 : 0;
+    state.replayMetrics.latencies = [...state.replayMetrics.latencies, latencyMs].slice(-200);
+    renderMetrics();
     const panel = $("replay-result");
     panel.replaceChildren();
     panel.classList.add(result.correct ? "correct" : "incorrect");
@@ -142,8 +182,8 @@ async function runScientificReplay() {
     top.textContent = `Top 3: ${result.top3.map((entry) => `${entry.class} ${(entry.probability * 100).toFixed(1)}%`).join(" · ")}`;
     panel.append(title, detail, decision, top);
 
-    const event = replayChartEvent(result);
-    state.events = [event, ...state.events].slice(0, 4);
+    const event = replayChartEvent(result, latencyMs);
+    state.events = [event, ...state.events].slice(0, 8);
     if (event.is_alert) state.pendingDetections.push(event);
     renderLatest(event);
     renderEventList();
@@ -285,28 +325,7 @@ function renderEventList() {
     $("event-list").innerHTML = '<div class="empty-event">No predictions</div>';
     return;
   }
-  $("event-list").replaceChildren(...state.events.slice(0, 3).map(eventNode));
-}
-
-function renderHeadDiagnostics(event) {
-  const entries = Object.entries(event?.head_predictions || {});
-  if (!entries.length) {
-    $("head-disagreement").textContent = event?.source_type === "validation-replay" ? "Replay result" : "No data";
-    $("head-grid").innerHTML = '<div class="empty-event">Head diagnostics xuất hiện với live collector event.</div>';
-    return;
-  }
-  $("head-disagreement").textContent = `${event.head_disagreement_count}/6 disagree`;
-  $("head-grid").replaceChildren(...entries.map(([head, prediction]) => {
-    const card = document.createElement("article");
-    const isTrusted = head === event.client_id;
-    const agrees = prediction.predicted_label === event.predicted_class;
-    card.className = `head-card${isTrusted ? " trusted" : ""}${agrees ? " agrees" : " disagrees"}`;
-    const name = document.createElement("small"); name.textContent = `HEAD ${head}${isTrusted ? " · TRUSTED" : ""}`;
-    const label = document.createElement("strong"); label.textContent = prediction.predicted_label;
-    const confidence = document.createElement("span"); confidence.textContent = prediction.confidence_bucket;
-    card.append(name, label, confidence);
-    return card;
-  }));
+  $("event-list").replaceChildren(...state.events.slice(0, 6).map(eventNode));
 }
 
 async function pollMonitor() {
@@ -319,19 +338,19 @@ async function pollMonitor() {
       if (!initialSnapshot) {
         state.pendingDetections.push(...fresh.filter((event) => event.is_alert));
       }
-      state.events = [...fresh.slice().reverse(), ...state.events].slice(0, 4);
+      state.events = [...fresh.slice().reverse(), ...state.events].slice(0, 8);
       const latest = fresh[fresh.length - 1];
       renderLatest(latest);
       renderEventList();
-      renderHeadDiagnostics(latest);
       updateAlertBanner(latest);
     }
     if (initialSnapshot && body.events.length < 100) state.monitorInitialized = true;
     const metrics = body.metrics;
-    $("metric-windows").textContent = metrics.windows;
-    $("metric-alerts").textContent = metrics.events;
-    $("metric-latency").textContent = metrics.inference_latency_ms_p95 == null ? "—" : `${Number(metrics.inference_latency_ms_p95).toFixed(1)} ms`;
-    $("metric-drop").textContent = `${(Number(metrics.dropped_flows) / Math.max(1, Number(metrics.observations)) * 100).toFixed(2)}%`;
+    if (state.liveBaseline == null) {
+      state.liveBaseline = {...metrics};
+    }
+    state.liveMetrics = metrics;
+    renderMetrics();
     $("system-dot").className = "status-dot ready";
     $("system-label").textContent = "Pipeline ready";
   } catch (_) {
@@ -342,10 +361,12 @@ async function pollMonitor() {
 
 function clearMonitor() {
   state.events = [];
+  state.liveBaseline = state.liveMetrics == null ? null : {...state.liveMetrics};
+  state.replayMetrics = {inferences: 0, detections: 0, latencies: []};
   resetChartSamples();
   renderLatest(null);
   renderEventList();
-  renderHeadDiagnostics(null);
+  renderMetrics();
   renderChart();
 }
 

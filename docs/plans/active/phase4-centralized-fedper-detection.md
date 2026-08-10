@@ -772,6 +772,24 @@ Continuous monitor GKE evidence on 2026-08-10:
   returned the current rate to `0 detection/s` and the banner to Benign while
   retaining the historical spike in the rolling 80-second view.
 
+Session metric and prediction-panel correction approved on 2026-08-10:
+
+- The compact dashboard metrics are session-scoped and must update for both
+  collector-driven live inference and validation replay. Collector windows and
+  policy alerts remain the live source of truth; successful replay calls add
+  one replay inference and, only when their calibrated decision is `alert`, one
+  replay qualified detection. The UI shows the live/replay split and must not
+  describe a replay-qualified detection as a live policy alert.
+- Replay round-trip latency is measured in the browser and shown as replay p95
+  after at least one replay; otherwise the collector's live inference p95 is
+  shown. Flow-drop rate remains collector-only because replay bypasses flow
+  collection. Clear establishes a new live counter baseline and resets replay
+  counters, events, and chart samples.
+- Remove the FedPer-head diagnostics panel from the compact primary screen.
+  Preserve multi-head inference and event payloads in the backend, but use the
+  full bottom width for a longer latest-prediction history. This is a display
+  change only and does not alter routing, fusion, or alert policy.
+
 ## Result
 
 Scientific evaluation, serving-bundle promotion, locked test execution, the

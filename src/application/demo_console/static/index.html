@@ -51,10 +51,10 @@
           </div>
 
           <div class="metric-grid">
-            <article><small>Predictions</small><strong id="metric-windows">0</strong></article>
-            <article><small>Policy alerts</small><strong id="metric-alerts">0</strong></article>
-            <article><small>Latency p95</small><strong id="metric-latency">—</strong></article>
-            <article><small>Flow drop</small><strong id="metric-drop">0%</strong></article>
+            <article><small>Inference phiên</small><strong id="metric-windows">0</strong><span id="metric-windows-source">live 0 · replay 0</span></article>
+            <article><small>Detection đạt ngưỡng</small><strong id="metric-alerts">0</strong><span id="metric-alerts-source">live 0 · replay 0</span></article>
+            <article><small>Latency p95</small><strong id="metric-latency">—</strong><span id="metric-latency-source">live inference p95</span></article>
+            <article><small>Flow drop</small><strong id="metric-drop">0%</strong><span id="metric-drop-source">live 0/0 flows</span></article>
           </div>
 
           <div id="alert-banner" class="alert-banner normal" role="status" aria-live="assertive">
@@ -99,11 +99,6 @@
               <strong id="latest-class">Waiting…</strong>
               <p id="latest-detail">Chưa có flow mới.</p>
               <div id="event-list" class="event-list"><div class="empty-event">No predictions</div></div>
-            </section>
-
-            <section class="head-diagnostics">
-              <div class="subheading"><span>FEDPER HEADS</span><strong id="head-disagreement">No data</strong></div>
-              <div id="head-grid" class="head-grid"><div class="empty-event">Đang chờ output từ 6 head.</div></div>
             </section>
           </div>
         </section>
