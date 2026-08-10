@@ -26,7 +26,7 @@ density remains useful only as the locked view presented to the model.
 | Attack | 663 | TCP/22 100%; SSH 96.1%; SF 100%; median 14 origin and 15 response packets | A bounded completed SSH-session candidate can represent this dataset slice, but `Attack` is still a generic label. |
 | C&C | 825 | TCP 99.9%; port 6667 99.8%; S0 68.8%, S3 18.5%, SF 9.3%; response present 29.1% | Requires a fixed IRC-like/no-response mixture; periodic HTTP is not equivalent. |
 | C&C-HeartBeat | 1,000 | TCP/57722, unknown service, S0 and SYN-only all 100%; one destination | Use bounded periodic incomplete connections and label timing as model-equivalence only. |
-| DDoS | 1,000 | TCP/80 100%; OTH 98.9%; history `C` 98.8%; no response; validation windows saturate at 50 | Completed HTTP flood is structurally wrong. `C` is a checksum-history artifact while live Zeek intentionally uses `-C`; faithful reproduction is currently unsupported. |
+| DDoS | 1,000 | TCP/80 100%; OTH 98.9%; history `C` 98.8%; no response; validation windows saturate at 50 | Completed HTTP flood is structurally wrong. The bounded candidate uses checksum-invalid ACK-only packets on a fixed private target; VM TX/GSO/TSO offload is disabled so checksum-aware Zeek records `OTH`/history `C` without weakening validation for ordinary traffic. |
 | Okiru | 1,000 | TCP/37215, unknown service, S0/SYN-only all 100%; one packet, no response, multiple destinations | Requires bounded incomplete connections to multiple fixed lab identities. |
 | PartOfAHorizontalPortScan | 4,012 | TCP 100%; S0/SYN-only 99.4%; multiple destinations and usually one port; ports 22/23 dominate | A six-port probe against one host is vertical and does not represent this class. |
 
@@ -45,6 +45,12 @@ frozen comparison against the validation reference. The comparison will use
 the model's exact preprocessed feature order, a deterministic same-class
 bootstrap envelope at the candidate sample size, and a nearest-reference check.
 Failures remain visible and must not be relabeled for the demo.
+
+The executable catalog exposes a bounded event count and inter-event interval
+for every profile. Per-profile limits are server-owned and the complete
+scheduled duration cannot exceed two minutes. These controls vary traffic
+density only; they cannot modify the fixed target, port, payload, model route,
+head, or expected class.
 
 Two claims remain separate:
 

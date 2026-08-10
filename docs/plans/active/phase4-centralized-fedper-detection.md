@@ -1015,12 +1015,12 @@ Dataset-shaped Attack/C&C/DDoS traffic extension approved on 2026-08-10:
   deterministic mixture of SYN-only traffic to the existing private blackhole
   and bounded IRC-like sessions through TCP/6667. Neither selected profile nor
   requested controls enter inference or select a model head/class.
-- DDoS emits a bounded ACK-only TCP/80 burst to the fixed private blackhole so
-  Zeek records OTH-like flows and the rolling window reaches the dataset's
-  50-flow view. It remains a known live approximation: the validation class is
-  dominated by history `C`, while the production Zeek command intentionally
-  uses `-C` for checksum-offload correctness. UI and reports must not describe
-  it as a class-equivalent malware reproduction.
+- DDoS emits a bounded, checksum-invalid ACK-only TCP/80 burst to the fixed
+  private blackhole so checksum-aware Zeek records OTH/history `C` flows and
+  the rolling window reaches the dataset's 50-flow view. VM TX/GSO/TSO offload
+  is disabled rather than weakening Zeek checksum validation. UI and reports
+  must still describe it as a validation-shaped candidate until the frozen
+  comparator accepts it, not as class-equivalent malware reproduction.
 - Every profile exposes only `events` and `interval_ms` controls. Their
   per-profile min/max bounds live in the signed catalog, the server enforces a
   two-minute maximum scheduled duration, and requests still cannot supply a
@@ -1044,7 +1044,7 @@ Dataset-shaped traffic extension progress:
   Host-wide application collection remains unavailable because the host lacks
   `torch_geometric`; the dependency-complete Jenkins image remains the release
   boundary.
-- [ ] Publish through Jenkins/Argo CD, update the VM through Ansible, and record
+- [x] Publish through Jenkins/Argo CD, update the VM through Ansible, and record
   live end-to-end evidence for all three newly executable profiles.
 
 First live extension audit on 2026-08-10:
@@ -1078,6 +1078,34 @@ First live extension audit on 2026-08-10:
   server bytes approximately 1,801, fragmented into bounded packet counts.
   Twenty-one affected tests, Ruff, Ansible syntax, and diff checks pass. It
   still requires a second immutable release and live Zeek/model proof.
+
+Final corrected live extension audit on 2026-08-10:
+
+- Jenkins build 97 passed the image import and CRITICAL vulnerability scan and
+  published immutable digest
+  `sha256:83e36734931b83ac38b52ec74323fb5f8be68fdeafdc93a5896964fca16b9b32`.
+  Argo CD alone deployed the application revision; the sidecar and existing
+  internal LoadBalancer listeners remained ready without a new GCP resource.
+- DDoS completed 50/50 sends and 50/50 predictions with zero late drop,
+  duplicate, inference failure, or alert-sink failure. Zeek recorded exactly
+  50 TCP/80 `OTH`/history `C` flows with no response bytes or packets. All 50
+  rolling predictions were `DDoS`, reaching the `0.95-1` confidence bucket.
+- C&C completed 3/3 sends and predictions with zero pipeline failure. Zeek
+  recorded one S0/unknown flow and two graceful `irc`/`SF` flows. The first
+  one-flow window predicted Okiru; the two- and three-flow windows predicted
+  C&C at confidence bucket `0.95-1`. This preserves the observable cold-window
+  behavior instead of rewriting it.
+- Attack completed 4/4 sends and predictions in the corrected audit and a final
+  one-flow verification also completed 1/1. Zeek recorded analyzer-confirmed
+  `ssh`, `SF`, history `ShAdDaFf`, approximately 3.41 seconds, 585 origin bytes,
+  1,803 response bytes, 20 origin packets, and 19 response packets. The model
+  predicted `Attack` at confidence bucket `0.95-1`. A low-priority Zeek hook
+  retains the `ssh` service only when the SSH analyzer actually populated the
+  connection's SSH record; profile metadata never supplies that service.
+- All seven profiles now expose catalog-bounded event count and inter-event
+  interval controls. The deployed server enforces each profile's min/max and a
+  two-minute maximum schedule; the UI displays derived events/second. Targets,
+  ports, payloads, labels, sensors, model heads, and routes remain immutable.
 
 ## Result
 
