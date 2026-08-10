@@ -46,10 +46,10 @@ trafficGenerator:
   sensorId: sensor-34-1
   agentTokenSecretName: fedkube-detection-traffic-agent-token
   observationTokenSecretName: fedkube-detection-traffic-observation-token
-  # Two-revision GitOps gate: Jenkins first publishes an image containing the
-  # emulator, then the environment-only activation commit flips this to true.
+  # The fixed-target protocol emulator reuses the existing internal gateway;
+  # no public listener or additional LoadBalancer is created.
   emulator:
-    enabled: false
+    enabled: true
 gateway:
   enabled: true
   observationPort:
