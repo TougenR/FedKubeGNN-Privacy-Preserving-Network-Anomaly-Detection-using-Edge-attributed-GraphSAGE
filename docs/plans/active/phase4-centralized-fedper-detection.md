@@ -978,9 +978,31 @@ Traffic-controller UI extension approved on 2026-08-10:
   only when the legacy target-side Zeek container is enabled. Local validation
   passes 14 focused control tests, all 64 application tests plus eight subtests,
   JavaScript syntax, Ruff, Helm lint/template, and `git diff --check`.
-- [ ] Publish the immutable application image, deploy only through Argo CD, and
+- [x] Publish the immutable application image, deploy only through Argo CD, and
   exercise profile selection, start, live counters, stop, and the one-screen
   layout against the GKE traffic-generator VM.
+
+Traffic-controller UI GKE evidence on 2026-08-10:
+
+- Jenkins build 91 passed the application-only build/import/CRITICAL-scan/push
+  path and published digest
+  `sha256:b87611f54efac68bf675b75a911f8b302951e5a8ed7b43f097c76fa8beafe7e1`.
+  Build 92 passed the environment-only loop guard. Argo CD alone deployed
+  revision `4978b0c`; the detection Application is `Synced/Healthy`.
+- The deployed traffic API returns all seven exact model class labels. Benign,
+  C&C-HeartBeat, Okiru, and PartOfAHorizontalPortScan are executable; Attack,
+  C&C, and DDoS remain inspectable but start-disabled with their scientific
+  blocking reason. The deployed console reports observation mode `zeek`.
+- Firefox exercised the deployed GKE page at 1440 x 900. It observed seven
+  profile controls, an inspectable blocked profile with Start disabled, an
+  executable candidate with Start enabled, and a ready traffic agent. Browser
+  viewport and document heights both measured 814 px, proving the desktop page
+  has no vertical scroll.
+- Starting C&C-HeartBeat and pressing Stop during its 30-second interval yielded
+  status `cancelled` after one successful send. Zeek/collector subsequently
+  reported exactly one received, accepted, and predicted flow with zero drop or
+  downstream failure; the fusion prediction was C&C-HeartBeat. The stop control
+  therefore interrupts a live bounded run without bypassing the model path.
 
 ## Result
 
@@ -993,5 +1015,5 @@ on GKE. The private traffic-generator extension is deployed and has completed
 the four controlled runs above. Its executable attack candidates remain
 scientifically non-equivalent to the IoT-23 validation reference, and the
 fusion policy remains shadow-only because the live benign control is a proven
-false positive. The generator VM is stopped and Jenkins is running at this
-checkpoint under the approved quota-safe rotation policy.
+false positive. At this UI-demo checkpoint Jenkins is stopped and the generator
+VM is running under the approved quota-safe rotation policy.
