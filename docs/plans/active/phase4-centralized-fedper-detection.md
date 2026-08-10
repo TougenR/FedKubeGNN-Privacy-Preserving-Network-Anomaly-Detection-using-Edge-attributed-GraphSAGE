@@ -1188,7 +1188,7 @@ Attacker/defender separation progress:
 - [x] Update Ansible to deploy the Attacker Console and disable VM capture only
   after a future independent-sensor cutover checkpoint. This UI release must
   keep the existing VM capture active.
-- [ ] Publish through Jenkins/Argo CD, apply Ansible, prove the two browser
+- [x] Publish through Jenkins/Argo CD, apply Ansible, prove the two browser
   surfaces are separated, run at least one clean end-to-end attack, and record
   rollback/evidence.
 
@@ -1206,6 +1206,44 @@ Local separation proof on 2026-08-10:
   delivery counters only. Both credentials remain server-side; the agent run
   remains gated until collector registration succeeds and is cancelled if
   registration fails.
+
+Live attacker/SOC separation evidence on 2026-08-10:
+
+- GitHub successfully delivered commit `19c8e78` after Jenkins was brought up
+  under the quota-safe compute rotation. Jenkins build 101 selected
+  `application=true` and `federated=false`, passed the CRITICAL scan, and
+  published digest
+  `sha256:348b6b96ebbd13bc8a545f4ed5470ad3d84f263ed0daeb28e700a846d02a11d7`.
+  Jenkins then wrote GitOps revision `14c8ec3`; Argo CD alone reconciled it to
+  `Synced/Healthy`.
+- The first manual Argo sync used client-side apply and retained the removed
+  traffic-agent token volume, while pruning its ExternalSecret. The new console
+  Pod correctly failed closed with `FailedMount`. Re-running the same Argo
+  revision with server-side apply removed the stale field. The final SOC
+  Deployment has no `TRAFFIC_AGENT_URL`, volume, mount, traffic-agent
+  ExternalSecret, or agent-egress NetworkPolicy. This is the documented
+  recovery path for a similar schema-removal migration.
+- Ansible completed `ok=17 changed=5 unreachable=0 failed=0`. The loopback-only
+  Attacker Console, traffic agent, VM Zeek, and shipper are all active. Both web
+  credentials remain readable only by the VM service account/group boundary;
+  `/api/config` returns only schema version 1 and generator/target identity.
+- The Attacker Console is forwarded at `127.0.0.1:18091`; the independent GKE
+  SOC Console is forwarded at `127.0.0.1:18080`. The former exposes seven fixed
+  model-class profiles and sanitized send/delivery counters. The latter has no
+  traffic controls or traffic API (`404`) and retains scientific replay plus
+  live monitoring.
+- A clean one-event Attack run `traffic-d6e63cbcc0c2` completed one send, one
+  collector receive/accept, and zero drops, duplicates, or processing failures.
+  VM Zeek observed source `10.10.0.20` to victim gateway `10.10.0.5:22`, service
+  `ssh`, state `SF`, 585/1,803 origin/response bytes, and 20/19 packets. SOC
+  sequence 280 independently reported fusion `Attack` at confidence bucket
+  `0.95-1`; trusted head remained `Benign` and `is_alert=false`, preserving the
+  configured shadow-policy semantics.
+- Capture is intentionally still VM-local. A gateway-only sensor would lose
+  the fixed `10.20.0.20-22` blackhole profiles; completing physical sensor
+  separation therefore remains gated on a separately reviewed Packet Mirroring
+  collector Terraform/cost plan. No new GCP resource was created in this
+  release.
 
 ## Result
 
