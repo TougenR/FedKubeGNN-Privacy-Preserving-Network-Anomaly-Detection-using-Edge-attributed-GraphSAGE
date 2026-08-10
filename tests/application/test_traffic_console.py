@@ -45,6 +45,7 @@ class TrafficConsoleTests(unittest.TestCase):
 
     def test_attacker_surface_has_no_model_or_alert_contract(self) -> None:
         document = asyncio.run(config())
+        self.assertEqual(document["console_schema_version"], 1)
         self.assertEqual(document["access_boundary"], "attacker-only")
         serialized = str(document).lower()
         self.assertNotIn("token", serialized)

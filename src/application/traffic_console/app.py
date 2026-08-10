@@ -96,7 +96,11 @@ async def health_ready() -> dict[str, str]:
 async def config() -> dict[str, Any]:
     _ready()
     # Deliberately excludes tokens, model identity, predictions and alerts.
-    return {"identity": dict(state["identity"]), "access_boundary": "attacker-only"}
+    return {
+        "console_schema_version": 1,
+        "identity": dict(state["identity"]),
+        "access_boundary": "attacker-only",
+    }
 
 
 @app.get("/api/profiles")
