@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="dark">
-    <title>FedKube Detection Console</title>
+    <title>DEFENDER SYSTEM</title>
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
@@ -12,7 +12,7 @@
       <header class="topbar">
         <div class="brand">
           <span class="brand-mark">FK</span>
-          <div><strong>FedKube Detection</strong><small>Centralized FedPer · 6 personalized heads</small></div>
+          <div><strong>DEFENDER SYSTEM</strong><small>Centralized FedPer · SOC Console</small></div>
         </div>
         <div class="system-status">
           <span id="system-dot" class="status-dot pending"></span>
@@ -21,28 +21,16 @@
       </header>
 
       <div class="dashboard-grid">
-        <aside class="class-panel panel">
+        <aside class="prediction-panel panel">
           <div class="panel-heading">
-            <div><span class="section-kicker">SCIENTIFIC EVALUATION</span><h1>Kiểm thử model</h1></div>
-            <span id="control-mode-badge" class="validation-badge">VALIDATION</span>
+            <div><span class="section-kicker">LATEST PREDICTION</span><h1>Live detection</h1></div>
+            <span class="live-indicator"><i></i> LIVE</span>
           </div>
-
-          <section id="replay-pane" class="control-pane replay-pane">
-            <div id="replay-cases" class="class-selector" aria-label="Các class của model"></div>
-
-            <section id="class-detail" class="class-detail empty-state">
-              Chọn một class để xem mẫu kiểm thử.
-            </section>
-
-            <button id="run-replay-button" class="primary-action" type="button" disabled>
-              Chạy inference
-            </button>
-
-            <section id="replay-result" class="replay-result empty-state" aria-live="polite">
-              Chưa có kết quả.
-            </section>
-
-            <p id="replay-disclaimer" class="boundary-note">Đang tải quy ước validation…</p>
+          <section class="latest-card">
+            <strong id="latest-class">Waiting…</strong>
+            <p id="latest-detail">Chưa có flow mới.</p>
+            <div class="subheading"><span>RECENT PREDICTIONS</span><button id="clear-events" type="button">Clear</button></div>
+            <div id="event-list" class="event-list"><div class="empty-event">No predictions</div></div>
           </section>
         </aside>
 
@@ -53,8 +41,8 @@
           </div>
 
           <div class="metric-grid">
-            <article><small>Inference phiên</small><strong id="metric-windows">0</strong><span id="metric-windows-source">live 0 · replay 0</span></article>
-            <article><small>Policy alert</small><strong id="metric-alerts">0</strong><span id="metric-alerts-source">live 0 · replay 0</span></article>
+            <article><small>Inference phiên</small><strong id="metric-windows">0</strong><span id="metric-windows-source">live 0</span></article>
+            <article><small>Policy alert</small><strong id="metric-alerts">0</strong><span id="metric-alerts-source">live 0</span></article>
             <article><small>Latency p95</small><strong id="metric-latency">—</strong><span id="metric-latency-source">live inference p95</span></article>
             <article><small>Flow drop</small><strong id="metric-drop">0%</strong><span id="metric-drop-source">live 0/0 flows</span></article>
           </div>
@@ -95,15 +83,6 @@
               <span><i class="legend-detection"></i>Model detection</span>
               <span><i class="legend-alert"></i>Policy alert</span>
             </div>
-          </div>
-
-          <div class="monitor-bottom">
-            <section class="latest-card">
-              <div class="subheading"><span>LATEST PREDICTION</span><button id="clear-events" type="button">Clear</button></div>
-              <strong id="latest-class">Waiting…</strong>
-              <p id="latest-detail">Chưa có flow mới.</p>
-              <div id="event-list" class="event-list"><div class="empty-event">No predictions</div></div>
-            </section>
           </div>
         </section>
       </div>

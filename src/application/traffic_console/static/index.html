@@ -4,27 +4,37 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="dark">
-    <title>FedKube Attacker Console</title>
+    <title>ATTACKER VM</title>
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
     <main class="shell">
       <header>
-        <div class="brand"><span class="mark">TX</span><div><small>FEDKUBE LAB</small><h1>Attacker Console</h1></div></div>
+        <div class="brand"><span class="mark">TX</span><div><small>FEDKUBE LAB</small><h1>ATTACKER VM</h1></div></div>
         <div class="status"><i id="agent-dot"></i><span><strong id="agent-label">Đang kết nối</strong><small>SSH/IAP · loopback 127.0.0.1</small></span></div>
       </header>
 
-      <section class="pipeline card" aria-label="Realtime evidence pipeline">
-        <div class="zones"><span>GCP ATTACKER VM · <b id="generator-name">—</b> <em id="generator-address">—</em></span><span>GKE · fedkube-detection · <b id="target-name">—</b> <em id="target-address">—</em></span></div>
-        <div id="pipeline-stages" class="pipeline-stages">
-          <article data-stage="agent"><i></i><strong>Traffic Agent</strong><span>0 sent</span><small>TCP packet</small></article>
-          <article data-stage="zeek"><i></i><strong>Zeek</strong><span>0 observed</span><small>conn.log</small></article>
-          <article data-stage="shipper"><i></i><strong>Shipper</strong><span>0 delivered</span><small>observation JSON</small></article>
-          <article data-stage="gateway"><i></i><strong>Internal NGINX</strong><span>0 received</span><small>observation JSON</small></article>
-          <article data-stage="collector"><i></i><strong>Collector</strong><span>0 accepted</span><small>flow</small></article>
-          <article data-stage="window"><i></i><strong>Rolling Window</strong><span>0 windowed</span><small>graph window</small></article>
-          <article data-stage="inference"><i></i><strong>FedPer Inference</strong><span>0 inferred</span><small>prediction</small></article>
-          <article data-stage="router"><i></i><strong>Alert Router / SOC</strong><span>0 stored</span><small>detection event</small></article>
+      <section class="pipeline" aria-label="Realtime evidence pipeline">
+        <div class="pipeline-zone attacker-zone">
+          <div class="zone-title">ATTACKER VM - <b id="generator-address">—</b></div>
+          <div class="zone-stages attacker-stages">
+            <article data-stage="agent"><i></i><strong>Traffic Agent</strong><span>0 sent</span><small>TCP packet</small><output class="event-batch"></output></article>
+            <article data-stage="zeek"><i></i><strong>Zeek</strong><span>0 observed</span><small>conn.log</small><output class="event-batch"></output></article>
+            <article data-stage="shipper"><i></i><strong>Shipper</strong><span>0 delivered</span><small>observation JSON</small><output class="event-batch"></output></article>
+          </div>
+        </div>
+        <div class="network-bridge" aria-label="Private network boundary">
+          <span>observation JSON</span><i></i><small>private boundary</small>
+        </div>
+        <div class="pipeline-zone defender-zone">
+          <div class="zone-title">DEFENDER SYSTEM - <b id="target-address">—</b></div>
+          <div class="zone-stages defender-stages">
+            <article data-stage="gateway"><i></i><strong>Internal NGINX</strong><span>0 received</span><small>observation JSON</small><output class="event-batch"></output></article>
+            <article data-stage="collector"><i></i><strong>Collector</strong><span>0 accepted</span><small>flow</small><output class="event-batch"></output></article>
+            <article data-stage="window"><i></i><strong>Rolling Window</strong><span>0 windowed</span><small>graph window</small><output class="event-batch"></output></article>
+            <article data-stage="inference"><i></i><strong>FedPer Inference</strong><span>0 inferred</span><small>prediction</small><output class="event-batch"></output></article>
+            <article data-stage="router"><i></i><strong>Alert Router / SOC</strong><span>0 stored</span><small>detection event</small><output class="event-batch"></output></article>
+          </div>
         </div>
       </section>
 

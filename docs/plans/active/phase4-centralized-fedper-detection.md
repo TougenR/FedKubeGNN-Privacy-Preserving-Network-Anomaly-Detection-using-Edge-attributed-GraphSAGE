@@ -1373,6 +1373,37 @@ Live evidence-pipeline rollout on 2026-08-11:
   Applications `Synced/Healthy`, Jenkins `TERMINATED`, and the traffic
   generator `RUNNING`.
 
+Attacker playback and SOC layout checkpoint on 2026-08-11:
+
+- [x] Split the eight-stage pipeline into independent three-stage attacker and
+  five-stage defender zones, with runtime IP-only headers and an explicit
+  `observation JSON` private-boundary bridge.
+- [x] Add a frontend-only 300 ms acknowledgment presentation queue. It keeps
+  one current batch and one mergeable pending batch, never renders a counter
+  above the backend-confirmed value, presents backend-confirmed failures
+  immediately, stops its blue border indicator when idle, and bypasses timed
+  playback for `prefers-reduced-motion`.
+- [x] Convert the SOC browser surface to live-only operation: `DEFENDER SYSTEM`
+  branding, Latest Prediction plus six recent events in the 400 px left
+  column, a full-height monitor/chart on the right, and no browser request to
+  the scientific replay API. The validation replay config and backend GET/POST
+  API remain unchanged.
+- [x] Pass both focused console suites (13 tests), JavaScript syntax, an
+  executable Node simulation of batching/error/reduced-motion behavior, an
+  executable live-only SOC boot simulation, Ruff, Python compile, both Helm
+  lint/template paths, Ansible syntax-check, and `git diff --check`.
+- [x] Inspect fresh Firefox headless captures of both static surfaces at
+  1440 x 900. Both remain within one viewport; only the intended terminal,
+  Zeek, and recent-event regions have internal overflow.
+- [ ] Publish through Jenkins/Argo CD, apply the attacker static assets through
+  Ansible, and repeat live multi-event acceptance. This remains a deployment
+  operation and was not performed by the local implementation checkpoint.
+
+Validation limitation: the host-wide `tests/application` collection still
+requires optional `torch_geometric`, which is absent from this host. Collection
+stopped on that pre-existing dependency boundary; the two directly affected
+test modules completed successfully.
+
 ## Result
 
 Scientific evaluation, serving-bundle promotion, locked test execution, the

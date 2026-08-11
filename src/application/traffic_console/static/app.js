@@ -1,4 +1,22 @@
-const state = {catalog: null, profile: null, run: null, busy: false, timer: null};
+const STAGE_KEYS = ["agent", "zeek", "shipper", "gateway", "collector", "window", "inference", "router"];
+const PLAYBACK_STAGE_MS = 300;
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+const state = {
+  catalog: null,
+  profile: null,
+  run: null,
+  busy: false,
+  timer: null,
+  presentation: {
+    runId: null,
+    displayed: Object.fromEntries(STAGE_KEYS.map((key) => [key, 0])),
+    confirmed: Object.fromEntries(STAGE_KEYS.map((key) => [key, 0])),
+    statuses: {},
+    current: null,
+    pending: null,
+    timer: null
+  }
+};
 const $ = (id) => document.getElementById(id);
 
 async function json(url, options = {}) {
@@ -106,13 +124,97 @@ function renderZeek(record) {
 }
 
 const countWords = {agent: "sent", zeek: "observed", shipper: "delivered", gateway: "received", collector: "accepted", window: "windowed", inference: "inferred", router: "stored"};
-function renderPipeline(record) {
-  const stages = record?.pipeline?.stages || [];
+function emptyStageCounts() {
+  return Object.fromEntries(STAGE_KEYS.map((key) => [key, 0]));
+}
+function resetPresentation(runId) {
+  clearTimeout(state.presentation.timer);
+  state.presentation = {
+    runId,
+    displayed: emptyStageCounts(),
+    confirmed: emptyStageCounts(),
+    statuses: {},
+    current: null,
+    pending: null,
+    timer: null
+  };
+}
+function renderPipelinePresentation() {
+  const playback = state.presentation;
+  const playingKey = playback.current?.stages[playback.current.index] || null;
   document.querySelectorAll("[data-stage]").forEach((card) => {
-    const stage = stages.find((item) => item.key === card.dataset.stage);
-    card.className = stage?.status || "idle";
-    card.querySelector("span").textContent = `${stage?.count || 0} ${countWords[card.dataset.stage]}`;
+    const key = card.dataset.stage;
+    const backendStatus = playback.statuses[key] || "idle";
+    const displayed = Math.min(playback.displayed[key] || 0, playback.confirmed[key] || 0);
+    let visualStatus = displayed > 0 ? "acknowledged" : backendStatus === "waiting" ? "waiting" : "idle";
+    if (key === playingKey) visualStatus = `${visualStatus} playing`;
+    if (backendStatus === "error") visualStatus = "error";
+    card.className = visualStatus;
+    card.querySelector("span").textContent = `${displayed} ${countWords[key]}`;
+    const badge = card.querySelector(".event-batch");
+    const delta = key === playingKey ? playback.current.target[key] - playback.displayed[key] : 0;
+    badge.textContent = delta > 0 ? `+${delta} EVT` : "";
+    badge.classList.toggle("visible", delta > 0);
   });
+}
+function beginPlayback(target) {
+  const playback = state.presentation;
+  const stages = STAGE_KEYS.filter((key) => target[key] > playback.displayed[key]);
+  if (!stages.length) return;
+  playback.current = {target: {...target}, stages, index: 0};
+  renderPipelinePresentation();
+  playback.timer = setTimeout(advancePlayback, PLAYBACK_STAGE_MS);
+}
+function advancePlayback() {
+  const playback = state.presentation;
+  const batch = playback.current;
+  if (!batch) return;
+  const key = batch.stages[batch.index];
+  playback.displayed[key] = Math.min(batch.target[key], playback.confirmed[key]);
+  batch.index += 1;
+  if (batch.index < batch.stages.length) {
+    renderPipelinePresentation();
+    playback.timer = setTimeout(advancePlayback, PLAYBACK_STAGE_MS);
+    return;
+  }
+  playback.current = null;
+  const pending = playback.pending;
+  playback.pending = null;
+  renderPipelinePresentation();
+  if (pending) beginPlayback(pending.target);
+}
+function ingestPipeline(record) {
+  const runId = record?.run_id || null;
+  if (runId !== state.presentation.runId) resetPresentation(runId);
+  const stages = record?.pipeline?.stages;
+  if (!stages) {
+    renderPipelinePresentation();
+    return;
+  }
+  const playback = state.presentation;
+  stages.forEach((stage) => {
+    playback.confirmed[stage.key] = Math.max(0, Number(stage.count || 0));
+    playback.statuses[stage.key] = stage.status || "idle";
+  });
+
+  if (reducedMotion.matches) {
+    clearTimeout(playback.timer);
+    playback.current = null;
+    playback.pending = null;
+    playback.displayed = {...playback.confirmed};
+    renderPipelinePresentation();
+    return;
+  }
+
+  const scheduled = playback.pending?.target || playback.current?.target || playback.displayed;
+  const hasNewAcknowledgment = STAGE_KEYS.some((key) => playback.confirmed[key] > scheduled[key]);
+  if (hasNewAcknowledgment) {
+    const target = Object.fromEntries(STAGE_KEYS.map((key) => [key, Math.max(scheduled[key], playback.confirmed[key])]));
+    if (playback.current) playback.pending = {target};
+    else beginPlayback(target);
+  }
+  // Confirmed errors and waiting states are never held behind presentation timing.
+  renderPipelinePresentation();
 }
 
 function selectProfile(profile) {
@@ -136,7 +238,7 @@ function renderCatalog(catalog) {
   const first = catalog.profiles.find((profile) => profile.execution_enabled) || catalog.profiles[0]; if (first) selectProfile(first);
 }
 function renderRun(record) {
-  state.run = record; renderPipeline(record); renderExecution(record); renderZeek(record);
+  state.run = record; ingestPipeline(record); renderExecution(record); renderZeek(record);
   if (record) {
     $("run-badge").textContent = `${active() ? "ACTIVE RUN" : "LAST RUN"} · ${record.profile_id} · ${record.run_id}`;
     $("run-badge").className = active() ? "running" : record.status === "failed" ? "failed" : "last";
@@ -152,8 +254,8 @@ function switchTab(name) {
 async function boot() {
   try {
     const [config, catalog] = await Promise.all([json("/api/config"), json("/api/profiles")]); const identity = config.identity;
-    $("generator-name").textContent = identity.generator_name; $("generator-address").textContent = `${identity.generator_source_ipv4} · ${identity.generator_zone}`;
-    $("target-name").textContent = identity.target_name; $("target-address").textContent = identity.target_ipv4; $("sensor-id").textContent = `sensor ${identity.sensor_id}`;
+    $("generator-address").textContent = identity.generator_source_ipv4;
+    $("target-address").textContent = identity.target_ipv4; $("sensor-id").textContent = `sensor ${identity.sensor_id}`;
     renderCatalog(catalog); $("agent-dot").className = "ready"; $("agent-label").textContent = "Traffic agent ready"; await poll();
   } catch (error) { $("agent-dot").className = "error"; $("agent-label").textContent = error.message; schedulePoll(); }
 }
@@ -180,4 +282,5 @@ async function poll() {
 $("events").addEventListener("input", refreshRate); $("interval").addEventListener("input", refreshRate);
 $("start").addEventListener("click", start); $("stop").addEventListener("click", stop);
 $("tab-agent").addEventListener("click", () => switchTab("agent")); $("tab-zeek").addEventListener("click", () => switchTab("zeek"));
+reducedMotion.addEventListener("change", () => ingestPipeline(state.run));
 boot();
