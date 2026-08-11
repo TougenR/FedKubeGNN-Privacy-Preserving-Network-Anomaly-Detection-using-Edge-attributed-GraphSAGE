@@ -1284,6 +1284,45 @@ Live terminal evidence on 2026-08-10:
   `Benign` and `is_alert=false`, which is the existing shadow-policy behavior,
   not a terminal/UI regression.
 
+Attacker UI evidence-pipeline checkpoint on 2026-08-10:
+
+- Keep Zeek and its bounded shipper on the attacker VM. This iteration creates
+  no Packet Mirroring path, GCP resource, Kubernetes permission, or public
+  endpoint. The `10.20.0.20-22` destinations are displayed explicitly as fixed
+  private lab sink/blackhole addresses, not Kubernetes victims.
+- Replace the fixed-configuration tiles with a real two-tab terminal. `TRAFFIC
+  AGENT` renders the actual loopback curl contract, the executor mechanism, and
+  at most 50 timestamped per-event send results. `ZEEK CONN.LOG` compares
+  structured IoT-23 validation expectations with bounded IP-free Zeek evidence
+  and retains scrollable compact conn rows.
+- Replace the continuously animated packet wire with eight evidence-driven
+  stages across the GCP VM and GKE boundaries. Gray is idle, amber is processing
+  or waiting for downstream evidence, green is an observed acknowledgment, and
+  red requires a backend-confirmed failure. Active runs poll every 500 ms and
+  idle/completed runs every two seconds; a completed record is marked `LAST RUN`
+  with its profile and run ID.
+- NGINX overwrites an internal hop marker on observation requests. Collector
+  metrics now distinguish gateway receive, collector receive/accept, window,
+  inference, and durable router/sink acknowledgment. `routed` advances only
+  after the router accepts the privacy-reduced event. Per-run Zeek UI evidence
+  is in-memory only, capped at 50, excludes raw source/destination IP, never
+  enters an inference request, and is not indexed in Elasticsearch.
+- The Attacker API maps private counters to `inferred`/`stored` stage evidence
+  and excludes predicted labels, confidence, per-head output, and alert
+  decisions. The existing credentials remain server-side.
+- [x] Implement agent evidence, structured seven-profile metadata, gateway hop
+  marker, per-run collector counters/evidence, sanitized Attacker API, and the
+  two-tab one-viewport UI.
+- [x] Pass the 34 focused dependency-complete tests, JavaScript/Python syntax,
+  Ruff, 1440 x 900 headless render inspection, Helm lint/template, Ansible
+  syntax-check, YAML parsing, and `git diff --check` at the local checkpoint.
+- [ ] Publish the immutable application image through Jenkins, update the GKE
+  digest, allow Argo CD to synchronize, apply the same revision to the attacker
+  VM through Ansible, and run the DDoS 50 events / 4 ms live acceptance.
+- [ ] After rollout evidence, restore quota-safe demo mode with Jenkins
+  `TERMINATED`, traffic generator `RUNNING`, and all Argo CD Applications
+  `Synced/Healthy`.
+
 ## Result
 
 Scientific evaluation, serving-bundle promotion, locked test execution, the

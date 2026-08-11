@@ -11,54 +11,66 @@
     <main class="shell">
       <header>
         <div class="brand"><span class="mark">TX</span><div><small>FEDKUBE LAB</small><h1>Attacker Console</h1></div></div>
-        <div class="status"><i id="agent-dot"></i><span><strong id="agent-label">Đang kết nối</strong><small>SSH/IAP loopback session</small></span></div>
+        <div class="status"><i id="agent-dot"></i><span><strong id="agent-label">Đang kết nối</strong><small>SSH/IAP · loopback 127.0.0.1</small></span></div>
       </header>
 
-      <section class="topology card">
-        <article><small>MÁY PHÁT TRAFFIC</small><strong id="generator-name">—</strong><span id="generator-address">—</span></article>
-        <div class="wire"><span></span><i></i><i></i><i></i><b>PRIVATE VPC</b></div>
-        <article class="target"><small>MỤC TIÊU LAB</small><strong id="target-name">—</strong><span id="target-address">—</span></article>
+      <section class="pipeline card" aria-label="Realtime evidence pipeline">
+        <div class="zones"><span>GCP ATTACKER VM · <b id="generator-name">—</b> <em id="generator-address">—</em></span><span>GKE · fedkube-detection · <b id="target-name">—</b> <em id="target-address">—</em></span></div>
+        <div id="pipeline-stages" class="pipeline-stages">
+          <article data-stage="agent"><i></i><strong>Traffic Agent</strong><span>0 sent</span><small>TCP packet</small></article>
+          <article data-stage="zeek"><i></i><strong>Zeek</strong><span>0 observed</span><small>conn.log</small></article>
+          <article data-stage="shipper"><i></i><strong>Shipper</strong><span>0 delivered</span><small>observation JSON</small></article>
+          <article data-stage="gateway"><i></i><strong>Internal NGINX</strong><span>0 received</span><small>observation JSON</small></article>
+          <article data-stage="collector"><i></i><strong>Collector</strong><span>0 accepted</span><small>flow</small></article>
+          <article data-stage="window"><i></i><strong>Rolling Window</strong><span>0 windowed</span><small>graph window</small></article>
+          <article data-stage="inference"><i></i><strong>FedPer Inference</strong><span>0 inferred</span><small>prediction</small></article>
+          <article data-stage="router"><i></i><strong>Alert Router / SOC</strong><span>0 stored</span><small>detection event</small></article>
+        </div>
       </section>
 
       <div class="workspace">
         <section class="catalog card">
           <div class="section-title"><div><small>TRAFFIC PROFILE</small><h2>Chọn kịch bản</h2></div><span>7 model classes</span></div>
           <div id="profiles" class="profiles"></div>
+          <p class="sink-note"><b>Fixed private lab sink/blackhole:</b> 10.20.0.20–22. Đây không phải Kubernetes victim.</p>
         </section>
 
-        <section class="configuration card">
-          <div class="section-title"><div><small>FIXED LAB CONFIGURATION</small><h2 id="profile-title">Chưa chọn profile</h2></div><span id="profile-status">—</span></div>
-          <div id="profile-detail" class="detail empty">Đang tải catalog…</div>
-          <section class="terminal" aria-label="Terminal minh họa lệnh phát traffic">
+        <section class="console card">
+          <div class="section-title">
+            <div><small>REAL EXECUTION EVIDENCE</small><h2 id="profile-title">Chưa chọn profile</h2></div>
+            <span id="run-badge">NO RUN</span>
+          </div>
+          <div id="profile-summary" class="profile-summary">Đang tải catalog…</div>
+
+          <section class="terminal" aria-label="Terminal bằng chứng traffic và Zeek">
             <div class="terminal-bar">
               <span class="terminal-controls" aria-hidden="true"><i></i><i></i><i></i></span>
-              <strong>kali@fedkube-attacker: ~/lab</strong>
-              <span class="terminal-mode">READ ONLY</span>
+              <div class="terminal-tabs" role="tablist">
+                <button id="tab-agent" class="active" role="tab" aria-selected="true" aria-controls="panel-agent">TRAFFIC AGENT</button>
+                <button id="tab-zeek" role="tab" aria-selected="false" aria-controls="panel-zeek">ZEEK CONN.LOG</button>
+              </div>
+              <span class="terminal-mode">EVIDENCE</span>
             </div>
-            <div class="terminal-body">
+            <div id="panel-agent" class="terminal-panel active" role="tabpanel">
               <div class="terminal-prompt">┌──(<b>kali㉿fedkube-attacker</b>)-[<em>~/lab</em>]</div>
               <div class="terminal-command-line"><span>└─$</span><code id="terminal-command">Đang tải profile…</code></div>
+              <div id="mechanism-detail" class="mechanism-detail"></div>
               <div id="terminal-output" class="terminal-output" aria-live="polite"></div>
             </div>
+            <div id="panel-zeek" class="terminal-panel" role="tabpanel">
+              <div id="zeek-compare" class="zeek-compare"></div>
+              <div id="zeek-log" class="zeek-log" aria-live="polite"><div class="empty-log">Chưa có conn.log cho run này.</div></div>
+            </div>
           </section>
+
           <div class="controls">
             <label>Số event<input id="events" type="number" disabled></label>
             <label>Interval (ms)<input id="interval" type="number" disabled></label>
             <div><small>TẦN SUẤT DỰ KIẾN</small><strong id="rate">—</strong></div>
+            <div><small>RUN / SENSOR</small><strong id="run-id">Chưa chạy</strong><span id="sensor-id">sensor —</span></div>
           </div>
           <div class="actions"><button id="start" disabled>Bắt đầu phát traffic</button><button id="stop" disabled>Dừng traffic</button></div>
-        </section>
-
-        <section class="run card">
-          <div class="section-title"><div><small>GENERATOR TELEMETRY</small><h2>Traffic run</h2></div><span id="run-status">Chưa chạy</span></div>
-          <div class="counters">
-            <article><small>Đã gửi</small><strong id="sent">0/0</strong></article>
-            <article><small>Collector nhận</small><strong id="received">0/0</strong></article>
-            <article><small>Drop / trùng</small><strong id="dropped">0/0</strong></article>
-            <article><small>Lỗi pipeline</small><strong id="failed">0</strong></article>
-          </div>
-          <div class="run-line"><span id="run-id">Không có run đang hoạt động</span><span id="sensor-id">sensor —</span></div>
-          <p class="boundary">Console này chỉ điều khiển máy phát và xem delivery counters. Kết quả phân tích chỉ hiển thị ở SOC Console độc lập.</p>
+          <p class="boundary">Attacker Console chỉ hiển thị bằng chứng xử lý và delivery acknowledgment. Prediction/class/confidence và quyết định cảnh báo chỉ xuất hiện tại SOC Console độc lập.</p>
         </section>
       </div>
     </main>

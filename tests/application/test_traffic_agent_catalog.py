@@ -34,6 +34,9 @@ class TrafficAgentCatalogTests(unittest.TestCase):
         for profile in catalog.profiles:
             self.assertLessEqual(profile.controls.events.maximum, 50)
             self.assertLessEqual(profile.controls.interval_ms.maximum, 60000)
+            self.assertIsNotNone(profile.expected_observables.reference_support)
+            self.assertIsNotNone(profile.expected_observables.flow_density)
+            self.assertTrue(profile.expected_observables.histories)
 
     def test_catalog_rejects_defaults_outside_control_bounds(self) -> None:
         document = yaml.safe_load(CATALOG.read_text(encoding="utf-8"))

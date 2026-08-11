@@ -22,6 +22,7 @@ from src.application.alerting.elasticsearch import (
 )
 from src.application.collection.zeek_reader import ZeekRecordError, parse_zeek_json
 from src.application.collection.app import (
+    _append_zeek_evidence,
     CollectorObservation,
     LabRunRegistration,
     app_state as collector_state,
@@ -113,7 +114,9 @@ class CollectionWindowAlertingTests(unittest.TestCase):
         self.assertNotIn("probabilities", monitor_event)
         self.assertNotIn("ground_truth", monitor_event)
 
-    def test_collector_loads_class_thresholds_from_digest_bound_fusion_policy(self) -> None:
+    def test_collector_loads_class_thresholds_from_digest_bound_fusion_policy(
+        self,
+    ) -> None:
         document = {
             "kind": "validation-selected-multi-head-probability-fusion",
             "class_alert_thresholds": {"C&C": 0.76},
@@ -158,12 +161,17 @@ class CollectionWindowAlertingTests(unittest.TestCase):
                 "observations": 0,
                 "windows": 0,
                 "events": 0,
+                "run_metrics": defaultdict(dict),
+                "flow_runs": defaultdict(dict),
+                "completed_uids": deque(maxlen=5000),
+                "active_runs": {},
             }
         )
         observation = CollectorObservation.model_validate(
             {
                 "sensor_id": "sensor-34-1",
                 "source": "zeek-json-v1",
+                "run_id": "shadow-run",
                 "flow": {
                     "ts": 1.0,
                     "uid": "shadow-flow",
@@ -213,8 +221,11 @@ class CollectionWindowAlertingTests(unittest.TestCase):
         self.assertEqual(indexed["predicted_class"], "Benign")
         self.assertEqual(indexed["fusion_predicted_class"], "Attack")
         self.assertEqual(indexed["alert_decision_source"], "trusted-shadow")
+        self.assertEqual(collector_state["run_metrics"]["shadow-run"]["routed"], 1)
 
-    def test_zeek_flow_is_correlated_to_registered_run_outside_model_payload(self) -> None:
+    def test_zeek_flow_is_correlated_to_registered_run_outside_model_payload(
+        self,
+    ) -> None:
         collector_state.update(
             {
                 "window_config": RollingWindowConfig(
@@ -288,12 +299,49 @@ class CollectionWindowAlertingTests(unittest.TestCase):
             }
 
         with patch("src.application.collection.app.post_json", side_effect=fake_post):
-            asyncio.run(observe(observation))
+            asyncio.run(observe(observation, None, "internal-nginx-v1"))
         metrics = collector_state["run_metrics"]["demo-correlation"]
         self.assertEqual(metrics["received"], 1)
+        self.assertEqual(metrics["gateway_received"], 1)
+        self.assertEqual(metrics["windowed"], 1)
         self.assertEqual(metrics["predicted"], 1)
+        evidence = list(collector_state["run_zeek_evidence"]["demo-correlation"])
+        self.assertEqual(len(evidence), 1)
+        self.assertNotIn("id.orig_h", evidence[0])
+        self.assertNotIn("id.resp_h", evidence[0])
         self.assertNotIn("run_id", captured["request"])
         self.assertNotIn("scenario_id", captured["request"])
+
+    def test_zeek_evidence_is_run_isolated_and_capped_at_fifty(self) -> None:
+        collector_state["run_zeek_evidence"] = defaultdict(lambda: deque(maxlen=50))
+        for index in range(55):
+            _append_zeek_evidence(
+                "run-a",
+                {
+                    "ts": float(index),
+                    "id.resp_p": 80,
+                    "proto": "tcp",
+                    "service": "-",
+                    "conn_state": "OTH",
+                    "history": "C",
+                    "orig_pkts": 0,
+                    "resp_pkts": 0,
+                    "orig_bytes": 0,
+                    "resp_bytes": 0,
+                    "id.orig_h": "10.10.0.20",
+                    "id.resp_h": "10.20.0.20",
+                },
+            )
+        _append_zeek_evidence(
+            "run-b",
+            {"ts": 1.0, "id.resp_p": 22, "proto": "tcp", "conn_state": "S0"},
+        )
+        run_a = list(collector_state["run_zeek_evidence"]["run-a"])
+        self.assertEqual(len(run_a), 50)
+        self.assertEqual(run_a[0]["timestamp"], 5.0)
+        self.assertEqual(len(collector_state["run_zeek_evidence"]["run-b"]), 1)
+        self.assertNotIn("10.10.0.20", str(run_a))
+        self.assertNotIn("10.20.0.20", str(run_a))
 
     def test_registering_new_run_resets_sensor_graph_context(self) -> None:
         collector_state.update(
@@ -416,7 +464,9 @@ class CollectionWindowAlertingTests(unittest.TestCase):
         self.assertIsNone(buffer.add({"ts": 7.0, "uid": "too-late"}))
         self.assertEqual(buffer.late_drop_count, 1)
 
-    def test_flush_emits_only_tail_and_capacity_eviction_is_not_input_drop(self) -> None:
+    def test_flush_emits_only_tail_and_capacity_eviction_is_not_input_drop(
+        self,
+    ) -> None:
         buffer = RollingWindowBuffer(
             sensor_id="sensor-1",
             config=RollingWindowConfig(
@@ -445,9 +495,7 @@ class CollectionWindowAlertingTests(unittest.TestCase):
             }
         )
         graph = build_inference_graph(frame, ["feature_a"], sensor_id="sensor-1")
-        self.assertEqual(
-            graph.node_ids, ["sensor-1::10.0.0.1", "sensor-1::10.0.0.2"]
-        )
+        self.assertEqual(graph.node_ids, ["sensor-1::10.0.0.1", "sensor-1::10.0.0.2"])
         self.assertFalse(hasattr(graph, "edge_label"))
 
     def test_detection_event_contains_no_raw_network_or_tensor_fields(self) -> None:
@@ -477,7 +525,9 @@ class CollectionWindowAlertingTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_elasticsearch_document(document)
 
-    def test_policy_indexes_all_decisions_but_only_qualifies_selected_alerts(self) -> None:
+    def test_policy_indexes_all_decisions_but_only_qualifies_selected_alerts(
+        self,
+    ) -> None:
         policy = AlertPolicy(
             confidence_threshold=0.85,
             confidence_boundaries=(0.0, 0.5, 0.85, 0.95, 1.0),
@@ -499,14 +549,22 @@ class CollectionWindowAlertingTests(unittest.TestCase):
         }
         benign = policy.detection_event(
             **common,
-            prediction={"predicted_label": "Benign", "confidence": 0.99, "entropy": 0.01},
+            prediction={
+                "predicted_label": "Benign",
+                "confidence": 0.99,
+                "entropy": 0.01,
+            },
         )
         self.assertFalse(benign.is_alert)
         self.assertEqual(benign.severity, "none")
         self.assertIsNone(
             policy.event_for_prediction(
                 **common,
-                prediction={"predicted_label": "Benign", "confidence": 0.99, "entropy": 0.01},
+                prediction={
+                    "predicted_label": "Benign",
+                    "confidence": 0.99,
+                    "entropy": 0.01,
+                },
             )
         )
         attack = policy.detection_event(

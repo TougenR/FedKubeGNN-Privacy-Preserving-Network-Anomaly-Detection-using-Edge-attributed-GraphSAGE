@@ -31,6 +31,7 @@ data:
       location = /observe {
         proxy_pass http://{{ include "detection-stack.fullname" . }}-collector:8082/observe;
         proxy_set_header X-FedKube-Observation-Token $http_x_fedkube_observation_token;
+        proxy_set_header X-FedKube-Gateway-Hop "internal-nginx-v1";
         proxy_set_header Content-Type application/json;
       }
 

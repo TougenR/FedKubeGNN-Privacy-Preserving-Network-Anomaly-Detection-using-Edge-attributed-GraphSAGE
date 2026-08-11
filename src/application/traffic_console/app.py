@@ -81,6 +81,105 @@ def _control_headers() -> dict[str, str]:
     return {"X-FedKube-Observation-Token": state["observation_token"]}
 
 
+def _stage_status(
+    *, count: int, active: bool, failed: int = 0, upstream: int = 0
+) -> str:
+    if failed:
+        return "error"
+    if count:
+        return "acknowledged"
+    if active or upstream:
+        return "waiting"
+    return "idle"
+
+
+def _pipeline_snapshot(
+    record: dict[str, Any], metrics: dict[str, Any]
+) -> dict[str, Any]:
+    """Translate private counters without exposing model or policy output."""
+    active = record.get("status") in {"waiting-for-release", "running"}
+    sent = int(record.get("succeeded", 0))
+    execution_failures = int(record.get("failed", 0))
+    evidence = list(metrics.get("zeek_evidence", []))[:50]
+    observed = len(evidence)
+    gateway = int(metrics.get("gateway_received", 0))
+    received = int(metrics.get("received", 0))
+    accepted = int(metrics.get("accepted", 0))
+    windowed = int(metrics.get("windowed", 0))
+    inferred = int(metrics.get("predicted", 0))
+    stored = int(metrics.get("routed", 0))
+    dropped = int(metrics.get("late_dropped", 0))
+    duplicates = int(metrics.get("duplicates", 0))
+    inference_failures = int(metrics.get("inference_failures", 0))
+    sink_failures = int(metrics.get("alert_sink_failures", 0))
+
+    def stage(
+        key: str,
+        label: str,
+        count: int,
+        *,
+        upstream: int = 0,
+        failed: int = 0,
+    ) -> dict[str, Any]:
+        return {
+            "key": key,
+            "label": label,
+            "count": count,
+            "status": _stage_status(
+                count=count, active=active, failed=failed, upstream=upstream
+            ),
+        }
+
+    return {
+        "stages": [
+            stage("agent", "Traffic Agent", sent, failed=execution_failures),
+            stage("zeek", "Zeek", observed, upstream=sent),
+            stage("shipper", "Shipper", gateway, upstream=observed),
+            stage("gateway", "Internal NGINX", gateway, upstream=observed),
+            stage(
+                "collector",
+                "Collector",
+                accepted,
+                upstream=received or gateway,
+                failed=dropped + duplicates,
+            ),
+            stage("window", "Rolling Window", windowed, upstream=accepted),
+            stage(
+                "inference",
+                "FedPer Inference",
+                inferred,
+                upstream=windowed,
+                failed=inference_failures,
+            ),
+            stage(
+                "router",
+                "Alert Router / SOC",
+                stored,
+                upstream=inferred,
+                failed=sink_failures,
+            ),
+        ],
+        "counters": {
+            "sent": sent,
+            "observed": observed,
+            "gateway": gateway,
+            "received": received,
+            "accepted": accepted,
+            "windowed": windowed,
+            "inferred": inferred,
+            "stored": stored,
+        },
+        "failures": {
+            "send": execution_failures,
+            "dropped": dropped,
+            "duplicates": duplicates,
+            "inference": inference_failures,
+            "sink": sink_failures,
+        },
+        "zeek_evidence": evidence,
+    }
+
+
 @app.get("/health/live")
 async def health_live() -> dict[str, str]:
     return {"status": "live"}
@@ -113,7 +212,9 @@ async def profiles() -> dict[str, Any]:
             headers=_agent_headers(),
         )
     except ServiceRequestError as exc:
-        raise HTTPException(status_code=502, detail="Traffic agent không khả dụng") from exc
+        raise HTTPException(
+            status_code=502, detail="Traffic agent không khả dụng"
+        ) from exc
 
 
 @app.post("/api/runs/{profile_id}", status_code=202)
@@ -154,7 +255,9 @@ async def start_run(profile_id: str, request: StartTrafficRequest) -> dict[str, 
                 )
             except ServiceRequestError:
                 pass
-        raise HTTPException(status_code=502, detail="Không thể bắt đầu traffic run") from exc
+        raise HTTPException(
+            status_code=502, detail="Không thể bắt đầu traffic run"
+        ) from exc
 
 
 @app.get("/api/runs/current")
@@ -174,17 +277,11 @@ async def current_run() -> dict[str, Any]:
             f"{state['control_url']}/runs/{record['run_id']}/metrics",
             headers=_control_headers(),
         )
-        delivery = {
-            "received": int(metrics.get("received", 0)),
-            "accepted": int(metrics.get("accepted", 0)),
-            "late_dropped": int(metrics.get("late_dropped", 0)),
-            "duplicates": int(metrics.get("duplicates", 0)),
-            "processing_failures": int(metrics.get("inference_failures", 0))
-            + int(metrics.get("alert_sink_failures", 0)),
-        }
-        return {"run": {**record, "pipeline": {"collector": delivery}}}
+        return {"run": {**record, "pipeline": _pipeline_snapshot(record, metrics)}}
     except (KeyError, ServiceRequestError) as exc:
-        raise HTTPException(status_code=502, detail="Không đọc được trạng thái run") from exc
+        raise HTTPException(
+            status_code=502, detail="Không đọc được trạng thái run"
+        ) from exc
 
 
 @app.delete("/api/runs/current")
@@ -197,7 +294,9 @@ async def stop_run() -> dict[str, Any]:
             headers=_agent_headers(),
         )
     except ServiceRequestError as exc:
-        raise HTTPException(status_code=502, detail="Không thể dừng traffic run") from exc
+        raise HTTPException(
+            status_code=502, detail="Không thể dừng traffic run"
+        ) from exc
 
 
 STATIC_DIR = Path(__file__).with_name("static")

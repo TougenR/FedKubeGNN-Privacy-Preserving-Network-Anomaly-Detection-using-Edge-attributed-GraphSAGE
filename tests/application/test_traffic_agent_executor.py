@@ -27,9 +27,7 @@ def targets() -> TrafficTargetCatalog:
             "groups": {
                 "gateway-http": {"endpoints": ["http://10.10.0.5/target/"]},
                 "ssh-emulator": {"endpoints": ["10.10.0.5"]},
-                "irc-emulator": {
-                    "endpoints": ["10.20.0.20", "10.10.0.5"]
-                },
+                "irc-emulator": {"endpoints": ["10.20.0.20", "10.10.0.5"]},
                 "single-blackhole": {"endpoints": ["10.20.0.20"]},
                 "multi-blackhole": {
                     "endpoints": ["10.20.0.20", "10.20.0.21", "10.20.0.22"]
@@ -69,6 +67,11 @@ class TrafficAgentExecutorTests(unittest.IsolatedAsyncioTestCase):
         )
         self.assertTrue(all(call["destination_port"] == 22 for call in calls))
         self.assertTrue(all(call["flags"] == 0x02 for call in calls))
+        evidence = executor.current().execution_evidence
+        self.assertEqual(len(evidence), 3)
+        self.assertEqual(evidence[0].tcp_flags, "SYN")
+        self.assertEqual(evidence[0].action, "raw TCP SYN")
+        self.assertEqual(evidence[0].event_index, 1)
 
     async def test_ddos_uses_adjusted_bounded_ack_only_schedule(self) -> None:
         calls: list[dict] = []
@@ -92,6 +95,9 @@ class TrafficAgentExecutorTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(all(call["corrupt_checksum"] for call in calls))
         self.assertEqual(executor.current().events, 10)
         self.assertEqual(executor.current().interval_ms, 20)
+        evidence = executor.current().execution_evidence
+        self.assertTrue(all(item.tcp_flags == "ACK" for item in evidence))
+        self.assertTrue(all("checksum-invalid" in item.action for item in evidence))
 
     async def test_ssh_and_irc_use_fixed_session_and_blackhole_mix(self) -> None:
         packets: list[dict] = []
@@ -118,6 +124,28 @@ class TrafficAgentExecutorTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(packets[-1]["destination"], "10.20.0.20")
         self.assertEqual(packets[-1]["flags"], 0x02)
         self.assertEqual([item["complete"] for item in sessions[-2:]], [False, True])
+        self.assertEqual(ssh.execution_evidence[0].action, "SSH session")
+        self.assertEqual(
+            [item.action for item in irc.execution_evidence],
+            ["raw TCP SYN", "IRC partial session", "IRC complete session"],
+        )
+
+    async def test_http_and_failure_evidence_are_truthful_and_bounded(self) -> None:
+        executor = TrafficExecutor(
+            catalog=CATALOG,
+            targets=targets(),
+            http_sender=lambda _endpoint: False,
+            interval_scale=0.0001,
+        )
+        record = await executor.start("benign-control", events=1, interval_ms=1000)
+        executor.release(record.run_id)
+        while executor.current().status in {"waiting-for-release", "running"}:
+            await asyncio.sleep(0.01)
+        evidence = executor.current().execution_evidence
+        self.assertEqual(len(evidence), 1)
+        self.assertEqual(evidence[0].action, "HTTP GET")
+        self.assertFalse(evidence[0].success)
+        self.assertEqual(evidence[0].target, "10.10.0.5")
 
     async def test_only_one_run_can_wait_or_execute(self) -> None:
         executor = TrafficExecutor(

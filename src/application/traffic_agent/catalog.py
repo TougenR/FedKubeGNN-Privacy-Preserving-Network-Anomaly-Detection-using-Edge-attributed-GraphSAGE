@@ -37,7 +37,29 @@ class ExpectedObservables(BaseModel):
     protocols: list[str] = Field(min_length=1)
     services: list[str] = Field(min_length=1)
     connection_states: list[str] = Field(min_length=1)
+    reference_support: int | None = Field(default=None, ge=1)
+    histories: list[str] | None = None
+    response_behaviors: list[str] | None = None
+    orig_packets: "ObservableRange | None" = None
+    resp_packets: "ObservableRange | None" = None
+    orig_bytes: "ObservableRange | None" = None
+    resp_bytes: "ObservableRange | None" = None
+    flow_density: "ObservableRange | None" = None
     note: str = Field(min_length=1, max_length=500)
+
+
+class ObservableRange(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    minimum: float = Field(ge=0)
+    maximum: float = Field(ge=0)
+    unit: str = Field(min_length=1, max_length=32)
+
+    @model_validator(mode="after")
+    def ordered(self) -> "ObservableRange":
+        if self.minimum > self.maximum:
+            raise ValueError("Observable minimum cannot exceed maximum.")
+        return self
 
 
 class IntegerControl(BaseModel):
@@ -87,7 +109,11 @@ class TrafficProfile(BaseModel):
             raise ValueError("Round-robin profiles require at least two events.")
         if (self.events - 1) * self.interval_ms > 120000:
             raise ValueError("Traffic profile runtime cannot exceed two minutes.")
-        if not self.controls.events.minimum <= self.events <= self.controls.events.maximum:
+        if (
+            not self.controls.events.minimum
+            <= self.events
+            <= self.controls.events.maximum
+        ):
             raise ValueError("Default event count must be inside its control bounds.")
         if not (
             self.controls.interval_ms.minimum
@@ -105,7 +131,11 @@ class TrafficProfile(BaseModel):
     ) -> tuple[int, int]:
         selected_events = self.events if events is None else events
         selected_interval = self.interval_ms if interval_ms is None else interval_ms
-        if not self.controls.events.minimum <= selected_events <= self.controls.events.maximum:
+        if (
+            not self.controls.events.minimum
+            <= selected_events
+            <= self.controls.events.maximum
+        ):
             raise ValueError(
                 f"events must be between {self.controls.events.minimum} and "
                 f"{self.controls.events.maximum}"
@@ -175,7 +205,9 @@ class TrafficTargetGroup(BaseModel):
             try:
                 address = ipaddress.ip_address(str(host))
             except ValueError as exc:
-                raise ValueError("Traffic targets must be literal private IPs.") from exc
+                raise ValueError(
+                    "Traffic targets must be literal private IPs."
+                ) from exc
             if address.version != 4 or not any(
                 address in network for network in PRIVATE_IPV4_NETWORKS
             ):

@@ -47,6 +47,39 @@ class LabRunRegistration(BaseModel):
 app_state: dict[str, Any] = {}
 
 
+def _run_evidence_store() -> defaultdict[str, deque]:
+    return app_state.setdefault(
+        "run_zeek_evidence", defaultdict(lambda: deque(maxlen=50))
+    )
+
+
+def _append_zeek_evidence(run_id: str, flow: dict[str, Any]) -> None:
+    """Retain bounded, IP-free UI evidence outside the model contract."""
+    response_seen = bool((flow.get("resp_pkts") or 0) or (flow.get("resp_bytes") or 0))
+    evidence = {
+        "timestamp": float(flow["ts"]),
+        "source": "attacker-vm",
+        "target": "fixed-private-lab-target",
+        "port": int(flow["id.resp_p"]),
+        "protocol": str(flow["proto"]),
+        "service": str(flow.get("service") or "-"),
+        "connection_state": str(flow["conn_state"]),
+        "history": str(flow.get("history") or "-"),
+        "response_behavior": "response-observed" if response_seen else "no-response",
+        "orig_packets": flow.get("orig_pkts"),
+        "resp_packets": flow.get("resp_pkts"),
+        "orig_bytes": flow.get("orig_bytes"),
+        "resp_bytes": flow.get("resp_bytes"),
+    }
+    evidence_buffer = _run_evidence_store()[run_id]
+    evidence_buffer.append(evidence)
+    evidence["density"] = len(evidence_buffer)
+
+
+def _increment_metric(values: dict[str, int], key: str) -> None:
+    values[key] = values.get(key, 0) + 1
+
+
 def _required_float(name: str) -> float:
     return float(os.environ[name])
 
@@ -118,15 +151,19 @@ async def lifespan(_: FastAPI):
         app_state["monitor_sequence"] = 0
         app_state["run_metrics"] = defaultdict(
             lambda: {
+                "gateway_received": 0,
                 "received": 0,
                 "accepted": 0,
+                "windowed": 0,
                 "predicted": 0,
+                "routed": 0,
                 "late_dropped": 0,
                 "inference_failures": 0,
                 "alert_sink_failures": 0,
                 "duplicates": 0,
             }
         )
+        app_state["run_zeek_evidence"] = defaultdict(lambda: deque(maxlen=50))
         app_state["flow_runs"] = defaultdict(dict)
         app_state["completed_uids"] = deque(maxlen=5000)
         app_state["active_runs"] = {}
@@ -223,6 +260,7 @@ async def run_metrics(run_id: str) -> dict[str, Any]:
         "run_id": run_id,
         "available": bool(values),
         **values,
+        "zeek_evidence": list(_run_evidence_store().get(run_id, ())),
     }
 
 
@@ -251,6 +289,7 @@ async def register_run(registration: LabRunRegistration) -> dict[str, str]:
     # Materialize zero-valued metrics so the console can distinguish an active
     # run with no captured flows from an unavailable metrics endpoint.
     app_state["run_metrics"][registration.run_id]
+    _run_evidence_store()[registration.run_id].clear()
     return {
         "status": "registered",
         "run_id": registration.run_id,
@@ -280,6 +319,7 @@ async def private_run_metrics(
 async def observe(
     observation: CollectorObservation,
     x_fedkube_observation_token: str | None = Header(default=None),
+    x_fedkube_gateway_hop: str | None = Header(default=None),
 ) -> dict[str, Any]:
     _ready()
     expected_token = app_state.get("observation_token")
@@ -293,7 +333,9 @@ async def observe(
         else None
     )
     if run_values is not None:
-        run_values["received"] += 1
+        _increment_metric(run_values, "received")
+        if x_fedkube_gateway_hop == "internal-nginx-v1":
+            _increment_metric(run_values, "gateway_received")
     buffers = app_state["buffers"]
     buffer = buffers.setdefault(
         observation.sensor_id,
@@ -303,18 +345,20 @@ async def observe(
         ),
     )
     flow = observation.flow.model_dump(by_alias=True)
+    if resolved_run_id is not None and observation.source == "zeek-json-v1":
+        _append_zeek_evidence(resolved_run_id, flow)
     uid = str(flow.get("uid", "-"))
     completed_uids = app_state.setdefault("completed_uids", deque(maxlen=5000))
     if uid != "-" and uid in completed_uids:
         if run_values is not None:
-            run_values["duplicates"] += 1
+            _increment_metric(run_values, "duplicates")
         return {"accepted": True, "duplicate": True, "window_emitted": False}
     late_before = buffer.late_drop_count
     snapshot = buffer.add(flow)
     app_state["observations"] += 1
     if buffer.late_drop_count > late_before:
         if run_values is not None:
-            run_values["late_dropped"] += 1
+            _increment_metric(run_values, "late_dropped")
         return {
             "accepted": False,
             "window_emitted": False,
@@ -322,7 +366,7 @@ async def observe(
             "flow_drop_rate": buffer.flow_drop_rate,
         }
     if run_values is not None:
-        run_values["accepted"] += 1
+        _increment_metric(run_values, "accepted")
     if uid != "-":
         app_state.setdefault("flow_runs", defaultdict(dict))[observation.sensor_id][
             uid
@@ -338,6 +382,12 @@ async def observe(
         "window_id": snapshot.window_id,
         "flows": list(snapshot.flows),
     }
+    for index in snapshot.emission_indices:
+        emitted_uid = str(snapshot.flows[index].get("uid", "-"))
+        emitted_run = app_state["flow_runs"][snapshot.sensor_id].get(emitted_uid)
+        if emitted_run is not None:
+            values = app_state["run_metrics"][emitted_run]
+            _increment_metric(values, "windowed")
     started = time.perf_counter()
     try:
         response = await asyncio.to_thread(
@@ -350,7 +400,9 @@ async def observe(
                 emitted_uid, None
             )
             if emitted_run is not None:
-                app_state["run_metrics"][emitted_run]["inference_failures"] += 1
+                _increment_metric(
+                    app_state["run_metrics"][emitted_run], "inference_failures"
+                )
         raise HTTPException(status_code=502, detail=str(exc)) from exc
     latency_ms = (time.perf_counter() - started) * 1000
     app_state["inference_latency_ms"].append(latency_ms)
@@ -399,11 +451,19 @@ async def observe(
                     emitted_uid
                 )
                 if emitted_run is not None:
-                    app_state["run_metrics"][emitted_run]["alert_sink_failures"] += 1
+                    _increment_metric(
+                        app_state["run_metrics"][emitted_run],
+                        "alert_sink_failures",
+                    )
                 # Prediction already succeeded. Do not make an upstream retry
                 # add this flow to the rolling buffer a second time merely
                 # because the downstream evidence sink was unavailable.
                 continue
+            emitted_uid = str(source_flow.get("uid", "-"))
+            emitted_run = app_state["flow_runs"][snapshot.sensor_id].get(emitted_uid)
+            if emitted_run is not None:
+                values = app_state["run_metrics"][emitted_run]
+                _increment_metric(values, "routed")
             if event.is_alert:
                 emitted += 1
                 alerted_indices.add(index)
@@ -413,7 +473,7 @@ async def observe(
         emitted_uid = str(source_flow.get("uid", "-"))
         emitted_run = app_state["flow_runs"][snapshot.sensor_id].pop(emitted_uid, None)
         if emitted_run is not None:
-            app_state["run_metrics"][emitted_run]["predicted"] += 1
+            _increment_metric(app_state["run_metrics"][emitted_run], "predicted")
         if emitted_uid != "-":
             completed_uids.append(emitted_uid)
         prediction = response["predictions"][index]

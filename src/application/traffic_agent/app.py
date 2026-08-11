@@ -44,9 +44,11 @@ async def lifespan(_: FastAPI):
             )
         )
         targets = load_target_catalog(os.environ["TRAFFIC_TARGET_CONFIG"])
-        token = Path(os.environ["TRAFFIC_AGENT_TOKEN_FILE"]).read_text(
-            encoding="utf-8"
-        ).strip()
+        token = (
+            Path(os.environ["TRAFFIC_AGENT_TOKEN_FILE"])
+            .read_text(encoding="utf-8")
+            .strip()
+        )
         if len(token) < 32:
             raise ValueError("Traffic-agent token must contain at least 32 characters.")
         state["token"] = token
@@ -94,12 +96,29 @@ async def health_ready() -> dict[str, str]:
 @app.get("/v1/profiles", dependencies=[Depends(require_token)])
 async def profiles() -> dict[str, Any]:
     executor = _ready()
+    profile_documents = []
+    for profile in executor.catalog.profiles:
+        document = profile.model_dump()
+        document["fixed_targets"] = [
+            {
+                "alias": (
+                    "internal-gateway"
+                    if profile.target_group in {"gateway-http", "ssh-emulator"}
+                    else "internal-gateway/blackhole"
+                    if profile.target_group == "irc-emulator"
+                    else "fixed-lab-sink/blackhole"
+                ),
+                "endpoint": endpoint,
+            }
+            for endpoint in executor.targets.groups[profile.target_group].endpoints
+        ]
+        profile_documents.append(document)
     return {
         "reference_digest": executor.catalog.reference_digest,
         "dataset_digest": executor.catalog.dataset_digest,
         "graph_protocol": executor.catalog.graph_protocol,
         "claim_boundary": executor.catalog.claim_boundary,
-        "profiles": [profile.model_dump() for profile in executor.catalog.profiles],
+        "profiles": profile_documents,
     }
 
 

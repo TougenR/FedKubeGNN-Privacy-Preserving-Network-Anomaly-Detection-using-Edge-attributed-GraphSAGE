@@ -23,6 +23,14 @@ profiles:
       protocols: [tcp]
       services: [http]
       connection_states: [SF]
+      reference_support: 3644
+      histories: [D]
+      response_behaviors: [no-response, response-observed]
+      orig_packets: {minimum: 1, maximum: 1, unit: packets}
+      resp_packets: {minimum: 0, maximum: 1, unit: packets}
+      orig_bytes: {minimum: 0, maximum: 46, unit: bytes}
+      resp_bytes: {minimum: 0, maximum: 0, unit: bytes}
+      flow_density: {minimum: 1, maximum: 2, unit: flows/60s}
       note: >-
         A reproducible false-alert control only. IoT-23 Benign is heterogeneous
         and is predominantly UDP in the validation reference.
@@ -42,6 +50,14 @@ profiles:
       protocols: [tcp]
       services: [ssh]
       connection_states: [SF]
+      reference_support: 663
+      histories: [ShAdDaFf]
+      response_behaviors: [response-observed]
+      orig_packets: {minimum: 13, maximum: 15, unit: packets}
+      resp_packets: {minimum: 14, maximum: 16, unit: packets}
+      orig_bytes: {minimum: 589, maximum: 589, unit: bytes}
+      resp_bytes: {minimum: 1434, maximum: 2241, unit: bytes}
+      flow_density: {minimum: 1, maximum: 4, unit: flows/60s}
       note: >-
         Bounded SSH identification and bidirectional exchanges approximate the
         validation packet/byte shape; comparator evidence remains authoritative.
@@ -61,6 +77,14 @@ profiles:
       protocols: [tcp]
       services: [irc, unknown]
       connection_states: [S0, S3, SF]
+      reference_support: 825
+      histories: [S]
+      response_behaviors: [no-response, response-observed]
+      orig_packets: {minimum: 1, maximum: 7, unit: packets}
+      resp_packets: {minimum: 0, maximum: 6, unit: packets}
+      orig_bytes: {minimum: 0, maximum: 62, unit: bytes}
+      resp_bytes: {minimum: 0, maximum: 243, unit: bytes}
+      flow_density: {minimum: 1, maximum: 3, unit: flows/60s}
       note: >-
         Deterministic SYN-only, partial, and completed IRC-like sessions model
         the validation mixture; they do not reproduce natural malware timing.
@@ -80,6 +104,14 @@ profiles:
       protocols: [tcp]
       services: [unknown]
       connection_states: [S0]
+      reference_support: 1000
+      histories: [S]
+      response_behaviors: [no-response]
+      orig_packets: {minimum: 1, maximum: 3, unit: packets}
+      resp_packets: {minimum: 0, maximum: 0, unit: packets}
+      orig_bytes: {minimum: 0, maximum: 0, unit: bytes}
+      resp_bytes: {minimum: 0, maximum: 0, unit: bytes}
+      flow_density: {minimum: 1, maximum: 2, unit: flows/60s}
       note: One SYN-only flow per event with no response is required.
   - id: ddos
     reference_class: DDoS
@@ -97,6 +129,14 @@ profiles:
       protocols: [tcp]
       services: [unknown]
       connection_states: [OTH]
+      reference_support: 1000
+      histories: [C]
+      response_behaviors: [no-response]
+      orig_packets: {minimum: 0, maximum: 0, unit: packets}
+      resp_packets: {minimum: 0, maximum: 0, unit: packets}
+      orig_bytes: {minimum: 0, maximum: 0, unit: bytes}
+      resp_bytes: {minimum: 0, maximum: 0, unit: bytes}
+      flow_density: {minimum: 50, maximum: 50, unit: flows/60s}
       note: >-
         Intentionally checksum-invalid ACK-only traffic reproduces TCP/80,
         OTH, history C, no response, and 50-flow density. The VM disables TX
@@ -117,6 +157,14 @@ profiles:
       protocols: [tcp]
       services: [unknown]
       connection_states: [S0]
+      reference_support: 1000
+      histories: [S]
+      response_behaviors: [no-response]
+      orig_packets: {minimum: 1, maximum: 1, unit: packets}
+      resp_packets: {minimum: 0, maximum: 0, unit: packets}
+      orig_bytes: {minimum: 0, maximum: 0, unit: bytes}
+      resp_bytes: {minimum: 0, maximum: 0, unit: bytes}
+      flow_density: {minimum: 1, maximum: 2, unit: flows/60s}
       note: Events must use different fixed private destinations.
   - id: horizontal-port-scan
     reference_class: PartOfAHorizontalPortScan
@@ -134,4 +182,12 @@ profiles:
       protocols: [tcp]
       services: [unknown]
       connection_states: [S0]
+      reference_support: 4012
+      histories: [S]
+      response_behaviors: [no-response]
+      orig_packets: {minimum: 1, maximum: 1, unit: packets}
+      resp_packets: {minimum: 0, maximum: 0, unit: packets}
+      orig_bytes: {minimum: 0, maximum: 0, unit: bytes}
+      resp_bytes: {minimum: 0, maximum: 0, unit: bytes}
+      flow_density: {minimum: 1, maximum: 3, unit: flows/60s}
       note: Same destination port across several fixed private destinations.

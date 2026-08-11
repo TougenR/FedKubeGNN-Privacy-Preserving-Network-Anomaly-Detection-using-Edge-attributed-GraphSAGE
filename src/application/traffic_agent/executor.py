@@ -148,7 +148,9 @@ def _ssh_kexinit_packet(total_size: int, marker: bytes) -> bytes:
 
     def payload(filler: bytes) -> bytes:
         values = [fields[0] + filler, *fields[1:]]
-        return b"\x14" + marker[:1] * 16 + b"".join(map(_ssh_string, values)) + b"\0" * 5
+        return (
+            b"\x14" + marker[:1] * 16 + b"".join(map(_ssh_string, values)) + b"\0" * 5
+        )
 
     base = payload(b"")
     filler_size = total_size - 9 - len(base)
@@ -237,6 +239,19 @@ def _endpoint_host(endpoint: str) -> str:
 
 
 @dataclass
+class ExecutionEvidence:
+    timestamp: float
+    event_index: int
+    mechanism: str
+    source: str
+    target: str
+    port: int
+    tcp_flags: str | None
+    action: str
+    success: bool
+
+
+@dataclass
 class TrafficRunRecord:
     run_id: str
     profile_id: str
@@ -253,9 +268,12 @@ class TrafficRunRecord:
     succeeded: int = 0
     failed: int = 0
     error: str | None = None
+    execution_evidence: list[ExecutionEvidence] | None = None
 
     def public(self) -> dict:
-        return asdict(self)
+        document = asdict(self)
+        document["execution_evidence"] = document["execution_evidence"] or []
+        return document
 
 
 class TrafficExecutor:
@@ -326,6 +344,7 @@ class TrafficExecutor:
                 interval_ms=selected_interval,
                 status="waiting-for-release",
                 started_at=time.time(),
+                execution_evidence=[],
             )
             self._task = asyncio.create_task(self._execute_after_release(profile))
             return self._record
@@ -361,42 +380,67 @@ class TrafficExecutor:
         profile: TrafficProfile,
         endpoints: list[str],
         index: int,
-    ) -> bool:
+    ) -> tuple[bool, dict[str, str | int | None]]:
         endpoint = endpoints[index % len(endpoints)]
+        target = _endpoint_host(endpoint)
         if profile.mechanism == "http-get":
-            return await asyncio.to_thread(self.http_sender, endpoint)
+            success = await asyncio.to_thread(self.http_sender, endpoint)
+            return success, {
+                "target": target,
+                "tcp_flags": None,
+                "action": "HTTP GET",
+            }
         if profile.mechanism == "ssh-session":
-            return await asyncio.to_thread(
+            success = await asyncio.to_thread(
                 self.session_sender,
                 source=self.targets.source_ipv4,
-                destination=_endpoint_host(endpoint),
+                destination=target,
                 destination_port=profile.destination_port,
                 protocol="ssh",
             )
+            return success, {
+                "target": target,
+                "tcp_flags": None,
+                "action": "SSH session",
+            }
         if profile.mechanism == "irc-mixed":
             mode = index % 3
             if mode:
-                return await asyncio.to_thread(
+                target = _endpoint_host(endpoints[-1])
+                success = await asyncio.to_thread(
                     self.session_sender,
                     source=self.targets.source_ipv4,
-                    destination=_endpoint_host(endpoints[-1]),
+                    destination=target,
                     destination_port=profile.destination_port,
                     protocol="irc",
                     complete=mode == 2,
                 )
+                return success, {
+                    "target": target,
+                    "tcp_flags": None,
+                    "action": "IRC complete session"
+                    if mode == 2
+                    else "IRC partial session",
+                }
             endpoint = endpoints[0]
+            target = _endpoint_host(endpoint)
         flags = 0x02 if profile.mechanism.startswith("syn-only") else 0x10
         if profile.mechanism == "irc-mixed":
             flags = 0x02
-        return await asyncio.to_thread(
+        success = await asyncio.to_thread(
             self.packet_sender,
             source=self.targets.source_ipv4,
-            destination=_endpoint_host(endpoint),
+            destination=target,
             destination_port=profile.destination_port,
             sequence=index + 1,
             flags=flags,
             corrupt_checksum=profile.mechanism == "ack-only",
         )
+        flag_name = "SYN" if flags == 0x02 else "ACK"
+        action = f"raw TCP {flag_name}"
+        if profile.mechanism == "ack-only":
+            action += " (checksum-invalid)"
+        return success, {"target": target, "tcp_flags": flag_name, "action": action}
 
     async def _execute(self, profile: TrafficProfile) -> None:
         assert self._record is not None
@@ -406,7 +450,27 @@ class TrafficExecutor:
                 if self._cancel.is_set():
                     break
                 self._record.attempted += 1
-                if await self._send(profile, endpoints, index):
+                success, detail = await self._send(profile, endpoints, index)
+                assert self._record.execution_evidence is not None
+                if len(self._record.execution_evidence) < 50:
+                    self._record.execution_evidence.append(
+                        ExecutionEvidence(
+                            timestamp=time.time(),
+                            event_index=index + 1,
+                            mechanism=profile.mechanism,
+                            source=self.targets.source_ipv4,
+                            target=str(detail["target"]),
+                            port=profile.destination_port,
+                            tcp_flags=(
+                                str(detail["tcp_flags"])
+                                if detail["tcp_flags"] is not None
+                                else None
+                            ),
+                            action=str(detail["action"]),
+                            success=success,
+                        )
+                    )
+                if success:
                     self._record.succeeded += 1
                 else:
                     self._record.failed += 1
