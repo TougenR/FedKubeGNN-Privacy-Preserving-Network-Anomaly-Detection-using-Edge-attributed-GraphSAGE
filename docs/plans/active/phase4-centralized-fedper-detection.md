@@ -1316,12 +1316,62 @@ Attacker UI evidence-pipeline checkpoint on 2026-08-10:
 - [x] Pass the 34 focused dependency-complete tests, JavaScript/Python syntax,
   Ruff, 1440 x 900 headless render inspection, Helm lint/template, Ansible
   syntax-check, YAML parsing, and `git diff --check` at the local checkpoint.
-- [ ] Publish the immutable application image through Jenkins, update the GKE
+- [x] Publish the immutable application image through Jenkins, update the GKE
   digest, allow Argo CD to synchronize, apply the same revision to the attacker
   VM through Ansible, and run the DDoS 50 events / 4 ms live acceptance.
-- [ ] After rollout evidence, restore quota-safe demo mode with Jenkins
+- [x] After rollout evidence, restore quota-safe demo mode with Jenkins
   `TERMINATED`, traffic generator `RUNNING`, and all Argo CD Applications
   `Synced/Healthy`.
+
+Live evidence-pipeline rollout on 2026-08-11:
+
+- Commit `503255c` passed GitHub Actions run `31452424925` and the complete
+  76-test dependency-complete application suite. Jenkins build 105 published
+  application digest
+  `sha256:c37b329911d303023ecd59b5decbdda106fb320a5ae0f5471c2d2d15bdd945d4`,
+  wrote GitOps revision `9a15fd4`, and build 106 accepted the generated
+  `[skip ci]` commit without rebuilding. Ansible applied the VM-side console,
+  agent, Zeek, and shipper revision with
+  `ok=17 changed=4 unreachable=0 failed=0`; all four systemd units and the
+  console readiness endpoint were healthy.
+- The current operator address changed before rollout. The saved Terraform
+  plan updated only the three existing authorized-network/SSH allowlist
+  entries and applied exactly `0 added, 3 changed, 0 destroyed`; it created no
+  GCP resource. The fixed `10.20.0.20-22` targets remain private lab
+  sink/blackhole destinations rather than Kubernetes victims.
+- Initial live run `traffic-79cadf22578f` proved 50 send, Zeek, gateway,
+  collector, window, inference, and sink acknowledgments with zero confirmed
+  failures. It also exposed a real acceptance gap: the privacy-reduced SOC
+  event did not carry the lab run identifier. Commit `866a573` added only the
+  optional correlation field, preserving the rule that predictions and alert
+  decisions remain SOC-only and Zeek evidence remains unindexed.
+- Correlation commit `866a573` passed all 77 application tests and GitHub
+  Actions run `31454595932`. Jenkins build 107 published application digest
+  `sha256:4aea9b5590f143698b1dd566c1fe4079f40972df1a7698b5ab411e8380231d68`,
+  wrote GitOps revision `cf0befc`, and loop-guard build 108 succeeded without
+  rebuilding. Argo CD server-side sync completed the `v6-runid` Elasticsearch
+  bootstrap, then pruned only the completed `v5-fusion` bootstrap Job. The
+  detection Application reached `Synced/Healthy`; every running detection Pod
+  was ready with zero restarts.
+- Final DDoS run `traffic-e33e68f7ec12` at 50 events / 4 ms completed 50/50
+  sends with 50 bounded execution records. Its eight-stage counters were
+  exactly `sent=50`, `observed=50`, `gateway=50`, `received=50`,
+  `accepted=50`, `windowed=50`, `inferred=50`, and `stored=50`; send, drop,
+  duplicate, inference, and sink failures were all zero. The 50 sanitized Zeek
+  records matched `tcp`, service `-`, state `OTH`, history `C`, no response,
+  and destination port 80.
+- The independent SOC monitor held sequences 51-100 with the same run ID.
+  Elasticsearch held exactly 50 documents for that run, mapped `run_id` as a
+  keyword, and exposed none of `zeek_evidence`, source/destination IP, or Zeek
+  origin/response host fields. The index mapping likewise contains no
+  `zeek_evidence` property.
+- A pre-existing Central dataset-sync Job had remained Pending for 35 hours
+  because the single node was at 99% requested CPU. Kibana logging was
+  reversibly scaled from one replica to zero long enough for the existing Job
+  to complete, then restored to one ready replica with zero restarts. No node
+  or other cloud resource was added. Final state is all six Argo CD
+  Applications `Synced/Healthy`, Jenkins `TERMINATED`, and the traffic
+  generator `RUNNING`.
 
 ## Result
 
