@@ -1395,9 +1395,43 @@ Attacker playback and SOC layout checkpoint on 2026-08-11:
 - [x] Inspect fresh Firefox headless captures of both static surfaces at
   1440 x 900. Both remain within one viewport; only the intended terminal,
   Zeek, and recent-event regions have internal overflow.
-- [ ] Publish through Jenkins/Argo CD, apply the attacker static assets through
-  Ansible, and repeat live multi-event acceptance. This remains a deployment
-  operation and was not performed by the local implementation checkpoint.
+- [x] Publish through Jenkins/Argo CD, apply the attacker static assets through
+  Ansible, and repeat live multi-event acceptance.
+
+Playback/SOC rollout evidence on 2026-08-11:
+
+- Commit `876fbc0` contains the complete UI/test/plan change. Its first webhook
+  arrived while Jenkins was still booting and returned 502; the local GitHub
+  token could inspect but not redeliver hooks. Follow-up source documentation
+  commit `78cf595` was delivered after readiness and returned 200 without
+  expanding token scope. GitHub Actions runs `31457980357` and `31458102515`
+  both completed successfully for the implementation and follow-up commits.
+- Jenkins build 110 selected `application=true`, `federated=false`, passed its
+  test, compile, image-import, and CRITICAL-scan gates, and published immutable
+  digest
+  `sha256:cd4080ac0480788a806c81565408d1886dc18a7a966e7afb031f2c1fb09d0977`.
+  It wrote GitOps revision `3e2abca`; loop-guard build 111 selected neither
+  image and completed successfully.
+- Argo CD synchronized the detection Application with server-side apply at
+  exact revision `3e2abcadf64c24189d3b0f23db8b449871480dd1`. All six Argo CD
+  Applications reached `Synced/Healthy`; all eight running detection/Elastic
+  Pods were ready with zero restarts.
+- Ansible applied the exact static assets with matching local/remote SHA-256
+  values and completed `ok=13 changed=2 unreachable=0 failed=0`. The console,
+  agent, Zeek, and shipper services were active and console readiness returned
+  success.
+- DDoS run `traffic-95838ad0ba23` completed 50/50 attempts at 4 ms with 50
+  bounded execution and Zeek records. All eight stage counters converged to 50;
+  send, drop, duplicate, inference, and sink failure counters were zero.
+- Browser automation against the real VM observed Agent=50 while Zeek was the
+  active `+50 EVT` stage at 800 ms, proving playback lagged confirmed backend
+  state. At 3.4 seconds all eight cards displayed 50, were acknowledged, and
+  no card retained the playback indicator. The real SOC browser showed title
+  `DEFENDER SYSTEM`, Latest Prediction `DDoS`, the same run ID, and six recent
+  live events. Paginated monitor evidence contained all 50 DDoS decisions with
+  confidence bucket `0.95-1`.
+- Final quota-safe state is Jenkins `TERMINATED`, traffic generator `RUNNING`,
+  and all Argo CD Applications `Synced/Healthy`.
 
 Validation limitation: the host-wide `tests/application` collection still
 requires optional `torch_geometric`, which is absent from this host. Collection
@@ -1412,7 +1446,7 @@ original six in-cluster live scenarios are complete. The model shows no
 validation-to-test overfitting in the locked rolling protocol. The all-decision
 privacy-reduced sink and six-panel Kibana dashboard are deployed and verified
 on GKE. The private traffic-generator extension is deployed and has completed
-the four controlled runs above. Its executable attack candidates remain
+the controlled runs above. Its executable attack candidates remain
 scientifically non-equivalent to the IoT-23 validation reference, and the
 fusion policy remains shadow-only because the live benign control is a proven
 false positive. At this UI-demo checkpoint Jenkins is stopped and the generator
