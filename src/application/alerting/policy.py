@@ -45,6 +45,7 @@ class AlertPolicy:
         self,
         *,
         sensor_id: str,
+        run_id: str | None = None,
         window_id: str,
         entity: str,
         entity_key: bytes,
@@ -70,6 +71,7 @@ class AlertPolicy:
             **{
                 "@timestamp": datetime.now(timezone.utc),
                 "sensor_id": sensor_id,
+                "run_id": run_id,
                 "client_id": str(response["client_id"]),
                 "window_id": window_id,
                 "predicted_class": predicted_class,
@@ -88,13 +90,11 @@ class AlertPolicy:
                 "model_digest": str(response["model_digest"]),
                 "head_digest": str(response["head_digest"]),
                 "schema_digest": str(response["schema_digest"]),
-                "decision_mode": str(
-                    response.get("decision_mode", "trusted-head-v1")
-                ),
+                "decision_mode": str(response.get("decision_mode", "trusted-head-v1")),
                 "fusion_policy_digest": response.get("fusion_policy_digest"),
-                "trusted_predicted_class": prediction.get(
-                    "trusted_prediction", {}
-                ).get("predicted_label"),
+                "trusted_predicted_class": prediction.get("trusted_prediction", {}).get(
+                    "predicted_label"
+                ),
                 "head_disagreement_count": int(
                     prediction.get("head_disagreement_count", 0)
                 ),

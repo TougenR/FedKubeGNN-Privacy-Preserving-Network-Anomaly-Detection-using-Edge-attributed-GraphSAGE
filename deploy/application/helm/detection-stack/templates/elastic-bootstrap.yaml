@@ -18,6 +18,7 @@ data:
             "@timestamp": {"type": "date"},
             "event_type": {"type": "constant_keyword", "value": "fedper_detection"},
             "sensor_id": {"type": "keyword"},
+            "run_id": {"type": "keyword"},
             "client_id": {"type": "keyword"},
             "window_id": {"type": "keyword"},
             "predicted_class": {"type": "keyword"},
@@ -78,7 +79,7 @@ spec:
                 curl --fail --silent --cacert /es-ca/ca.crt -u "${auth}" -X PUT \
                   "${es}/{{ .Values.elasticsearch.index }}/_mapping" \
                   -H 'content-type: application/json' \
-                  -d '{"properties":{"decision_mode":{"type":"keyword"},"fusion_policy_digest":{"type":"keyword"},"trusted_predicted_class":{"type":"keyword"},"head_disagreement_count":{"type":"byte"},"fusion_predicted_class":{"type":"keyword"},"alert_decision_source":{"type":"keyword"}}}'
+                  -d '{"properties":{"run_id":{"type":"keyword"},"decision_mode":{"type":"keyword"},"fusion_policy_digest":{"type":"keyword"},"trusted_predicted_class":{"type":"keyword"},"head_disagreement_count":{"type":"byte"},"fusion_predicted_class":{"type":"keyword"},"alert_decision_source":{"type":"keyword"}}}'
               fi
               until curl --fail --silent --cacert /kb-ca/ca.crt -u "${auth}" "${kb}/api/status" >/dev/null; do sleep 10; done
               curl --fail --silent --cacert /kb-ca/ca.crt -u "${auth}" -X POST \

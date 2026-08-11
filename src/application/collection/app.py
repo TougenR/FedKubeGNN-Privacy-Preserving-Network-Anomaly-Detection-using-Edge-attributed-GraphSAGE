@@ -414,6 +414,8 @@ async def observe(
     if policy is not None:
         for index in snapshot.emission_indices:
             source_flow = snapshot.flows[index]
+            emitted_uid = str(source_flow.get("uid", "-"))
+            emitted_run = app_state["flow_runs"][snapshot.sensor_id].get(emitted_uid)
             prediction = response["predictions"][index]
             policy_prediction = prediction
             if app_state["alert_decision_source"] == "trusted-shadow":
@@ -432,6 +434,7 @@ async def observe(
                 }
             event = policy.detection_event(
                 sensor_id=snapshot.sensor_id,
+                run_id=emitted_run,
                 window_id=snapshot.window_id,
                 entity=str(source_flow["id.orig_h"]),
                 entity_key=app_state["entity_key"],
@@ -459,8 +462,6 @@ async def observe(
                 # add this flow to the rolling buffer a second time merely
                 # because the downstream evidence sink was unavailable.
                 continue
-            emitted_uid = str(source_flow.get("uid", "-"))
-            emitted_run = app_state["flow_runs"][snapshot.sensor_id].get(emitted_uid)
             if emitted_run is not None:
                 values = app_state["run_metrics"][emitted_run]
                 _increment_metric(values, "routed")
@@ -483,6 +484,7 @@ async def observe(
             "sequence": app_state["monitor_sequence"],
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "sensor_id": snapshot.sensor_id,
+            "run_id": emitted_run,
             "client_id": str(response["client_id"]),
             "window_id": snapshot.window_id,
             "predicted_class": predicted_class,

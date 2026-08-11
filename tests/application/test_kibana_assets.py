@@ -6,12 +6,18 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SAVED_OBJECTS = (
-    ROOT / "deploy/application/helm/detection-stack/files/kibana.ndjson"
-)
+SAVED_OBJECTS = ROOT / "deploy/application/helm/detection-stack/files/kibana.ndjson"
 
 
 class KibanaAssetsTests(unittest.TestCase):
+    def test_strict_mapping_accepts_privacy_reduced_run_correlation(self) -> None:
+        template = (
+            ROOT
+            / "deploy/application/helm/detection-stack/templates/elastic-bootstrap.yaml"
+        ).read_text(encoding="utf-8")
+        self.assertIn('"run_id": {"type": "keyword"}', template)
+        self.assertNotIn('"zeek_evidence"', template)
+
     def test_dashboard_references_version_controlled_objects(self) -> None:
         objects = [
             json.loads(line)
@@ -25,8 +31,7 @@ class KibanaAssetsTests(unittest.TestCase):
         dashboard = next(
             item
             for item in objects
-            if item["type"] == "dashboard"
-            and item["id"] == "fedper-detection-overview"
+            if item["type"] == "dashboard" and item["id"] == "fedper-detection-overview"
         )
         panels = json.loads(dashboard["attributes"]["panelsJSON"])
         self.assertEqual(len(panels), 6)

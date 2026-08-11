@@ -340,7 +340,8 @@ function renderLatest(event) {
   }
   $("latest-class").textContent = event.predicted_class;
   const source = event.source_type === "validation-replay" ? "validation replay" : "live collector";
-  $("latest-detail").textContent = `${source} · ${event.client_id || "—"} · confidence ${event.confidence_bucket}`;
+  const run = event.source_type === "live" ? ` · run ${event.run_id || "untracked"}` : "";
+  $("latest-detail").textContent = `${source}${run} · ${event.client_id || "—"} · confidence ${event.confidence_bucket}`;
 }
 
 function eventNode(event) {
@@ -353,7 +354,7 @@ function eventNode(event) {
   if (event.source_type === "validation-replay") {
     detail.textContent = event.decision_status === "below-threshold" ? "validation replay · dưới ngưỡng" : "validation replay · đạt ngưỡng";
   } else {
-    detail.textContent = `${event.alert_decision_source || "live"} · trusted ${event.trusted_predicted_class || event.predicted_class}`;
+    detail.textContent = `${event.alert_decision_source || "live"} · ${event.run_id || "untracked"} · trusted ${event.trusted_predicted_class || event.predicted_class}`;
   }
   main.append(label, detail);
   const meta = document.createElement("div"); meta.className = "event-meta"; meta.textContent = event.confidence_bucket;

@@ -15,6 +15,7 @@ class DetectionEvent(BaseModel):
     timestamp: datetime = Field(alias="@timestamp")
     event_type: str = "fedper_detection"
     sensor_id: str
+    run_id: str | None = Field(default=None, pattern=r"^[a-z0-9][a-z0-9-]{0,63}$")
     client_id: str
     window_id: str
     predicted_class: str
@@ -47,7 +48,9 @@ class DetectionEvent(BaseModel):
     def validate_digest(cls, value: str | None) -> str | None:
         if value is None:
             return value
-        if len(value) != 64 or any(character not in "0123456789abcdef" for character in value):
+        if len(value) != 64 or any(
+            character not in "0123456789abcdef" for character in value
+        ):
             raise ValueError("Digest fields must be lowercase SHA-256 hex.")
         return value
 

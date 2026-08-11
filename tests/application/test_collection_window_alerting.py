@@ -221,7 +221,11 @@ class CollectionWindowAlertingTests(unittest.TestCase):
         self.assertEqual(indexed["predicted_class"], "Benign")
         self.assertEqual(indexed["fusion_predicted_class"], "Attack")
         self.assertEqual(indexed["alert_decision_source"], "trusted-shadow")
+        self.assertEqual(indexed["run_id"], "shadow-run")
         self.assertEqual(collector_state["run_metrics"]["shadow-run"]["routed"], 1)
+        self.assertEqual(
+            list(collector_state["monitor_events"])[0]["run_id"], "shadow-run"
+        )
 
     def test_zeek_flow_is_correlated_to_registered_run_outside_model_payload(
         self,

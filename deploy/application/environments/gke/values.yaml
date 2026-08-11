@@ -106,7 +106,7 @@ elasticStack:
   version: 9.2.3
   kibanaCount: 1
   kibanaNodeOptions: --max-old-space-size=512
-  bootstrapRevision: v5-fusion
+  bootstrapRevision: v6-runid
   storageClassName: standard-rwo
   storageSize: 10Gi
   elasticsearchResources:
