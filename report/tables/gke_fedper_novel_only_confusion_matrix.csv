@@ -1,0 +1,8 @@
+actual_or_predicted,Benign,Attack,C&C,C&C-HeartBeat,DDoS,Okiru,PartOfAHorizontalPortScan
+Benign,5969,22,5,0,0,0,124
+Attack,0,1330,0,0,0,0,0
+C&C,4,0,1002,0,0,0,0
+C&C-HeartBeat,0,0,0,771,0,0,0
+DDoS,0,0,0,0,1,0,3
+Okiru,0,0,0,0,0,2000,0
+PartOfAHorizontalPortScan,11,0,0,0,0,0,7799

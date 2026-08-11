@@ -1,0 +1,90 @@
+{
+  "components": {
+    "data_source": "iot23",
+    "graph_builder": "phase1_ip_flow",
+    "model": "egraphsage",
+    "observer": "console_jsonl",
+    "partitioner": "scenario",
+    "runtime": "inprocess",
+    "task": "iot23_manifest"
+  },
+  "data": {
+    "cap_per_class": 10000,
+    "chunk_size": 100000,
+    "graph_protocol": "transductive_edge_mask",
+    "prepared_root": "artifacts/phase2/prepared",
+    "preprocessing": "train_only_global",
+    "raw_root": "data",
+    "scenarios": [
+      {
+        "id": "34-1",
+        "malware": "Mirai",
+        "path": "CTU-IoT-Malware-Capture-34-1/conn.log.labeled"
+      },
+      {
+        "id": "1-1",
+        "malware": "Hide-and-Seek",
+        "path": "CTU-IoT-Malware-Capture-1-1/conn.log.labeled"
+      },
+      {
+        "id": "3-1",
+        "malware": "Muhstik",
+        "path": "CTU-IoT-Malware-Capture-3-1/conn.log.labeled"
+      },
+      {
+        "id": "9-1",
+        "malware": "Linux.Hajime",
+        "path": "CTU-IoT-Malware-Capture-9-1/conn.log.labeled"
+      },
+      {
+        "id": "36-1",
+        "malware": "Okiru",
+        "path": "CTU-IoT-Malware-Capture-36-1/conn.log.labeled"
+      },
+      {
+        "id": "39-1",
+        "malware": "IRCBot",
+        "path": "CTU-IoT-Malware-Capture-39-1/conn.log.labeled"
+      }
+    ],
+    "split": {
+      "test": 0.2,
+      "train": 0.7,
+      "validation": 0.1
+    },
+    "target_column": "detailed-label"
+  },
+  "federation": {
+    "evaluate_split": "validation",
+    "final_split": "test",
+    "participation": "full",
+    "proximal_mu": 0.01,
+    "strategies": [
+      "fedavg",
+      "fedprox"
+    ]
+  },
+  "model": {
+    "dropout": 0.5,
+    "hidden_dim": 64,
+    "num_layers": 2
+  },
+  "observability": {
+    "console": true,
+    "jsonl": true,
+    "level": "INFO",
+    "output_root": "artifacts/phase2/runs"
+  },
+  "training": {
+    "centralized_epochs": 150,
+    "grad_clip": 1.0,
+    "imbalance": "class_weight",
+    "learning_rate": 0.001,
+    "local_epochs": 5,
+    "optimizer": "adam",
+    "rounds": 30,
+    "seed": 42,
+    "weight_decay": 0.0
+  },
+  "version": 1
+}

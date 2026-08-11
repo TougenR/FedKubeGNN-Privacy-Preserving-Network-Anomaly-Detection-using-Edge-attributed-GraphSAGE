@@ -1,0 +1,15 @@
+{
+  "completed_at": "2026-08-05T13:25:42.330974+00:00",
+  "config_digest": "9ba6d9a8aafd3af45e9c23d9f02113dd1e9d5231ce359be0288797718d12bdcc",
+  "dataset_digest": "68fc6fc0cb8974aba1d431113b39dbf82f98457159c04d6a14b22feaa4b0cb89",
+  "latest_checkpoint": "checkpoints/round-0150.npz",
+  "latest_round": 150,
+  "model_digest": "0c1faa97cde18b330cc5e1f565a1f80fe3fce4d326525ca1c148712808fa2004",
+  "run_id": "centralized-20260805T132411540234Z-ccb597b7e8",
+  "started_at": "2026-08-05T13:24:11.540651+00:00",
+  "status": "completed",
+  "strategy": "centralized",
+  "test_macro_f1": 0.8698299868925814,
+  "updated_at": "2026-08-05T13:25:42.331046+00:00",
+  "validation_macro_f1": 0.8586500028956563
+}

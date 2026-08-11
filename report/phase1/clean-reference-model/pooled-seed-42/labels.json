@@ -1,0 +1,24 @@
+{
+  "bundle_schema_version": 1,
+  "class_to_idx": {
+    "Attack": 0,
+    "Benign": 1,
+    "C&C": 2,
+    "C&C-HeartBeat": 3,
+    "DDoS": 4,
+    "Okiru": 5,
+    "Okiru-Attack": 6,
+    "PartOfAHorizontalPortScan": 7
+  },
+  "digest": "abafcc64ddd6c5b3f049bda5fd3256e99d17b324c1adc7e791c5a291f33bf4ed",
+  "labels": [
+    "Attack",
+    "Benign",
+    "C&C",
+    "C&C-HeartBeat",
+    "DDoS",
+    "Okiru",
+    "Okiru-Attack",
+    "PartOfAHorizontalPortScan"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "files": {
+    "best_personalized_heads/1-1.npz": "0cad7efbab038218df49a56639c33cd48203e4c8199a3ac6d7e5fa8eb2227013",
+    "best_personalized_heads/3-1.npz": "187b85d16516ed5dbd63ce3af4f7fb57a4ca58afaef1bb6e014c71d08e62d2cd",
+    "best_personalized_heads/34-1.npz": "cfb574926e5346c78f84a1c4b6820318878468d89c465044bcd68cd0bf172a2b",
+    "best_personalized_heads/36-1.npz": "6ebd618030bc0b84bd2fbe2eb82a59f7e50b53e8c5ac70c7ac722e9a36eb50c1",
+    "best_personalized_heads/39-1.npz": "b33bb40317667fa2894526f9077acc50f551c3b9393978f9b004ad52e07bfc98",
+    "best_personalized_heads/9-1.npz": "b392672ea4a0b177ea1652f019f1aa2572a3aff24a503da4cf684c3eaa4bf9b6",
+    "best_shared_state.npz": "aa379355fe6f440b2d6eca4af7af3a963ebd646e58960ef24f981228f90ef692",
+    "final_personalized_heads/1-1.npz": "351ef416d6ca7e5bb84d4bc1393e5b3913ffaaae63f6a38abdad8fc679781078",
+    "final_personalized_heads/3-1.npz": "10a51b5987adbee0fbff24d1e1b77320ddd3f76e9923f00c0841cf40c73a9d3a",
+    "final_personalized_heads/34-1.npz": "8fa7ec2cd581291931af33fa94406e1c2735d354e4cb4e9c7f3b0fe5c50175f7",
+    "final_personalized_heads/36-1.npz": "6623cb0d5c8e1fcde7b9d7c604e20dd04ef23343a9c6ca413cfac72ef3ef87fe",
+    "final_personalized_heads/39-1.npz": "d5dda2b03337e818642244b5a7adcd04dffd970057549a79ab5a4d645082015f",
+    "final_personalized_heads/9-1.npz": "d6a6db641147e3f553b6af7a2818f0b03ef09fd5d842b69717c5af1480560e6d",
+    "final_shared_state.npz": "6d5bc14008aec0c5b8b2b3e75c90a2d1d9c1d2dcb34fde7ac8c257f3389d454f",
+    "rounds.json": "995910a57784ad711d6a1d11e487f80dfb4c409481fe205b6e968a1de1de8baa",
+    "summary.json": "8b58f1a1442b82e8ddfba28a7234437aef4cb9d4a3b8af47504409d458d9c88e"
+  },
+  "test_evaluations": 0
+}

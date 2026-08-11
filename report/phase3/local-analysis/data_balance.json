@@ -1,0 +1,64 @@
+{
+  "analysis_version": 1,
+  "class_names": [
+    "Benign",
+    "Attack",
+    "C&C",
+    "C&C-HeartBeat",
+    "DDoS",
+    "Okiru",
+    "Okiru-Attack",
+    "PartOfAHorizontalPortScan"
+  ],
+  "client_ids": [
+    "34-1",
+    "1-1",
+    "3-1",
+    "9-1",
+    "36-1",
+    "39-1"
+  ],
+  "clients_per_class": {
+    "Attack": 2,
+    "Benign": 6,
+    "C&C": 4,
+    "C&C-HeartBeat": 1,
+    "DDoS": 1,
+    "Okiru": 1,
+    "Okiru-Attack": 1,
+    "PartOfAHorizontalPortScan": 5
+  },
+  "dataset_digest": "68fc6fc0cb8974aba1d431113b39dbf82f98457159c04d6a14b22feaa4b0cb89",
+  "dataset_id": "iot23-0d9bbeb9f9ed0a3f",
+  "feature_schema_digest": "f5d6a3d5de73e113ff94d51db011ae371a7bb44f822c0f17415fdfc60470ffa2",
+  "global_class_support": {
+    "Attack": 6639,
+    "Benign": 36459,
+    "C&C": 8252,
+    "C&C-HeartBeat": 10000,
+    "DDoS": 10000,
+    "Okiru": 10000,
+    "Okiru-Attack": 3,
+    "PartOfAHorizontalPortScan": 40122
+  },
+  "integrity": {
+    "duplicate_definition": "exact transformed feature, label, source, and destination row within each client graph",
+    "manifest_and_all_client_checksums_verified": true,
+    "masks_disjoint_and_complete": true,
+    "raw_missingness_available": false
+  },
+  "label_schema_digest": "edcfb0289ea9199dbcb3b038bd93883db706dd79e2d41eeda4c31784235822b6",
+  "severe_classes": [
+    "C&C-HeartBeat",
+    "DDoS",
+    "Okiru",
+    "Okiru-Attack"
+  ],
+  "severe_imbalance": true,
+  "severity_policy": {
+    "global_support_below": 30,
+    "single_client_class": true,
+    "zero_client_class_support": true,
+    "zero_validation_support": true
+  }
+}

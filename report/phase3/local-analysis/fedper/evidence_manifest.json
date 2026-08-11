@@ -1,0 +1,18 @@
+{
+  "files": {
+    "figures/fedper_learning_curves.pdf": "cd0a22cc156add762d5301105338c6bca3569f5f4634a570feb992f3d6f99227",
+    "figures/fedper_learning_curves.png": "34b6d9f6ad53c0ce8c79b6a3073594aba5668cf867ee6080273466fbf7ed2727",
+    "figures/fedper_per_class_f1.pdf": "d783c9854406bdbff1c0ed0938c2139910e71eec6d7a36d426a609c21247b1e5",
+    "figures/fedper_per_class_f1.png": "e686c650d842847ce40bf8c881b489ec66553ccc4b831e063f5eb73905c59b6d",
+    "figures/fedper_seed_metrics.csv": "1e8a31e815fd192a47cc2f02390c97995c111a5b0ed6d1253903acab171ace33",
+    "figures/fedper_test_metrics.pdf": "c327ec8af1d05caeea05b5df720ca701c8b6663b32c8ad0af063fc3ffa72eb34",
+    "figures/fedper_test_metrics.png": "e1999b10546ca76abb1ceac154d4632035bf6fdf8087df493897fcd3e85c24e1",
+    "figures/fedper_validation_by_seed.pdf": "bc1b4f44383f60c9f51b37bb13ea28d57e0200fce2488919de90347b875a2e17",
+    "figures/fedper_validation_by_seed.png": "1734f1a7d99334ce5ee38b598ab4af5cb5a49368a6d165dac9ffafd0d12a27e9",
+    "figures/visualization_manifest.json": "6231ab9f07ea237fe11fdf50b2482a17d80da1b2f97467c7f7dc76ae81853d94",
+    "finding.md": "f81902905f58df23912e2b1db65791032de878d9a860111976e1243d7258b3ba",
+    "summary.json": "2c08496bf5b91c9c03d30ce5f962adbc534a8693771f95cb7ac89728fd082d8e"
+  },
+  "source_runs": "artifacts/phase2/runs/phase3d",
+  "test_evaluations": 3
+}

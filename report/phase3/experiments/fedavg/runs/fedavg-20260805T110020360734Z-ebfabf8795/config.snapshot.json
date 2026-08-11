@@ -1,0 +1,22 @@
+{
+  "benchmark-config-digest": "9ba6d9a8aafd3af45e9c23d9f02113dd1e9d5231ce359be0288797718d12bdcc",
+  "dataset-root": "/dataset",
+  "evaluate-split": "val",
+  "events-output": "/artifacts/fedavg/events",
+  "final-split": "test",
+  "flower-output-root": "/artifacts/fedavg/runs",
+  "fraction-evaluate": 1.0,
+  "grad-clip": 1.0,
+  "learning-rate": 0.001,
+  "local-epochs": 5,
+  "model-output": "/artifacts/fedavg/best-model.pt",
+  "num-server-rounds": 30,
+  "optimizer": "adam",
+  "phase2-config": "/app/configs/phase2/iot23-federated.yaml",
+  "proximal-mu": 0.0,
+  "save-model": true,
+  "seed": 42,
+  "strategy": "fedavg",
+  "task": "iot23_manifest",
+  "weight-decay": 0.0
+}

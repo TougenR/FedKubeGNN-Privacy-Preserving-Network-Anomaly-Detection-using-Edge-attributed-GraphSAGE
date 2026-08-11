@@ -1,0 +1,13 @@
+{
+  "client_id": "3-1",
+  "cold_start": false,
+  "completed_rounds": 30,
+  "model_digest": "42642e4cc839c09dfe8519511aa7cf7cdf5ca7350a8dd376e118ee31a6a74bbf",
+  "personalized_prefixes": [
+    "head."
+  ],
+  "ready": true,
+  "run_id": "14339380272482304688",
+  "state_file": "head-0030.npz",
+  "state_sha256": "f8e1dd80d8d2bd4e9929f848689291775b20a9acdca9ab5543e550804de0b840"
+}

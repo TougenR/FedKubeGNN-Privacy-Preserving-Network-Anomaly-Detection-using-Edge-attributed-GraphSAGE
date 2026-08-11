@@ -1,0 +1,40 @@
+{
+  "best_round": 1,
+  "duration_seconds": 0.9003240649999498,
+  "run_id": "fedavg-20260726T113009782692Z-20d2d3f38d",
+  "strategy": "fedavg",
+  "test_confusion_matrix": [
+    [
+      1,
+      59
+    ],
+    [
+      42,
+      18
+    ]
+  ],
+  "test_metrics": {
+    "accuracy": 0.15833333333333333,
+    "loss": 1.0662561655044556,
+    "macro_f1": 0.14109559917794626,
+    "num_examples": 120,
+    "per_class": {
+      "negative": {
+        "f1": 0.01941747572815534,
+        "precision": 0.023255813953488372,
+        "recall": 0.016666666666666666,
+        "support": 60
+      },
+      "positive": {
+        "f1": 0.2627737226277372,
+        "precision": 0.23376623376623376,
+        "recall": 0.3,
+        "support": 60
+      }
+    },
+    "weighted_f1": 0.14109559917794626
+  },
+  "total_download_bytes": 48,
+  "total_upload_bytes": 48,
+  "validation_macro_f1": 0.1515837104072398
+}

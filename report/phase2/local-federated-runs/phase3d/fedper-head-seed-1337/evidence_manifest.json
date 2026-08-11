@@ -1,0 +1,21 @@
+{
+  "files": {
+    "best_personalized_heads/1-1.npz": "0881fd3dc25a4f3bcd7b9b7991709ca4c51bbf408055de49d655f91f1dde4295",
+    "best_personalized_heads/3-1.npz": "4a93936beeec70a920497c3cb35fcbdc543388334f6436860053d7b3db3cbce0",
+    "best_personalized_heads/34-1.npz": "8828975ca3e6e9da6f5680ad68a510f86d0e9881f877d5c0638bddbdda1e8ed7",
+    "best_personalized_heads/36-1.npz": "41985a6c5776c76b981eaefacbc96027ed02dc6a9e49c17fe8c2ede25dca4a65",
+    "best_personalized_heads/39-1.npz": "584540d20895dacdef4d0d3a8d1baf83100475c387ff5bf65c4a314e28395471",
+    "best_personalized_heads/9-1.npz": "df9caab1261920a109de062975fa8213c4d092dd8a0a0cad88e38750fe661de6",
+    "best_shared_state.npz": "a7af9883e84458be549dcb62baf7b0d29be04966fcfb85c6b36d71e71dc38d10",
+    "final_personalized_heads/1-1.npz": "0881fd3dc25a4f3bcd7b9b7991709ca4c51bbf408055de49d655f91f1dde4295",
+    "final_personalized_heads/3-1.npz": "4a93936beeec70a920497c3cb35fcbdc543388334f6436860053d7b3db3cbce0",
+    "final_personalized_heads/34-1.npz": "8828975ca3e6e9da6f5680ad68a510f86d0e9881f877d5c0638bddbdda1e8ed7",
+    "final_personalized_heads/36-1.npz": "41985a6c5776c76b981eaefacbc96027ed02dc6a9e49c17fe8c2ede25dca4a65",
+    "final_personalized_heads/39-1.npz": "584540d20895dacdef4d0d3a8d1baf83100475c387ff5bf65c4a314e28395471",
+    "final_personalized_heads/9-1.npz": "df9caab1261920a109de062975fa8213c4d092dd8a0a0cad88e38750fe661de6",
+    "final_shared_state.npz": "a7af9883e84458be549dcb62baf7b0d29be04966fcfb85c6b36d71e71dc38d10",
+    "rounds.json": "31b5b1cf764793add1ccfc32676de19b486edc56804b65f7f84133298bf321a9",
+    "summary.json": "a2eb13f79b0e327f18987f014cf1018066e71993783a5d101e45f28736cd093a"
+  },
+  "test_evaluations": 0
+}

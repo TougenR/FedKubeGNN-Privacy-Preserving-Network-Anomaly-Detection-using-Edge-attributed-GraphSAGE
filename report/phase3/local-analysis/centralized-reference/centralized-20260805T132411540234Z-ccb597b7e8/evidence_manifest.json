@@ -1,0 +1,13 @@
+{
+  "config_digest": "9ba6d9a8aafd3af45e9c23d9f02113dd1e9d5231ce359be0288797718d12bdcc",
+  "dataset_digest": "68fc6fc0cb8974aba1d431113b39dbf82f98457159c04d6a14b22feaa4b0cb89",
+  "files": {
+    "checkpoints/best_model.npz": "17563ecbf3d15516d51f356407e9ba9e14688163baf1bb0c5daf34b0b477a89e",
+    "checkpoints/round-0150.npz": "17563ecbf3d15516d51f356407e9ba9e14688163baf1bb0c5daf34b0b477a89e",
+    "config.snapshot.json": "e84c35ede5a893594701446204dd6f54446f521e784e800794118a51dd845ad6",
+    "metrics/summary.json": "e10635af3bd4a7e88855f579533b8c7904c1fc46346a51237b3cac2cafdb9ec9",
+    "run.json": "1ddee0e36b7de360c535d958f58264f2de5426d5b903651ec175535ef53016e6"
+  },
+  "model_digest": "0c1faa97cde18b330cc5e1f565a1f80fe3fce4d326525ca1c148712808fa2004",
+  "run_id": "centralized-20260805T132411540234Z-ccb597b7e8"
+}

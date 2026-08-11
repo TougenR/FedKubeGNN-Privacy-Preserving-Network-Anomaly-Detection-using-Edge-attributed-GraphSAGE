@@ -1,0 +1,16 @@
+{
+  "best_round": 30,
+  "completed_at": "2026-08-05T16:36:23.503893+00:00",
+  "config_digest": "0b2f78c63c6606a319d267935117fc22aa0f53fc71f5087a55a0de19f3468b2e",
+  "dataset_digest": "c5ab9c02896c08c9f60e8efb9672a2090cbe595e4c344308f5e4dc2b0e51319a",
+  "latest_checkpoint": "checkpoints/round-0030.npz",
+  "latest_round": 30,
+  "model_digest": "42642e4cc839c09dfe8519511aa7cf7cdf5ca7350a8dd376e118ee31a6a74bbf",
+  "run_id": "fedper-20260805T162143974378Z-270b7ffe84",
+  "started_at": "2026-08-05T16:21:43.981858+00:00",
+  "status": "completed",
+  "strategy": "fedper",
+  "test_macro_f1": 0.9940726452547172,
+  "updated_at": "2026-08-05T16:36:23.504100+00:00",
+  "validation_macro_f1": 0.9941709664789821
+}

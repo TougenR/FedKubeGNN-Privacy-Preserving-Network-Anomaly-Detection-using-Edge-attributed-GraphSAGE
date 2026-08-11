@@ -1,0 +1,24 @@
+{
+  "figures": [
+    "fedper_validation_by_seed.png",
+    "fedper_validation_by_seed.pdf",
+    "fedper_learning_curves.png",
+    "fedper_learning_curves.pdf",
+    "fedper_test_metrics.png",
+    "fedper_test_metrics.pdf",
+    "fedper_per_class_f1.png",
+    "fedper_per_class_f1.pdf"
+  ],
+  "seeds": [
+    "42",
+    "1337",
+    "2026"
+  ],
+  "source_summary": "artifacts/phase3_analysis/fedper/summary.json",
+  "source_summary_sha256": "2c08496bf5b91c9c03d30ce5f962adbc534a8693771f95cb7ac89728fd082d8e",
+  "tables": [
+    "fedper_seed_metrics.csv"
+  ],
+  "test_evaluation_reused": true,
+  "visualization_version": 1
+}

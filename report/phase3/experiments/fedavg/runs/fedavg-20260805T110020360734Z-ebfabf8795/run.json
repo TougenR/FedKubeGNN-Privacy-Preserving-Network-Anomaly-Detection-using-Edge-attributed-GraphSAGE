@@ -1,0 +1,16 @@
+{
+  "best_round": 22,
+  "completed_at": "2026-08-05T11:15:00.780796+00:00",
+  "config_digest": "9ba6d9a8aafd3af45e9c23d9f02113dd1e9d5231ce359be0288797718d12bdcc",
+  "dataset_digest": "68fc6fc0cb8974aba1d431113b39dbf82f98457159c04d6a14b22feaa4b0cb89",
+  "latest_checkpoint": "checkpoints/round-0030.npz",
+  "latest_round": 30,
+  "model_digest": "0c1faa97cde18b330cc5e1f565a1f80fe3fce4d326525ca1c148712808fa2004",
+  "run_id": "fedavg-20260805T110020360734Z-ebfabf8795",
+  "started_at": "2026-08-05T11:00:20.380954+00:00",
+  "status": "completed",
+  "strategy": "fedavg",
+  "test_macro_f1": 0.45655616549573097,
+  "updated_at": "2026-08-05T11:15:00.780980+00:00",
+  "validation_macro_f1": 0.4557746255022112
+}

@@ -1,0 +1,841 @@
+{
+  "confusion_matrix": [
+    [
+      7127,
+      22,
+      17,
+      0,
+      0,
+      0,
+      129
+    ],
+    [
+      0,
+      1330,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      4,
+      0,
+      1648,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      2000,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      1982,
+      0,
+      18
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      2000,
+      0
+    ],
+    [
+      11,
+      0,
+      0,
+      0,
+      0,
+      0,
+      8014
+    ]
+  ],
+  "dataset_id": "iot23-seven-natural-3be7796b1ee27bc3",
+  "kind": "personalized_checkpoint_evaluation",
+  "metrics": {
+    "accuracy": 0.9917290757962307,
+    "loss": 0.04721248376497996,
+    "macro_f1": 0.9940726452547172,
+    "num_examples": 24302,
+    "per_class": {
+      "Attack": {
+        "f1": 0.9917971662938105,
+        "precision": 0.9837278106508875,
+        "recall": 1.0,
+        "support": 1330
+      },
+      "Benign": {
+        "f1": 0.9873242363371891,
+        "precision": 0.9978997479697563,
+        "recall": 0.9769705277587388,
+        "support": 7295
+      },
+      "C&C": {
+        "f1": 0.9936689779921616,
+        "precision": 0.9897897897897898,
+        "recall": 0.9975786924939467,
+        "support": 1652
+      },
+      "C&C-HeartBeat": {
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 2000
+      },
+      "DDoS": {
+        "f1": 0.9954796584630838,
+        "precision": 1.0,
+        "recall": 0.991,
+        "support": 2000
+      },
+      "Okiru": {
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 2000
+      },
+      "PartOfAHorizontalPortScan": {
+        "f1": 0.990238477696775,
+        "precision": 0.981987501531675,
+        "recall": 0.9986292834890965,
+        "support": 8025
+      }
+    },
+    "weighted_f1": 0.9917202200368859
+  },
+  "model_digest": "42642e4cc839c09dfe8519511aa7cf7cdf5ca7350a8dd376e118ee31a6a74bbf",
+  "per_client": {
+    "1-1": {
+      "confusion_matrix": [
+        [
+          1875,
+          0,
+          0,
+          0,
+          0,
+          0,
+          125
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          8,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1992
+        ]
+      ],
+      "metrics": {
+        "accuracy": 0.9662668665667167,
+        "loss": 0.18189905596518147,
+        "macro_f1": 0.276135126962706,
+        "num_examples": 4002,
+        "per_class": {
+          "Attack": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "Benign": {
+            "f1": 0.9652509652509652,
+            "precision": 0.9946949602122016,
+            "recall": 0.9375,
+            "support": 2000
+          },
+          "C&C": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 2
+          },
+          "C&C-HeartBeat": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "DDoS": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "Okiru": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "PartOfAHorizontalPortScan": {
+            "f1": 0.9676949234879767,
+            "precision": 0.9409541804440246,
+            "recall": 0.996,
+            "support": 2000
+          }
+        },
+        "weighted_f1": 0.9659899493947736
+      }
+    },
+    "3-1": {
+      "confusion_matrix": [
+        [
+          892,
+          16,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          1193,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1998
+        ]
+      ],
+      "metrics": {
+        "accuracy": 0.9951255179137216,
+        "loss": 0.01926420631566746,
+        "macro_f1": 0.42596459423384897,
+        "num_examples": 4103,
+        "per_class": {
+          "Attack": {
+            "f1": 0.9933388842631141,
+            "precision": 0.9867659222497932,
+            "recall": 1.0,
+            "support": 1193
+          },
+          "Benign": {
+            "f1": 0.9889135254988914,
+            "precision": 0.9955357142857143,
+            "recall": 0.9823788546255506,
+            "support": 908
+          },
+          "C&C": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 2
+          },
+          "C&C-HeartBeat": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "DDoS": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "Okiru": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "PartOfAHorizontalPortScan": {
+            "f1": 0.9994997498749374,
+            "precision": 1.0,
+            "recall": 0.999,
+            "support": 2000
+          }
+        },
+        "weighted_f1": 0.9948784474357211
+      }
+    },
+    "34-1": {
+      "confusion_matrix": [
+        [
+          364,
+          0,
+          17,
+          0,
+          0,
+          0,
+          4
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          1342,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          1982,
+          0,
+          18
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          24
+        ]
+      ],
+      "metrics": {
+        "accuracy": 0.9893390191897654,
+        "loss": 0.04105907106704549,
+        "macro_f1": 0.5194155282799778,
+        "num_examples": 3752,
+        "per_class": {
+          "Attack": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "Benign": {
+            "f1": 0.9706666666666667,
+            "precision": 0.9972602739726028,
+            "recall": 0.9454545454545454,
+            "support": 385
+          },
+          "C&C": {
+            "f1": 0.9937060348019252,
+            "precision": 0.9874908020603385,
+            "recall": 1.0,
+            "support": 1342
+          },
+          "C&C-HeartBeat": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "DDoS": {
+            "f1": 0.9954796584630838,
+            "precision": 1.0,
+            "recall": 0.991,
+            "support": 2000
+          },
+          "Okiru": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "PartOfAHorizontalPortScan": {
+            "f1": 0.6760563380281689,
+            "precision": 0.5217391304347826,
+            "recall": 0.96,
+            "support": 25
+          }
+        },
+        "weighted_f1": 0.9901708130990731
+      }
+    },
+    "36-1": {
+      "confusion_matrix": [
+        [
+          533,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          2000,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          2000,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "metrics": {
+        "accuracy": 1.0,
+        "loss": 0.0236847442216282,
+        "macro_f1": 0.42857142857142855,
+        "num_examples": 4533,
+        "per_class": {
+          "Attack": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "Benign": {
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "support": 533
+          },
+          "C&C": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "C&C-HeartBeat": {
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "support": 2000
+          },
+          "DDoS": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "Okiru": {
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "support": 2000
+          },
+          "PartOfAHorizontalPortScan": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          }
+        },
+        "weighted_f1": 1.0
+      }
+    },
+    "39-1": {
+      "confusion_matrix": [
+        [
+          1463,
+          6,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          137,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          306,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2000
+        ]
+      ],
+      "metrics": {
+        "accuracy": 0.9984662576687117,
+        "loss": 0.02017897233397439,
+        "macro_f1": 0.568075006264443,
+        "num_examples": 3912,
+        "per_class": {
+          "Attack": {
+            "f1": 0.9785714285714286,
+            "precision": 0.958041958041958,
+            "recall": 1.0,
+            "support": 137
+          },
+          "Benign": {
+            "f1": 0.9979536152796725,
+            "precision": 1.0,
+            "recall": 0.9959155888359428,
+            "support": 1469
+          },
+          "C&C": {
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "support": 306
+          },
+          "C&C-HeartBeat": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "DDoS": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "Okiru": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "PartOfAHorizontalPortScan": {
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "support": 2000
+          }
+        },
+        "weighted_f1": 0.9984811213088253
+      }
+    },
+    "9-1": {
+      "confusion_matrix": [
+        [
+          2000,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          2000
+        ]
+      ],
+      "metrics": {
+        "accuracy": 1.0,
+        "loss": 0.0,
+        "macro_f1": 0.2857142857142857,
+        "num_examples": 4000,
+        "per_class": {
+          "Attack": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "Benign": {
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "support": 2000
+          },
+          "C&C": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "C&C-HeartBeat": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "DDoS": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "Okiru": {
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "support": 0
+          },
+          "PartOfAHorizontalPortScan": {
+            "f1": 1.0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "support": 2000
+          }
+        },
+        "weighted_f1": 1.0
+      }
+    }
+  },
+  "personalized_checkpoints": {
+    "1-1": "artifacts/phase2/runs/phase3d/fedper-head-seed-42/best_personalized_heads/1-1.npz",
+    "3-1": "artifacts/phase2/runs/phase3d/fedper-head-seed-42/best_personalized_heads/3-1.npz",
+    "34-1": "artifacts/phase2/runs/phase3d/fedper-head-seed-42/best_personalized_heads/34-1.npz",
+    "36-1": "artifacts/phase2/runs/phase3d/fedper-head-seed-42/best_personalized_heads/36-1.npz",
+    "39-1": "artifacts/phase2/runs/phase3d/fedper-head-seed-42/best_personalized_heads/39-1.npz",
+    "9-1": "artifacts/phase2/runs/phase3d/fedper-head-seed-42/best_personalized_heads/9-1.npz"
+  },
+  "shared_checkpoint": "artifacts/phase2/runs/phase3d/fedper-head-seed-42/best_shared_state.npz",
+  "split": "test"
+}

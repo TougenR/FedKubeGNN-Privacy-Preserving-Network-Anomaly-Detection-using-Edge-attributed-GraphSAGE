@@ -1,0 +1,40 @@
+{
+  "class_names": [
+    "Benign",
+    "Attack",
+    "C&C",
+    "C&C-HeartBeat",
+    "DDoS",
+    "Okiru",
+    "PartOfAHorizontalPortScan"
+  ],
+  "figures": [
+    "federated_learning_curves.png",
+    "federated_learning_curves.pdf",
+    "federated_final_metrics.png",
+    "federated_final_metrics.pdf",
+    "federated_per_class_f1.png",
+    "federated_per_class_f1.pdf",
+    "federated_confusion_matrices.png",
+    "federated_confusion_matrices.pdf"
+  ],
+  "provenance": {
+    "config_digest": "0b2f78c63c6606a319d267935117fc22aa0f53fc71f5087a55a0de19f3468b2e",
+    "dataset_digest": "c5ab9c02896c08c9f60e8efb9672a2090cbe595e4c344308f5e4dc2b0e51319a",
+    "model_digest": "42642e4cc839c09dfe8519511aa7cf7cdf5ca7350a8dd376e118ee31a6a74bbf"
+  },
+  "runs": [
+    {
+      "root": "/artifacts/fedper/runs/fedper-20260805T162143974378Z-270b7ffe84",
+      "rounds": 30,
+      "run_id": "fedper-20260805T162143974378Z-270b7ffe84",
+      "strategy": "fedper"
+    }
+  ],
+  "tables": [
+    "round_metrics.csv",
+    "final_metrics.csv"
+  ],
+  "test_evaluation_reused": true,
+  "visualization_version": 1
+}

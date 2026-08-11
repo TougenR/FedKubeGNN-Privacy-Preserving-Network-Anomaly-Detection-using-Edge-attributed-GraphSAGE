@@ -1,0 +1,4922 @@
+[
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 0.9999999999999998,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.034265205190451765,
+          0.03502479649942719,
+          0.035340120242060374,
+          0.027852049218828934,
+          0.036122034653220246,
+          0.031174783377031175,
+          0.0352230884351035
+        ],
+        "relative_update_l2": 0.022120332256444743,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.034265205190451765,
+          0.03502479649942719,
+          0.035340120242060374,
+          0.027852049218828934,
+          0.036122034653220246,
+          0.031174783377031175,
+          0.0352230884351035
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.565628380782809
+      }
+    },
+    "confusion_matrix": [
+      [
+        118,
+        2,
+        0,
+        0,
+        0,
+        146,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        489,
+        0,
+        0,
+        0,
+        0,
+        511,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 1,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 1.792554559526798
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 0.49338040600176525,
+      "loss": 1.5942388199539386,
+      "macro_f1": 0.14615154702610905,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 0.2703321878579611,
+          "precision": 0.19439868204283361,
+          "recall": 0.44360902255639095,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 0.7527286413248023,
+          "precision": 0.6035003017501509,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 0.3639174771822683
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 1.0,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.032553749546757396,
+          0.03526645917819932,
+          0.034934604891793265,
+          0.028374502432377668,
+          0.03589093146849991,
+          0.026418796725136737,
+          0.03533270384123172
+        ],
+        "relative_update_l2": 0.020280550848739635,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.032553749546757396,
+          0.03526645917819932,
+          0.034934604891793265,
+          0.028374502432377668,
+          0.03589093146849991,
+          0.026418796725136737,
+          0.03533270384123172
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.5184004295535788
+      }
+    },
+    "confusion_matrix": [
+      [
+        229,
+        0,
+        0,
+        0,
+        0,
+        37,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 2,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 1.3287552754018626
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 0.5423654015887026,
+      "loss": 1.2248881004178618,
+      "macro_f1": 0.22625673452146944,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 0.9252525252525252,
+          "precision": 1.0,
+          "recall": 0.8609022556390977,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 0.6585446163977609,
+          "precision": 0.49091801669121254,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 0.39923291620252976
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 1.0,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.03200670335749772,
+          0.035564942086282685,
+          0.034706624821592695,
+          0.026235079682801962,
+          0.03586474074748054,
+          0.025234442447067292,
+          0.035507326218526515
+        ],
+        "relative_update_l2": 0.020096675384083808,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.03200670335749772,
+          0.035564942086282685,
+          0.034706624821592695,
+          0.026235079682801962,
+          0.03586474074748054,
+          0.025234442447067292,
+          0.035507326218526515
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.5137188618968118
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        489,
+        0,
+        511,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 3,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 1.1406423767849938
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 0.7744924977934686,
+      "loss": 1.0096050912262797,
+      "macro_f1": 0.3504731536606866,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 0.6568166554734721,
+          "precision": 1.0,
+          "recall": 0.489,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 0.7964954201513341,
+          "precision": 0.6618133686300464,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 0.7587431931265695
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 1.0000000000000002,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.030439481338599462,
+          0.03560098026914605,
+          0.03461423835182598,
+          0.024985310795422527,
+          0.03575372107137825,
+          0.025264701450907773,
+          0.035472851249964625
+        ],
+        "relative_update_l2": 0.01973384944286757,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.030439481338599462,
+          0.03560098026914605,
+          0.03461423835182598,
+          0.024985310795422527,
+          0.03575372107137825,
+          0.025264701450907773,
+          0.035472851249964625
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.5046429529512249
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        489,
+        0,
+        0,
+        0,
+        0,
+        511,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 4,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 1.0220069469897137
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 0.558693733451015,
+      "loss": 0.8624952270831034,
+      "macro_f1": 0.18822188666216766,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 0.5210577864838394,
+          "precision": 0.352317880794702,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 0.7964954201513341,
+          "precision": 0.6618133686300464,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 0.41266407385526716
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 0.9999999999999999,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.029474530147794893,
+          0.03485561290725292,
+          0.03359936439603772,
+          0.02504484406164129,
+          0.03526714844094618,
+          0.02433205886593761,
+          0.03483065409177672
+        ],
+        "relative_update_l2": 0.019510176726486105,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.029474530147794893,
+          0.03485561290725292,
+          0.03359936439603772,
+          0.02504484406164129,
+          0.03526714844094618,
+          0.02433205886593761,
+          0.03483065409177672
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.4993272438682034
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        489,
+        0,
+        0,
+        0,
+        0,
+        511,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 5,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 0.9553297702504701
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 0.558693733451015,
+      "loss": 0.7078708200883992,
+      "macro_f1": 0.18822188666216766,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 0.5210577864838394,
+          "precision": 0.352317880794702,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 0.7964954201513341,
+          "precision": 0.6618133686300464,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 0.41266407385526716
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 1.0000000000000002,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.027078209439695255,
+          0.03482065652420076,
+          0.03401426209352555,
+          0.025977025341957723,
+          0.03590489704865901,
+          0.025257914959794157,
+          0.034799997080850235
+        ],
+        "relative_update_l2": 0.019135567616501224,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.027078209439695255,
+          0.03482065652420076,
+          0.03401426209352555,
+          0.025977025341957723,
+          0.03590489704865901,
+          0.025257914959794157,
+          0.034799997080850235
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.4902655304835343
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        489,
+        0,
+        511,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 6,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 0.849437977870244
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 0.7744924977934686,
+      "loss": 0.6075135624103597,
+      "macro_f1": 0.3504731536606866,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 0.6568166554734721,
+          "precision": 1.0,
+          "recall": 0.489,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 0.7964954201513341,
+          "precision": 0.6618133686300464,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 0.7587431931265695
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 0.9999999999999999,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.027164208586340822,
+          0.034749774537464986,
+          0.03324545893422539,
+          0.024656024176596892,
+          0.03554319491678149,
+          0.025227760501517954,
+          0.0347631965291912
+        ],
+        "relative_update_l2": 0.019470360419637622,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.027164208586340822,
+          0.034749774537464986,
+          0.03324545893422539,
+          0.024656024176596892,
+          0.03554319491678149,
+          0.025227760501517954,
+          0.0347631965291912
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.49946198558800314
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        489,
+        0,
+        511,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 7,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 0.8398885448047348
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 0.7744924977934686,
+      "loss": 0.4922356062617222,
+      "macro_f1": 0.3504731536606866,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 0.6568166554734721,
+          "precision": 1.0,
+          "recall": 0.489,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 0.7964954201513341,
+          "precision": 0.6618133686300464,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 0.7587431931265695
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 0.9999999999999999,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.024398119637143417,
+          0.03511589468680289,
+          0.03404924886197145,
+          0.026440172948452426,
+          0.036111571952425967,
+          0.024509178436630343,
+          0.03537014170930504
+        ],
+        "relative_update_l2": 0.01853933096873364,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.024398119637143417,
+          0.03511589468680289,
+          0.03404924886197145,
+          0.026440172948452426,
+          0.036111571952425967,
+          0.024509178436630343,
+          0.03537014170930504
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.47627759143520515
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1000,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 8,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 0.7847340559716152
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 1.0,
+      "loss": 0.42074684621166153,
+      "macro_f1": 0.42857142857142855,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 1.0
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 1.0,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.024522481662244824,
+          0.03517081629424497,
+          0.033597634799187,
+          0.021378429645330894,
+          0.03611036830884366,
+          0.023145387051633985,
+          0.03525890366252222
+        ],
+        "relative_update_l2": 0.018263083828333446,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.024522481662244824,
+          0.03517081629424497,
+          0.033597634799187,
+          0.021378429645330894,
+          0.03611036830884366,
+          0.023145387051633985,
+          0.03525890366252222
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.4699277291138763
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1000,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 9,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 0.7818629101590706
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 1.0,
+      "loss": 0.3704001956141742,
+      "macro_f1": 0.42857142857142855,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 1.0
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 0.9999999999999999,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.025936731367487975,
+          0.03522063043379393,
+          0.03445276918101485,
+          0.02744981491139619,
+          0.036142368356546495,
+          0.024098143098594173,
+          0.035902752682851445
+        ],
+        "relative_update_l2": 0.018319103085943884,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.025936731367487975,
+          0.03522063043379393,
+          0.03445276918101485,
+          0.02744981491139619,
+          0.036142368356546495,
+          0.024098143098594173,
+          0.035902752682851445
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.47217320757377845
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1000,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 10,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 0.7694934863199361
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 1.0,
+      "loss": 0.3251731178977273,
+      "macro_f1": 0.42857142857142855,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 1.0
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 1.0000000000000002,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.020953210780237395,
+          0.03507253181201485,
+          0.03380031430629522,
+          0.02213751686914343,
+          0.03633485088795814,
+          0.024232518566321963,
+          0.035509534017090484
+        ],
+        "relative_update_l2": 0.01723240551064758,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.020953210780237395,
+          0.03507253181201485,
+          0.03380031430629522,
+          0.02213751686914343,
+          0.03633485088795814,
+          0.024232518566321963,
+          0.035509534017090484
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.44500337873575463
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1000,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 11,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 0.7023355383966274
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 1.0,
+      "loss": 0.2580651252120339,
+      "macro_f1": 0.42857142857142855,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 1.0
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 1.0,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.026430004961049927,
+          0.03518868840221678,
+          0.03440923803970714,
+          0.02286110351218452,
+          0.036604610339925764,
+          0.022779526231102947,
+          0.03600047042796872
+        ],
+        "relative_update_l2": 0.017669183981954693,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.026430004961049927,
+          0.03518868840221678,
+          0.03440923803970714,
+          0.02286110351218452,
+          0.036604610339925764,
+          0.022779526231102947,
+          0.03600047042796872
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.45709914771493204
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1000,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 12,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 0.8740283466629863
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 1.0,
+      "loss": 0.35306769267500554,
+      "macro_f1": 0.42857142857142855,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 1.0
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 0.9999999999999999,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.02015863483616466,
+          0.03515454801429545,
+          0.03422705612667437,
+          0.02750790728248013,
+          0.036508241001266976,
+          0.024668960226188256,
+          0.03564850595812619
+        ],
+        "relative_update_l2": 0.016782111174683787,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.02015863483616466,
+          0.03515454801429545,
+          0.03422705612667437,
+          0.02750790728248013,
+          0.036508241001266976,
+          0.024668960226188256,
+          0.03564850595812619
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.4349885254177708
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1000,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 13,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 0.691737827162944
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 1.0,
+      "loss": 0.19445637823308556,
+      "macro_f1": 0.42857142857142855,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 1.0
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 1.0,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.022378109970060702,
+          0.034688446320411286,
+          0.03421012987454518,
+          0.020357200377330093,
+          0.036358942637982526,
+          0.019775174121560414,
+          0.035616586197080524
+        ],
+        "relative_update_l2": 0.016208388166453102,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.022378109970060702,
+          0.034688446320411286,
+          0.03421012987454518,
+          0.020357200377330093,
+          0.036358942637982526,
+          0.019775174121560414,
+          0.035616586197080524
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.42089085892999634
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1000,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 14,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 0.8116914687553517
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 1.0,
+      "loss": 0.2966317482364988,
+      "macro_f1": 0.42857142857142855,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 1.0
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 0.9999999999999999,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.024226437028449434,
+          0.03466721790344897,
+          0.0338795423665313,
+          0.025740922354516367,
+          0.03583244905972401,
+          0.02286462352803811,
+          0.03545539446943634
+        ],
+        "relative_update_l2": 0.01640116039416618,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.024226437028449434,
+          0.03466721790344897,
+          0.0338795423665313,
+          0.025740922354516367,
+          0.03583244905972401,
+          0.02286462352803811,
+          0.03545539446943634
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.4267050941857145
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1000,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 15,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 0.7848406135797606
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 1.0,
+      "loss": 0.23372893236636694,
+      "macro_f1": 0.42857142857142855,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 1.0
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 0.9999999999999998,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.021046095757927798,
+          0.034375903704946045,
+          0.03373979384762184,
+          0.02179379550259241,
+          0.036118317235227085,
+          0.022746563428093374,
+          0.03542025357754282
+        ],
+        "relative_update_l2": 0.015219696428951051,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.021046095757927798,
+          0.034375903704946045,
+          0.03373979384762184,
+          0.02179379550259241,
+          0.036118317235227085,
+          0.022746563428093374,
+          0.03542025357754282
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.3967834824541792
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1000,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 16,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 0.6948751515414164
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 1.0,
+      "loss": 0.17169934211320195,
+      "macro_f1": 0.42857142857142855,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 1.0
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 1.0,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.023461101691622542,
+          0.03366080151871926,
+          0.03320106599682676,
+          0.023173097691783832,
+          0.03544395983846248,
+          0.021419969850827888,
+          0.03502316504936492
+        ],
+        "relative_update_l2": 0.015447249697346071,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.023461101691622542,
+          0.03366080151871926,
+          0.03320106599682676,
+          0.023173097691783832,
+          0.03544395983846248,
+          0.021419969850827888,
+          0.03502316504936492
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.4035034599758865
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        489,
+        0,
+        0,
+        511,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 17,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 0.8230919632171262
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 0.7842012356575463,
+      "loss": 0.3203838244014784,
+      "macro_f1": 0.3139187213176781,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 0.5210577864838394,
+          "precision": 0.352317880794702,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 0.6763732627399073,
+          "precision": 1.0,
+          "recall": 0.511,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 0.8009596795872059
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 1.0000000000000002,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.024347932748666697,
+          0.03339233642013379,
+          0.03267719030063373,
+          0.025609831013506865,
+          0.03507524347472527,
+          0.024919707208767527,
+          0.034671303734979474
+        ],
+        "relative_update_l2": 0.01529691288160638,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.024347932748666697,
+          0.03339233642013379,
+          0.03267719030063373,
+          0.025609831013506865,
+          0.03507524347472527,
+          0.024919707208767527,
+          0.034671303734979474
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.40042981205521355
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1000,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 18,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 0.7483416472070272
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 1.0,
+      "loss": 0.216496924646955,
+      "macro_f1": 0.42857142857142855,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 1.0
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 1.0,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.021022092114240564,
+          0.0328425007995704,
+          0.03176235987629395,
+          0.022313207982226742,
+          0.034641693849828674,
+          0.023490428654464914,
+          0.034052258418638626
+        ],
+        "relative_update_l2": 0.014444535321808318,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.021022092114240564,
+          0.0328425007995704,
+          0.03176235987629395,
+          0.022313207982226742,
+          0.034641693849828674,
+          0.023490428654464914,
+          0.034052258418638626
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.37887681454208777
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1000,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 19,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 0.726325035546904
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 1.0,
+      "loss": 0.17785911189699635,
+      "macro_f1": 0.42857142857142855,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 1.0
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 1.0,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.02324986247453982,
+          0.031833288068203326,
+          0.029779882552252813,
+          0.024109172309913707,
+          0.033679646885181505,
+          0.02452278090799848,
+          0.033008570510197406
+        ],
+        "relative_update_l2": 0.014591220206668809,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.02324986247453982,
+          0.031833288068203326,
+          0.029779882552252813,
+          0.024109172309913707,
+          0.033679646885181505,
+          0.02452278090799848,
+          0.033008570510197406
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.3834943970138196
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1000,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 20,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 0.7640439049355933
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 1.0,
+      "loss": 0.2401739862884764,
+      "macro_f1": 0.42857142857142855,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 1.0
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 1.0,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.022220194844931433,
+          0.031237772130863838,
+          0.028489903462128367,
+          0.026754387870558154,
+          0.03299506288843284,
+          0.02683288446808098,
+          0.0320325416067433
+        ],
+        "relative_update_l2": 0.013759638630843136,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.022220194844931433,
+          0.031237772130863838,
+          0.028489903462128367,
+          0.026754387870558154,
+          0.03299506288843284,
+          0.02683288446808098,
+          0.0320325416067433
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.362431847872038
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1000,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 21,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 0.5959608202879776
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 1.0,
+      "loss": 0.07613769423509212,
+      "macro_f1": 0.42857142857142855,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 1.0
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 0.9999999999999998,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.018879689497435275,
+          0.030195271751676665,
+          0.025594800427976055,
+          0.022501439997049486,
+          0.032078620575434605,
+          0.022122869018265802,
+          0.031023663687345847
+        ],
+        "relative_update_l2": 0.013473016843350852,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.018879689497435275,
+          0.030195271751676665,
+          0.025594800427976055,
+          0.022501439997049486,
+          0.032078620575434605,
+          0.022122869018265802,
+          0.031023663687345847
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.3555829161544883
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1000,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 22,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 0.721361334694677
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 1.0,
+      "loss": 0.2518262871576429,
+      "macro_f1": 0.42857142857142855,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 1.0
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 1.0,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.02059247284968024,
+          0.02851912865478098,
+          0.02316311637541112,
+          0.023651351804243024,
+          0.030684503857472477,
+          0.021744883923442555,
+          0.02902422899013318
+        ],
+        "relative_update_l2": 0.012557165756540053,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.02059247284968024,
+          0.02851912865478098,
+          0.02316311637541112,
+          0.023651351804243024,
+          0.030684503857472477,
+          0.021744883923442555,
+          0.02902422899013318
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.3320890559803942
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1000,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 23,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 0.6826917572180622
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 1.0,
+      "loss": 0.1860607716222832,
+      "macro_f1": 0.42857142857142855,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 1.0
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 0.9999999999999999,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.02077402148658973,
+          0.02662889371910277,
+          0.020788105447430736,
+          0.02283488550551279,
+          0.028828219436154327,
+          0.023100939754931517,
+          0.027195334488925773
+        ],
+        "relative_update_l2": 0.012133801388712211,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.02077402148658973,
+          0.02662889371910277,
+          0.020788105447430736,
+          0.02283488550551279,
+          0.028828219436154327,
+          0.023100939754931517,
+          0.027195334488925773
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.32154524966928444
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1000,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 24,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 0.44591161049482253
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 1.0,
+      "loss": 0.031763940391978225,
+      "macro_f1": 0.42857142857142855,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 1.0
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 1.0,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.017445048984206266,
+          0.024550172013523885,
+          0.016824675023850905,
+          0.0214566118969308,
+          0.026551644910003537,
+          0.02098926633173799,
+          0.024617354112403452
+        ],
+        "relative_update_l2": 0.012196019918500091,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.017445048984206266,
+          0.024550172013523885,
+          0.016824675023850905,
+          0.0214566118969308,
+          0.026551644910003537,
+          0.02098926633173799,
+          0.024617354112403452
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.3237477084515767
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1000,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 25,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 0.6605045672031318
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 1.0,
+      "loss": 0.23432072557818015,
+      "macro_f1": 0.42857142857142855,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 1.0
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 1.0,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.02108464041930947,
+          0.02306344412428618,
+          0.014883004712327617,
+          0.018925065366289715,
+          0.024717518575286666,
+          0.017366980375493005,
+          0.02328942391228088
+        ],
+        "relative_update_l2": 0.012804133207573612,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.02108464041930947,
+          0.02306344412428618,
+          0.014883004712327617,
+          0.018925065366289715,
+          0.024717518575286666,
+          0.017366980375493005,
+          0.02328942391228088
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.34055347806891717
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1000,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 26,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 0.469121070249596
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 1.0,
+      "loss": 0.02417884584243384,
+      "macro_f1": 0.42857142857142855,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 1.0
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 1.0000000000000002,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.017828697582907414,
+          0.0195105736036239,
+          0.013518728044946646,
+          0.02019854636985748,
+          0.02255635883800123,
+          0.019701260244963523,
+          0.02047614786357683
+        ],
+        "relative_update_l2": 0.011217629023873951,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.017828697582907414,
+          0.0195105736036239,
+          0.013518728044946646,
+          0.02019854636985748,
+          0.02255635883800123,
+          0.019701260244963523,
+          0.02047614786357683
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.298731030402165
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1000,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 27,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 0.378097726931078
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 1.0,
+      "loss": 0.01945931113934159,
+      "macro_f1": 0.42857142857142855,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 1.0
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 1.0000000000000002,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.01600334890816086,
+          0.018455570586590912,
+          0.011223952272970504,
+          0.01885092541961207,
+          0.019760719865712532,
+          0.018482667751004267,
+          0.018267002542758676
+        ],
+        "relative_update_l2": 0.00987633174040695,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.01600334890816086,
+          0.018455570586590912,
+          0.011223952272970504,
+          0.01885092541961207,
+          0.019760719865712532,
+          0.018482667751004267,
+          0.018267002542758676
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.26339872552542976
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1000,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 28,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 0.47322144517724946
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 1.0,
+      "loss": 0.05749760195941706,
+      "macro_f1": 0.42857142857142855,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 1.0
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 1.0,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.015839717880553363,
+          0.014760029253915214,
+          0.008456982432922444,
+          0.01849169529684784,
+          0.01548492543368614,
+          0.01792643361766291,
+          0.013838111875953556
+        ],
+        "relative_update_l2": 0.009197404098778377,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.015839717880553363,
+          0.014760029253915214,
+          0.008456982432922444,
+          0.01849169529684784,
+          0.01548492543368614,
+          0.01792643361766291,
+          0.013838111875953556
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.24569901840063835
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1000,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 29,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 0.463856164096008
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 1.0,
+      "loss": 0.04910850356557363,
+      "macro_f1": 0.42857142857142855,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 1.0
+    }
+  },
+  {
+    "client_diagnostics": {
+      "36-1": {
+        "cosine_to_aggregate_update": 0.9999999999999999,
+        "distance_to_aggregate_l2": 0.0,
+        "effective_aggregation_weight": 1.0,
+        "num_examples": 15864,
+        "output_row_update_l2": [
+          0.014734455857858807,
+          0.012754520562657239,
+          0.0065944609758851695,
+          0.019120478992486922,
+          0.01239793624429545,
+          0.01778030210305464,
+          0.011069256378351296
+        ],
+        "relative_update_l2": 0.008047388909602948,
+        "sample_aggregation_weight": 1.0,
+        "sample_weighted_output_row_contribution_l2": [
+          0.014734455857858807,
+          0.012754520562657239,
+          0.0065944609758851695,
+          0.019120478992486922,
+          0.01239793624429545,
+          0.01778030210305464,
+          0.011069256378351296
+        ],
+        "train_class_support": [
+          1864,
+          0,
+          0,
+          7000,
+          0,
+          7000,
+          0
+        ],
+        "update_l2": 0.2152649194864591
+      }
+    },
+    "confusion_matrix": [
+      [
+        266,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1000,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1000,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "download_bytes": 144156,
+    "round": 30,
+    "train_examples": 15864,
+    "train_metrics": {
+      "train_loss": 0.3413022644753678
+    },
+    "upload_bytes": 144156,
+    "validation_examples": 2266,
+    "validation_metrics": {
+      "accuracy": 1.0,
+      "loss": 0.001960060181916549,
+      "macro_f1": 0.42857142857142855,
+      "num_examples": 2266,
+      "per_class": {
+        "Attack": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Benign": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 266
+        },
+        "C&C": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "C&C-HeartBeat": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "DDoS": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        },
+        "Okiru": {
+          "f1": 1.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "support": 1000
+        },
+        "PartOfAHorizontalPortScan": {
+          "f1": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "support": 0
+        }
+      },
+      "weighted_f1": 1.0
+    }
+  }
+]

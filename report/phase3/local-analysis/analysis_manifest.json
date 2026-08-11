@@ -1,0 +1,19 @@
+{
+  "analysis_version": 1,
+  "dataset_digest": "68fc6fc0cb8974aba1d431113b39dbf82f98457159c04d6a14b22feaa4b0cb89",
+  "dataset_id": "iot23-0d9bbeb9f9ed0a3f",
+  "files": {
+    "class_support_by_client.csv": "65cef84a8b11811c0d63d6e15087f317973f05c8834c1ffd83617b6cf9dc93d9",
+    "class_support_heatmap.pdf": "6fa4c6c4dc99582b168a7e3444ce8f1314385b50fe8df27603d7acce2b77b999",
+    "class_support_heatmap.png": "2a23f035f529f1ed91f4ee0a7fbb1313069f143dfe98ed4cff5f3ea2d3749656",
+    "data_balance.csv": "9a830a9229880a2120d39d5b08c83d548f1a8bd5b01d7e35a2104f1311b89e08",
+    "data_balance.json": "d20e0b28459f18d2144ce962086f7612b9b41459cea71fb7183bf3387098cab7",
+    "feature_distribution.csv": "44ae69604532058da7cec17beca4d249705025d0aa9820c021d77a49db9ca2d8",
+    "feature_mean_shift_heatmap.pdf": "4af562628977155eefc1433b644d5e29faab101195274687b59991f27eead66b",
+    "feature_mean_shift_heatmap.png": "a2d1ac04e47f6426baaaac3532b20d20c73209fb28d814eb253f20c7d0911a67",
+    "global_split_support.pdf": "a5f0e1f49949027017550a777141d5ffcc953900b9dd302fe6c3f191ad7b79c3",
+    "global_split_support.png": "de3ec8a5e3604e7220575481296a2c940d9d7cb940d1dea231dbc8da1e393d08",
+    "graph_topology.csv": "297f50c6d911dc674995c08cd38ed6b5dd4c174cd15fe22c3c40b4c9300ee344",
+    "report.md": "ffeb54c1b05a9fea8c92907d901ec8cab39019ab56b162cbd2612ecc9acb2aae"
+  }
+}

@@ -1,0 +1,2 @@
+round,train_loss,validation_loss,accuracy,macro_f1,weighted_f1,train_examples,validation_examples,upload_bytes,download_bytes,duration_seconds
+1,1.0987850427627563,1.1240410804748535,0.16666666666666666,0.1515837104072398,0.1515837104072398,180,60,48,48,0.8972822390005604

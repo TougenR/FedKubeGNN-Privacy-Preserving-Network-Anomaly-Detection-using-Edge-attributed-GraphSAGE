@@ -1,0 +1,11 @@
+benchmark,class_count,protocol,seeds,test_accuracy,test_weighted_f1,test_macro_f1,test_macro_f1_std,note
+Phase1 clean pooled,8,pooled centralized,3,,,0.899981,0.027091,Context baseline; protocol differs from Phase2 prepared benchmark
+Prepared centralized,8,transductive edge-mask,1,0.982101,0.982595,0.869830,,Official fixed-eight result
+GKE FedAvg,8,natural scenario non-IID,1,0.738921,0.651059,0.456556,,Completed cloud baseline
+GKE FedProx,8,natural scenario non-IID,1,0.739045,0.651185,0.456691,,Completed cloud baseline
+Centralized-7,7,transductive edge-mask,1,0.985310,0.985328,0.986555,,Seven-class upper bound
+Stratified IID FedAvg-7,7,train-only stratified IID,1,0.986174,0.986174,0.988879,,Controlled implementation check
+Natural non-IID FedAvg-7,7,natural scenario clients,1,0.727471,0.640237,0.507170,,Production-like partition baseline
+Class-aware aggregation-7,7,natural scenario clients,3,,,0.738097,0.060893,Validation-selected policy; mean over three seeds
+FedPer local-7,7,natural scenario clients,3,,,0.970459,0.033444,Personalized known-edge metric; mean over three seeds
+FedPer GKE seed42-7,7,natural scenario clients,1,0.991729,0.991720,0.994073,,Exact completed GKE run

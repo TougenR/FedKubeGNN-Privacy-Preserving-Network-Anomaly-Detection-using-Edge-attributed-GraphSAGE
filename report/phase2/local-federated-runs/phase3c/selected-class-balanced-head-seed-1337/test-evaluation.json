@@ -1,0 +1,122 @@
+{
+  "checkpoint": "/workspace/artifacts/phase2/runs/selected-class-balanced-head-seed-1337/best_state.npz",
+  "confusion_matrix": [
+    [
+      7031,
+      58,
+      48,
+      0,
+      0,
+      0,
+      158
+    ],
+    [
+      37,
+      1293,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      25,
+      0,
+      1627,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      2000
+    ],
+    [
+      1982,
+      0,
+      0,
+      0,
+      0,
+      0,
+      18
+    ],
+    [
+      1,
+      0,
+      0,
+      0,
+      0,
+      1999,
+      0
+    ],
+    [
+      22,
+      20,
+      313,
+      0,
+      0,
+      10,
+      7660
+    ]
+  ],
+  "dataset_id": "iot23-seven-natural-3be7796b1ee27bc3",
+  "metrics": {
+    "accuracy": 0.8069294708254464,
+    "loss": 0.7347070817819457,
+    "macro_f1": 0.6520250406006419,
+    "num_examples": 24302,
+    "per_class": {
+      "Attack": {
+        "f1": 0.9574231766012588,
+        "precision": 0.9431072210065645,
+        "recall": 0.9721804511278196,
+        "support": 1330
+      },
+      "Benign": {
+        "f1": 0.8578051607393401,
+        "precision": 0.7728072103759068,
+        "recall": 0.963810829335161,
+        "support": 7295
+      },
+      "C&C": {
+        "f1": 0.893956043956044,
+        "precision": 0.81841046277666,
+        "recall": 0.9848668280871671,
+        "support": 1652
+      },
+      "C&C-HeartBeat": {
+        "f1": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "support": 2000
+      },
+      "DDoS": {
+        "f1": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "support": 2000
+      },
+      "Okiru": {
+        "f1": 0.9972561736093789,
+        "precision": 0.9950223992035838,
+        "recall": 0.9995,
+        "support": 2000
+      },
+      "PartOfAHorizontalPortScan": {
+        "f1": 0.8577347292984715,
+        "precision": 0.7787718584790565,
+        "recall": 0.9545171339563863,
+        "support": 8025
+      }
+    },
+    "weighted_f1": 0.7359768910759418
+  },
+  "model_digest": "42642e4cc839c09dfe8519511aa7cf7cdf5ca7350a8dd376e118ee31a6a74bbf",
+  "split": "test"
+}

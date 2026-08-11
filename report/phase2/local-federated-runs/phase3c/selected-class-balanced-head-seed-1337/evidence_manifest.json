@@ -1,0 +1,9 @@
+{
+  "files": {
+    "best_state.npz": "e78a8dc809f9338102ea9d13a6cca4a828218ac3cc56e649ca614663f9b4f467",
+    "final_state.npz": "adf530ad538cb05bd12ec4d20215c7c8635381630deb09f87befd86191b8aa40",
+    "rounds.json": "0f50713483aa9df1146d59563d19bae18ad21fc12b23031452a477ebe322f8c6",
+    "summary.json": "7ee696052ac28c5b65297e5d50f4432894ee78b5112b95269f709c089e3438bb"
+  },
+  "test_evaluations": 0
+}

@@ -1,0 +1,121 @@
+{
+  "bundle_schema_version": 1,
+  "protocol": "pooled",
+  "scenarios": [
+    {
+      "counts": {
+        "all": 20008,
+        "test": 4003,
+        "train": 14005,
+        "validation": 2000
+      },
+      "coverage_verified": true,
+      "disjointness_verified": true,
+      "index_digest": {
+        "all": "51740970c7841e02d594799fe8081b2456b0ef1d39dc0e797da83eac84871aaa",
+        "test": "73e11fdd62ba02b4b5f85db22177bba4783f4fcde3a43e1f7149a412adbbb7ac",
+        "train": "cda21df5e9ace08018ff3e50588802a13b3864a7432ba54dce3c1ac5147f3a2f",
+        "validation": "bc34b2a1f2969ac19b4cf32af4e6a47f48d93247af9e3984d2cf24f9bdb53cf3"
+      },
+      "protocol": "pooled",
+      "scenario": "1-1",
+      "seed": 42
+    },
+    {
+      "counts": {
+        "all": 20506,
+        "test": 4102,
+        "train": 14354,
+        "validation": 2050
+      },
+      "coverage_verified": true,
+      "disjointness_verified": true,
+      "index_digest": {
+        "all": "a36c9a91123dc324f20ecf5a49846a1a841c23cceaeb6a9a8a0ce806631e6ee9",
+        "test": "b28cc61820e4cf7d7eea07da75e0e526e5931c83149168ae05fb96f592ef3fbf",
+        "train": "b88e65a91015f1af98c11f0223bc6db8aa5185640a811504a6dea1050efcda0e",
+        "validation": "ce0f72232038bdb3728861f6d3c6fc7627daa0fe504b563e134e85f1574f1867"
+      },
+      "protocol": "pooled",
+      "scenario": "3-1",
+      "seed": 42
+    },
+    {
+      "counts": {
+        "all": 18751,
+        "test": 3751,
+        "train": 13125,
+        "validation": 1875
+      },
+      "coverage_verified": true,
+      "disjointness_verified": true,
+      "index_digest": {
+        "all": "9854b4c0ffe09ac85ef3017584644b2c58f1acac4ff94f5bd0dac0d195fec894",
+        "test": "790606fbbee4ac8515df2c75770f26b8acaa1096a6cc92e11f6dd8384cad5701",
+        "train": "c2d9705634dc1afb79dbf6177ca3c29b345d0c4b5a7c4a6e728ce3ab8b8cacb8",
+        "validation": "addd7013ee158e2a0441b55c689917cc639d302dcb7897022492d1b2cd03dca7"
+      },
+      "protocol": "pooled",
+      "scenario": "34-1",
+      "seed": 42
+    },
+    {
+      "counts": {
+        "all": 22666,
+        "test": 4534,
+        "train": 15866,
+        "validation": 2266
+      },
+      "coverage_verified": true,
+      "disjointness_verified": true,
+      "index_digest": {
+        "all": "20aff16703df55444483848bcdbbf6d4fe91a2400db64acfd4d1efdfa35a0683",
+        "test": "dfe11b284818fd080144959e407241bf7ade34c7a4174af5dc286832dbf241bb",
+        "train": "1d8cde201c6d7f244bb4c9f79ac40987e18f9a64457b2e3b43d7840bea16c335",
+        "validation": "391e622ed35ba37b39b384b35486e2b3dd89cf9298843fea1cc1a4e4b5343f42"
+      },
+      "protocol": "pooled",
+      "scenario": "36-1",
+      "seed": 42
+    },
+    {
+      "counts": {
+        "all": 19544,
+        "test": 3910,
+        "train": 13680,
+        "validation": 1954
+      },
+      "coverage_verified": true,
+      "disjointness_verified": true,
+      "index_digest": {
+        "all": "805aa67adb74740cafdf1e759a73f78d42e60c3e4ae72b4be52c316ec01e6e76",
+        "test": "4c5e294abff2e7f3c30ff2e58d976cafd7746de47bc19336fcf5f2a0880d11c1",
+        "train": "d6eb84b77a719a295f3f6b1863fed300422f1b1933757847a36fa06ad1a99c47",
+        "validation": "8b83cf96e421e583243ec99d840ae8d82e14a2a53151850d50bc1896aee26032"
+      },
+      "protocol": "pooled",
+      "scenario": "39-1",
+      "seed": 42
+    },
+    {
+      "counts": {
+        "all": 20000,
+        "test": 4001,
+        "train": 13999,
+        "validation": 2000
+      },
+      "coverage_verified": true,
+      "disjointness_verified": true,
+      "index_digest": {
+        "all": "48ac9690199a1dd269a2bfc64a1ea194e755bec9bf6fe1a05ab3de9d0592bc4d",
+        "test": "2198327350c69ed641f99301a125b06dcd59ab0c8e96c3bea3778e09e100bddf",
+        "train": "c14875cf82c6a335c39707e8fd88ea00b6cb6e83c29c53f077d6aeecfb6c5fef",
+        "validation": "057876c2d7f601eeb4611f844b61740052c66e71d6fa548b2bf383cacde3a7ff"
+      },
+      "protocol": "pooled",
+      "scenario": "9-1",
+      "seed": 42
+    }
+  ],
+  "seed": 42
+}

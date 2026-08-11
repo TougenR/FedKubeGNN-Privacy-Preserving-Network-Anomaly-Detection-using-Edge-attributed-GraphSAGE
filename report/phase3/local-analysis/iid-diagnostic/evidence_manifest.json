@@ -1,0 +1,10 @@
+{
+  "files": {
+    "finding.md": "2959e86defaad9e9a22e8b16b5e5b73e616fff56e6d9057468905e158fcd505d",
+    "summary.json": "82a6d2e1b1b41a7a67b773220a500100d84a9eb4c24f961270552e77228c4290"
+  },
+  "source_dataset_digest": "68fc6fc0cb8974aba1d431113b39dbf82f98457159c04d6a14b22feaa4b0cb89",
+  "iid_dataset_digest": "7c08f2e53191229b6b2c780c63b36fb440a125bf014b23718d2299d8e6804ecd",
+  "natural_dataset_digest": "c5ab9c02896c08c9f60e8efb9672a2090cbe595e4c344308f5e4dc2b0e51319a",
+  "test_evaluations_per_frozen_federated_state": 1
+}

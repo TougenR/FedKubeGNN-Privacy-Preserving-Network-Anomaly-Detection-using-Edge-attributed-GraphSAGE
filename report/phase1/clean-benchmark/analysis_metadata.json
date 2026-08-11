@@ -1,0 +1,11 @@
+{
+  "bundle_count": 21,
+  "seed_count": 3,
+  "seeds": [
+    42,
+    1337,
+    2026
+  ],
+  "single_seed": false,
+  "statistical_uncertainty": "AVAILABLE"
+}

@@ -1,0 +1,122 @@
+{
+  "checkpoint": "/workspace/artifacts/phase2/runs/selected-class-balanced-head-seed-42/best_state.npz",
+  "confusion_matrix": [
+    [
+      6967,
+      115,
+      65,
+      0,
+      0,
+      80,
+      68
+    ],
+    [
+      28,
+      1302,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      24,
+      0,
+      1628,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      2000
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      1982,
+      0,
+      18
+    ],
+    [
+      1,
+      0,
+      0,
+      0,
+      0,
+      1999,
+      0
+    ],
+    [
+      16,
+      26,
+      299,
+      0,
+      0,
+      711,
+      6973
+    ]
+  ],
+  "dataset_id": "iot23-seven-natural-3be7796b1ee27bc3",
+  "metrics": {
+    "accuracy": 0.8579952267303103,
+    "loss": 0.4444206689240147,
+    "macro_f1": 0.7787615921760571,
+    "num_examples": 24302,
+    "per_class": {
+      "Attack": {
+        "f1": 0.9390551749008296,
+        "precision": 0.9022869022869023,
+        "recall": 0.9789473684210527,
+        "support": 1330
+      },
+      "Benign": {
+        "f1": 0.9722978159235224,
+        "precision": 0.990193291642979,
+        "recall": 0.9550376970527759,
+        "support": 7295
+      },
+      "C&C": {
+        "f1": 0.893523600439078,
+        "precision": 0.8172690763052208,
+        "recall": 0.9854721549636803,
+        "support": 1652
+      },
+      "C&C-HeartBeat": {
+        "f1": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "support": 2000
+      },
+      "DDoS": {
+        "f1": 0.9954796584630838,
+        "precision": 1.0,
+        "recall": 0.991,
+        "support": 2000
+      },
+      "Okiru": {
+        "f1": 0.8346555323590815,
+        "precision": 0.7164874551971326,
+        "recall": 0.9995,
+        "support": 2000
+      },
+      "PartOfAHorizontalPortScan": {
+        "f1": 0.816319363146804,
+        "precision": 0.7697317584722375,
+        "recall": 0.8689096573208722,
+        "support": 8025
+      }
+    },
+    "weighted_f1": 0.8241786770061307
+  },
+  "model_digest": "42642e4cc839c09dfe8519511aa7cf7cdf5ca7350a8dd376e118ee31a6a74bbf",
+  "split": "test"
+}

@@ -1,0 +1,47 @@
+{
+  "class_names": [
+    "Benign",
+    "Attack",
+    "C&C",
+    "C&C-HeartBeat",
+    "DDoS",
+    "Okiru",
+    "Okiru-Attack",
+    "PartOfAHorizontalPortScan"
+  ],
+  "figures": [
+    "federated_learning_curves.png",
+    "federated_learning_curves.pdf",
+    "federated_final_metrics.png",
+    "federated_final_metrics.pdf",
+    "federated_per_class_f1.png",
+    "federated_per_class_f1.pdf",
+    "federated_confusion_matrices.png",
+    "federated_confusion_matrices.pdf"
+  ],
+  "provenance": {
+    "config_digest": "9ba6d9a8aafd3af45e9c23d9f02113dd1e9d5231ce359be0288797718d12bdcc",
+    "dataset_digest": "68fc6fc0cb8974aba1d431113b39dbf82f98457159c04d6a14b22feaa4b0cb89",
+    "model_digest": "0c1faa97cde18b330cc5e1f565a1f80fe3fce4d326525ca1c148712808fa2004"
+  },
+  "runs": [
+    {
+      "root": "/artifacts/fedavg/runs/fedavg-20260805T110020360734Z-ebfabf8795",
+      "rounds": 30,
+      "run_id": "fedavg-20260805T110020360734Z-ebfabf8795",
+      "strategy": "fedavg"
+    },
+    {
+      "root": "/artifacts/fedprox/runs/fedprox-20260805T111510205887Z-600756a341",
+      "rounds": 30,
+      "run_id": "fedprox-20260805T111510205887Z-600756a341",
+      "strategy": "fedprox"
+    }
+  ],
+  "tables": [
+    "round_metrics.csv",
+    "final_metrics.csv"
+  ],
+  "test_evaluation_reused": true,
+  "visualization_version": 1
+}

@@ -1,0 +1,139 @@
+{
+  "dataset": {
+    "dataset_id": "iot23-seven-natural-3be7796b1ee27bc3",
+    "manifest_digest": "c5ab9c02896c08c9f60e8efb9672a2090cbe595e4c344308f5e4dc2b0e51319a",
+    "model_digest": "42642e4cc839c09dfe8519511aa7cf7cdf5ca7350a8dd376e118ee31a6a74bbf"
+  },
+  "selected_policy": {
+    "name": "class_balanced_clients_and_head",
+    "shared_parameters": "Every class receives equal total influence; its influence is distributed to clients in proportion to train-only class support.",
+    "classifier_rows": "Each output weight/bias row is averaged only over clients with positive train support for that class, weighted by class support.",
+    "uses_validation_or_test_for_weights": false,
+    "client_weights": {
+      "34-1": 0.266940475162564,
+      "1-1": 0.07491483429404114,
+      "3-1": 0.18181619828993956,
+      "9-1": 0.0747911484560696,
+      "36-1": 0.2961486789072996,
+      "39-1": 0.10538866489008611
+    },
+    "budget": "30 rounds x 5 local Adam epochs",
+    "selection": "best validation macro-F1 checkpoint per training seed"
+  },
+  "validation": {
+    "baseline": {
+      "42": 0.5218283020471323,
+      "1337": 0.5219182446610195,
+      "2026": 0.5216106872706613,
+      "mean": 0.5217857446596044,
+      "population_std": 0.00012911554390259767
+    },
+    "selected": {
+      "42": {
+        "best_round": 30,
+        "macro_f1": 0.7762779052304024
+      },
+      "1337": {
+        "best_round": 19,
+        "macro_f1": 0.6497592670855286
+      },
+      "2026": {
+        "best_round": 29,
+        "macro_f1": 0.7828898994477089
+      },
+      "mean": 0.7363090239212133,
+      "population_std": 0.0612594206258354
+    },
+    "delta_by_seed": {
+      "42": 0.25444960318327015,
+      "1337": 0.127841022424509,
+      "2026": 0.26127921217704764
+    },
+    "mean_delta": 0.21452327926160897,
+    "test_evaluations_during_selection": 0
+  },
+  "test": {
+    "evaluation_policy": "one evaluation per frozen validation-selected best_state",
+    "42": {
+      "accuracy": 0.8579952267303103,
+      "weighted_f1": 0.8241786770061307,
+      "macro_f1": 0.7787615921760571,
+      "per_class_f1": {
+        "Benign": 0.9722978159235224,
+        "Attack": 0.9390551749008296,
+        "C&C": 0.893523600439078,
+        "C&C-HeartBeat": 0.0,
+        "DDoS": 0.9954796584630838,
+        "Okiru": 0.8346555323590815,
+        "PartOfAHorizontalPortScan": 0.816319363146804
+      }
+    },
+    "1337": {
+      "accuracy": 0.8069294708254464,
+      "weighted_f1": 0.7359768910759418,
+      "macro_f1": 0.6520250406006419,
+      "per_class_f1": {
+        "Benign": 0.8578051607393401,
+        "Attack": 0.9574231766012588,
+        "C&C": 0.893956043956044,
+        "C&C-HeartBeat": 0.0,
+        "DDoS": 0.0,
+        "Okiru": 0.9972561736093789,
+        "PartOfAHorizontalPortScan": 0.8577347292984715
+      }
+    },
+    "2026": {
+      "accuracy": 0.8613282857377994,
+      "weighted_f1": 0.8274417096150721,
+      "macro_f1": 0.7835041870802583,
+      "per_class_f1": {
+        "Benign": 0.9777406789092933,
+        "Attack": 0.9594395280235988,
+        "C&C": 0.9008467631794592,
+        "C&C-HeartBeat": 0.0,
+        "DDoS": 0.9954796584630838,
+        "Okiru": 0.8346555323590815,
+        "PartOfAHorizontalPortScan": 0.8163671486272903
+      }
+    },
+    "macro_f1_mean": 0.7380969399523192,
+    "macro_f1_population_std": 0.060892812630666975,
+    "macro_f1_min": 0.6520250406006419,
+    "macro_f1_max": 0.7835041870802583,
+    "seed_42_delta_from_frozen_natural_fedavg": 0.2715915898454247
+  },
+  "diagnostics": {
+    "class_support_head_only_best_validation_macro_f1": 0.5218522667093631,
+    "class_support_head_only_decision": "rejected",
+    "class_balanced_clients_only_validation_macro_f1": {
+      "42": 0.78235886107691,
+      "1337": 0.49790602987695376,
+      "2026": 0.6578684601695475
+    },
+    "class_balanced_clients_only_decision": "rejected because seed 1337 regressed",
+    "client_36_only": {
+      "best_round": 8,
+      "validation_weighted_f1": 1.0,
+      "C&C-HeartBeat_f1": 1.0,
+      "Okiru_f1": 1.0
+    },
+    "remaining_failure": "C&C-HeartBeat remains zero in every selected global model despite being perfectly learnable by client 36-1 alone."
+  },
+  "evidence_sha256": {
+    "baseline_diagnostics_summary": "312a7842d58cfaeabcd466a92e5ed9505780433c208ea5214c86f7aad90e3936",
+    "class_support_head_summary": "a8a73e7d0ac5acb31ce610ad0959e44052b2b03de14a8fd657f02fce9158ead2",
+    "client_36_only_summary": "8354b47aed9ed1669b34bb6c8cc9ba40cc96b0c4488684196b9ffec349073373",
+    "selected_42_summary": "13a250f221b1d2b5edc8184de2f5b726c20f2671ab30b6c0d062c23963306a60",
+    "selected_42_rounds": "a4c28ae379b6ab09e83c4512e372d018ac6d5745c8e08aed2d89c2e6a2e846ab",
+    "selected_42_best_state": "c462dae316a710dd03968793c2e5fe2dfee683ead0fec17cad9a36fdc60b7aa1",
+    "selected_42_test": "689a2987bcdb6cce9d385bc6e854d265e07d00f19cabf3253a4584b30ed29df9",
+    "selected_1337_summary": "7ee696052ac28c5b65297e5d50f4432894ee78b5112b95269f709c089e3438bb",
+    "selected_1337_rounds": "0f50713483aa9df1146d59563d19bae18ad21fc12b23031452a477ebe322f8c6",
+    "selected_1337_best_state": "e78a8dc809f9338102ea9d13a6cca4a828218ac3cc56e649ca614663f9b4f467",
+    "selected_1337_test": "245866f8c4e379c2bb2eac9b914b89bf8ca3d48d1c7ba4f2dca918ad2d1bd018",
+    "selected_2026_summary": "b868d67284d46f461f6aba92fa1b3a11849d18a21bb7a010fadb007c343c03cc",
+    "selected_2026_rounds": "4a2983ebec98b6a714868671383ab2ec54a4326ff82e7184ffff2961a792524e",
+    "selected_2026_best_state": "f37e138c755d0fe0743ae72d2a6de52ff92fedc7b067a4bab1aaa9b1566d9b4a",
+    "selected_2026_test": "3ee550e51c8fde827876eca8524136dc244a7a9dbee52cf0e426805d84431e53"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "figures": [
+    "class_aware_validation_by_seed.png",
+    "class_aware_validation_by_seed.pdf",
+    "class_aware_test_metrics.png",
+    "class_aware_test_metrics.pdf",
+    "class_aware_per_class_f1.png",
+    "class_aware_per_class_f1.pdf"
+  ],
+  "seeds": [
+    "42",
+    "1337",
+    "2026"
+  ],
+  "source_summary": "artifacts/phase3_analysis/class-aware-aggregation/summary.json",
+  "source_summary_sha256": "752587a097d432bf1ff3ec42362be25441b541a6ff42eceec03574d9e3f15318",
+  "tables": [
+    "class_aware_seed_metrics.csv"
+  ],
+  "test_evaluation_reused": true,
+  "visualization_version": 1
+}
