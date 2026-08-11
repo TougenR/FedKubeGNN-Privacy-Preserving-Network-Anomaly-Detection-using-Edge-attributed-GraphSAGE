@@ -1,4 +1,5 @@
 const STAGE_KEYS = ["agent", "zeek", "shipper", "gateway", "collector", "window", "inference", "router"];
+// Presentation timing never creates acknowledgments; confirmed backend counters remain authoritative.
 const PLAYBACK_STAGE_MS = 300;
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 const state = {
