@@ -29,7 +29,7 @@ jobs:
         with: {terraform_version: 1.13.4}
       - name: Create review plan only
         run: scripts/terraform_review_plan.sh "${{ vars.ADMIN_CIDR }}"
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: phase3-terraform-plan
           path: artifacts/federated/terraform/phase3-plan.txt
